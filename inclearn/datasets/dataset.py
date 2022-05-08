@@ -32,5 +32,12 @@ class DataHandler:
     common_transforms = [ToTensorV2()]
     class_order = None
 
-
+    
+def split_data(data_c):
+    # currently for trees with depth of 2
+    DataLoaderList = []
+    tg = data_c.targets.copy()
+    for class_i in range(len(np.unique(tg))):
+        DataLoaderList.append(torch.utils.data.DataLoader((data_c.data[tg==tg[class_i]], data_c.targets[tg==tg[class_i]])))
+    return DataLoaderList
 
