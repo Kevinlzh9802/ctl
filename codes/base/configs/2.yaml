@@ -1,5 +1,5 @@
 exp:
-  name: "CIFAR100B0S10_DER_wo_mask"
+  name: "der_deep_rtc"
   savedir: "./logs"
   tensorboard_dir: "./tensorboard"
   debug: False
@@ -8,7 +8,7 @@ exp:
 #Model Cfg
 model: "incmodel"
 convnet: 'resnet18' #modified_resnet32, resnet18
-taxonomy: None # rtc for Real Taxonomic Classifier
+taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
@@ -60,7 +60,7 @@ postprocessor:
   weight_decay: 0.0005
 
 decouple:
-  enable: True 
+  enable: True
   epochs: 50
   fullset: False
   lr: 0.05
@@ -101,6 +101,6 @@ memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
-device: 0 #GPU index to use, for cpu use -1
+device: -1 #GPU index to use, for cpu use -1
 seed: 1993
 

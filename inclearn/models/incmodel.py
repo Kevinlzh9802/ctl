@@ -55,7 +55,7 @@ class IncModel(IncrementalLearner):
 
         # Model
         self._der = cfg['der']  # Whether to expand the representation
-        self._network = network.BasicNet(
+        self._network = network.TaxonomicDer(
             cfg["convnet"],
             cfg=cfg,
             nf=cfg["channel"],

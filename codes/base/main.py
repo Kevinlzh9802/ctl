@@ -74,7 +74,7 @@ def train(_run, _rnd, _seed):
     cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
-#     _train(cfg, _run, ex, tensorboard)
+    _train(cfg, _run, ex, tensorboard)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
 
 

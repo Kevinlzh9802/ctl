@@ -29,3 +29,9 @@ class CosineClassifier(Module):
         if self.sigma is not None:
             out = self.sigma * out
         return out
+
+
+class RealTaxonomicClassifier(Module):
+    def __int__(self):
+        pass
+
