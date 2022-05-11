@@ -396,10 +396,16 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         return task_info, train_loader, val_loader, test_loader
 
     def _get_cur_data_top_level(self):
-        pass
+        # TODO: complete this function
+        x_train = self.taxonomy_tree(self.cur_parent_node.all_children()).data
+        y_train = self.taxonomy_tree(self.cur_parent_node.all_children()).targets
+        return x_train, y_train
 
     def _get_cur_data_for_all_children(self):
-        pass
+        # TODO: complete this function
+        x_train = self.taxonomy_tree(self.cur_parent_node.all_children()).data
+        y_train = self.taxonomy_tree(self.cur_parent_node.all_children()).targets
+        return x_train, y_train
 
     def _setup_data_for_raw_data(self, dataset, train_dataset, test_dataset, current_class_idx=0):
         increment = self.task_size
