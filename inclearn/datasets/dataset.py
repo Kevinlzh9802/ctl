@@ -3,6 +3,7 @@ import numpy as np
 import glob
 
 import albumentations as A
+from libs import Tree, write_file
 from albumentations.pytorch import ToTensorV2
 
 from torchvision import datasets, transforms
@@ -96,6 +97,7 @@ class iCIFAR100(iCIFAR10):
         self.targets = self.base_dataset.targets
         self.n_cls = 100
         self.transform_type = 'torchvision'
+        self.taxonomy_tree = Tree('cifar100')
 
     @property
     def is_proc_inc_data(self):
