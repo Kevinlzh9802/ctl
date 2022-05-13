@@ -60,6 +60,7 @@ class IncrementalDataset:
         self.train_dataset = None
         self.test_dataset = None
         self.n_tot_cls = -1
+        # datasets is the object
         datasets = get_dataset(dataset_name)
         self._setup_data(datasets)
 
@@ -353,18 +354,14 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         else:
             self.taxonomy_layers = 0
 
-        self.taxonomy_stage = 0
+        self.cur_taxonomy_stage = 0
         self.taxonomy_tree = datasets.taxonomy_tree
+        self.taxonomy_order = self.taxonomy_tree.gen_coarse_list()
 
     def new_task(self):
-        if self._current_task == 0:  # First stage, learn all classes at most coarse level
-            self._get_cur_data_top_level()
-        else:
-            self._get_cur_data_for_all_children()
+        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         # if self._current_task >= len(self.increments):
         #     raise Exception("No more tasks.")
-        #
-        # min_class, max_class, x_train, y_train, x_test, y_test = self._get_cur_step_data_for_raw_data()
         #
         # self.data_cur, self.targets_cur = x_train, y_train
         #
@@ -382,9 +379,7 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         task_info = {
-            "taxonomy_stage": self.taxonomy_stage,
-            "min_class": min_class,
-            "max_class": max_class,
+            "taxonomy_stage": self.cur_taxonomy_stage,
             "increment": self.increments[self._current_task],
             "task": self._current_task,
             "max_task": len(self.increments),
@@ -395,55 +390,18 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         self._current_task += 1
         return task_info, train_loader, val_loader, test_loader
 
-    def _get_cur_data_top_level(self):
-        # TODO: complete this function
-        x_train = self.taxonomy_tree(self.cur_parent_node.all_children()).data
-        y_train = self.taxonomy_tree(self.cur_parent_node.all_children()).targets
-        return x_train, y_train
-
     def _get_cur_data_for_all_children(self):
         # TODO: complete this function
-        x_train = self.taxonomy_tree(self.cur_parent_node.all_children()).data
-        y_train = self.taxonomy_tree(self.cur_parent_node.all_children()).targets
-        return x_train, y_train
+        label_index = self.cur_parent_node.all_leaf_children()
+        x_train, y_train = self._select_from_idx(self.data_train, self.targets_train, label_index)
+        x_test, y_test = self._select_from_idx(self.data_test, self.targets_test, label_index)
+        return x_train, y_train, x_test, y_test
 
-    def _setup_data_for_raw_data(self, dataset, train_dataset, test_dataset, current_class_idx=0):
-        increment = self.task_size
-
-        x_train, y_train = train_dataset.data, np.array(train_dataset.targets)
-        x_val, y_val, x_train, y_train = self._split_per_class(x_train, y_train, self.validation_split)
-        x_test, y_test = test_dataset.data, np.array(test_dataset.targets)
-
-        # Get Class Order
-        order = [i for i in range(len(np.unique(y_train)))]
-        if self.random_order:
-            random.seed(self._seed)  # Ensure that following order is determined by seed:
-            random.shuffle(order)
-        elif dataset.class_order(self.trial_i) is not None:
-            order = dataset.class_order(self.trial_i)
-
-        self.class_order.append(order)
-        y_train = self._map_new_class_index(y_train, order)
-        y_val = self._map_new_class_index(y_val, order)
-        y_test = self._map_new_class_index(y_test, order)
-
-        y_train += current_class_idx
-        y_val += current_class_idx
-        y_test += current_class_idx
-
-        current_class_idx += len(order)
-        if self.start_class == 0:
-            self.increments = [increment for _ in range(len(order) // increment)]
-        else:
-            self.increments.append(self.start_class)
-            for _ in range((len(order) - self.start_class) // increment):
-                self.increments.append(increment)
-        self.data_train.append(x_train)
-        self.targets_train.append(y_train)
-        self.data_val.append(x_val)
-        self.targets_val.append(y_val)
-        self.data_test.append(x_test)
-        self.targets_test.append(y_test)
+    def _select_from_idx(self, x, y, fine_level_idx):
+        # fine_level_idx: fine level labels
+        idxes = np.array(y == fine_level_idx)
+        # get labels corresponding to current coarse level
+        return x[idxes], self.taxonomy_tree.get_coarse_label(y[idxes], self.cur_taxonomy_stage)
 
 
 class DummyDataset(torch.utils.data.Dataset):

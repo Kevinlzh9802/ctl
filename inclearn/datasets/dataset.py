@@ -3,7 +3,7 @@ import numpy as np
 import glob
 
 import albumentations as A
-from libs import Tree, write_file
+from .libs import Tree, write_file
 from albumentations.pytorch import ToTensorV2
 
 from torchvision import datasets, transforms
