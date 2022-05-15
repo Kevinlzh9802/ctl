@@ -97,7 +97,6 @@ def _train(cfg, _run, ex, tensorboard):
 
     for task_i in range(inc_dataset.n_tasks):
         task_info, train_loader, val_loader, test_loader = inc_dataset.new_task()
-
         model.set_task_info(
             task=task_info["task"],
             total_n_classes=task_info["max_class"],
@@ -105,6 +104,7 @@ def _train(cfg, _run, ex, tensorboard):
             n_train_data=task_info["n_train_data"],
             n_test_data=task_info["n_test_data"],
             n_tasks=inc_dataset.n_tasks,
+            tax_tree=task_info["partial_tree"]
         )
 
         model.before_task(task_i, inc_dataset)

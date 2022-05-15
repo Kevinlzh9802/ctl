@@ -46,15 +46,15 @@ class IncrementalDataset:
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
-        #the number of classes for each step in incremental stage
+        # the number of classes for each step in incremental stage
         self.task_size = increment
         self.increments = []
         self.random_order = random_order
         self.validation_split = validation_split
 
-        #-------------------------------------
-        #Dataset Info
-        #-------------------------------------
+        # -------------------------------------
+        # Dataset Info
+        # -------------------------------------
         self.data_folder = get_data_folder(data_folder, dataset_name)
         self.dataset_name = dataset_name
         self.train_dataset = None
@@ -68,10 +68,10 @@ class IncrementalDataset:
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
-        #Currently, don't support multiple datasets
+        # Currently, don't support multiple datasets
         self.train_transforms = datasets.train_transforms
         self.test_transforms = datasets.test_transforms
-        #torchvision or albumentations
+        # torchvision or albumentations
         self.transform_type = datasets.transform_type
 
         # memory Mt
@@ -87,7 +87,7 @@ class IncrementalDataset:
         self.shared_data_inc = None
         self.shared_test_data = None
 
-        #Current states for Incremental Learning Stage.
+        # Current states for Incremental Learning Stage.
         self._current_task = 0
 
     @property
@@ -343,25 +343,21 @@ class IncrementalDataset:
 
 
 class IncrementalTaxonomyDataset(IncrementalDataset):
-    def __int__(self, trial_i, dataset_name, taxonomy_tree, random_order=False, shuffle=True, workers=10,
+    def __int__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10,
                 batch_size=128, seed=1, increment=10, validation_split=0.0, resampling=False, data_folder="./data",
                 start_class=0):
         IncrementalDataset.__init__(self, trial_i, dataset_name, random_order, shuffle, workers, batch_size, seed,
                                     increment, validation_split, resampling, data_folder, start_class)
 
-        if dataset_name == 'cifar100':
-            self.taxonomy_layers = 2
-        else:
-            self.taxonomy_layers = 0
-
-        self.cur_taxonomy_stage = 0
-        self.taxonomy_tree = datasets.taxonomy_tree
-        self.taxonomy_order = self.taxonomy_tree.gen_coarse_list()
+        cur_dataset = get_dataset(dataset_name)
+        self.taxonomy_tree = cur_dataset.taxonomy_tree
+        _, self.taxonomy_order = self.taxonomy_tree.gen_coarse_label_list()  # list of coarse nodes, stored in ID
+        self.cur_parent_node = self.taxonomy_tree.nodes.values()[self.taxonomy_order[self._current_task]]
 
     def new_task(self):
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
-        # if self._current_task >= len(self.increments):
-        #     raise Exception("No more tasks.")
+        if self._current_task >= len(self.taxonomy_order):
+            raise Exception("No more tasks.")
         #
         # self.data_cur, self.targets_cur = x_train, y_train
         #
@@ -379,20 +375,25 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         task_info = {
-            "taxonomy_stage": self.cur_taxonomy_stage,
-            "increment": self.increments[self._current_task],
+            "full_tree": self.taxonomy_tree,
+            "partial_tree": self.taxonomy_tree.gen_partial_tree(self.taxonomy_order[:self._current_task]),
+            "taxonomy_order": self.taxonomy_order,
+            "taxonomy_stage": self.cur_parent_node.name,
             "task": self._current_task,
+            "stage": self.taxonomy_tree.get_nodeId(self.taxonomy_order[self._current_task]),
             "max_task": len(self.increments),
             "n_train_data": len(x_train),
             "n_test_data": len(y_train),
         }
 
         self._current_task += 1
+        self.cur_parent_node = self.taxonomy_tree.nodes.values()[self.taxonomy_order[self._current_task]]
         return task_info, train_loader, val_loader, test_loader
 
     def _get_cur_data_for_all_children(self):
-        # TODO: complete this function
-        label_index = self.cur_parent_node.all_leaf_children()
+        curr_node = self.taxonomy_order[self._current_task]
+        # get all finest labels with id, this time use labels in label_index
+        label_index, _ = self.taxonomy_tree.get_finest_label(curr_node)
         x_train, y_train = self._select_from_idx(self.data_train, self.targets_train, label_index)
         x_test, y_test = self._select_from_idx(self.data_test, self.targets_test, label_index)
         return x_train, y_train, x_test, y_test
@@ -401,7 +402,8 @@ class IncrementalTaxonomyDataset(IncrementalDataset):
         # fine_level_idx: fine level labels
         idxes = np.array(y == fine_level_idx)
         # get labels corresponding to current coarse level
-        return x[idxes], self.taxonomy_tree.get_coarse_label(y[idxes], self.cur_taxonomy_stage)
+        coarse_labels, _ = self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth)
+        return x[idxes], coarse_labels
 
 
 class DummyDataset(torch.utils.data.Dataset):

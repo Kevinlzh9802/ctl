@@ -41,7 +41,7 @@ def get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset):
 
 
 def get_data(cfg, trial_i):
-    return data.IncrementalDataset(
+    return data.IncrementalTaxonomyDataset(
         trial_i=trial_i,
         dataset_name=cfg["dataset"],
         random_order=cfg["random_classes"],
@@ -53,6 +53,19 @@ def get_data(cfg, trial_i):
         increment=cfg["increment"],
         data_folder=cfg["data_folder"],
         start_class=cfg["start_class"],
+
+    # return data.IncrementalTaxonomyDataset(
+    #     trial_i=trial_i,
+    #     dataset_name=cfg["dataset"],
+    #     random_order=cfg["random_classes"],
+    #     shuffle=True,
+    #     batch_size=cfg["batch_size"],
+    #     workers=cfg["workers"],
+    #     validation_split=cfg["validation"],
+    #     resampling=cfg["resampling"],
+    #     increment=cfg["increment"],
+    #     data_folder=cfg["data_folder"],
+    #     start_class=cfg["start_class"],
     )
 
 

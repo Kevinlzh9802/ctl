@@ -22,7 +22,7 @@ class CosineClassifier(Module):
         stdv = 1. / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stdv, stdv)
         if self.sigma is not None:
-            self.sigma.data.fill_(1)  #for initializaiton of sigma
+            self.sigma.data.fill_(1)  # for initializaiton of sigma
 
     def forward(self, input):
         out = F.linear(F.normalize(input, p=2, dim=1), F.normalize(self.weight, p=2, dim=1))
@@ -32,6 +32,7 @@ class CosineClassifier(Module):
 
 
 class RealTaxonomicClassifier(Module):
-    def __int__(self):
-        pass
+    def __int__(self, taxonomy_tree, in_features, n_classes):
+        self.in_features = in_features
+        self.out_features = n_classes
 

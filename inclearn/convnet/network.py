@@ -8,6 +8,9 @@ import torch.nn.functional as F
 from inclearn.tools import factory
 from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
+from inclearn.convnet import get_model
+from inclearn.datasets.libs import Tree
+from inclearn.datasets.dataset import iCIFAR10, iCIFAR100
 
 
 class BasicNet(nn.Module):
@@ -166,7 +169,7 @@ class BasicNet(nn.Module):
         return classifier
 
 
-class TaxonomicDer(nn.Module):
+class TaxonomicDer(nn.Module):  # used in incmodel.py
     def __init__(
         self,
         convnet_type,
@@ -176,6 +179,7 @@ class TaxonomicDer(nn.Module):
         init="kaiming",
         device=None,
         dataset="cifar100",
+        current_tax_tree=None
     ):
         super(TaxonomicDer, self).__init__()
         self.nf = nf
@@ -189,6 +193,8 @@ class TaxonomicDer(nn.Module):
         self.der = cfg['der']
         self.aux_nplus1 = cfg['aux_n+1']
         self.reuse_oldfc = cfg['reuse_oldfc']
+        self.module_cls = cfg['model']['cls']
+        self.current_tax_tree = current_tax_tree
 
         if self.der:
             print("Enable dynamical reprensetation expansion!")
@@ -313,7 +319,9 @@ class TaxonomicDer(nn.Module):
     def _gen_classifier(self, in_features, n_classes):
         if self.taxonomy is not None:
             if self.taxonomy == 'rtc':
-                classifier = RealTaxonomicClassifier()
+                model_cls = get_model(self.module_cls, nodes).cuda()
+                model_cls = nn.DataParallel(model_cls, device_ids=range(n_gpu))
+                classifier = model_cls
             else:
                 raise NotImplementedError('')
         else:

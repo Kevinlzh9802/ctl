@@ -90,6 +90,16 @@ class IncModel(IncrementalLearner):
     def eval(self):
         self._parallel_network.eval()
 
+    def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, tax_tree):
+        self._task = task
+        self._task_size = increment
+        self._increments.append(self._task_size)
+        self._total_n_classes = total_n_classes
+        self._n_train_data = n_train_data
+        self._n_test_data = n_test_data
+        self._n_tasks = n_tasks
+        self._current_tax_tree = tax_tree
+
     def train(self):
         if self._der:
             self._parallel_network.train()
