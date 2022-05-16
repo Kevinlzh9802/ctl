@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 
+
 class HierNet(nn.Module):
     """Module of hierarchical classifier
     """

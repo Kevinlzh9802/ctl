@@ -7,6 +7,7 @@ exp:
 
 #Model Cfg
 model: "incmodel"
+model_cls: "hiernet"
 convnet: 'resnet18' #modified_resnet32, resnet18
 taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'

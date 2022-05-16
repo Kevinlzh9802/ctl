@@ -193,7 +193,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.der = cfg['der']
         self.aux_nplus1 = cfg['aux_n+1']
         self.reuse_oldfc = cfg['reuse_oldfc']
-        self.module_cls = cfg['model']['cls']
+        self.module_cls = cfg['model_cls']
         self.current_tax_tree = current_tax_tree
 
         if self.der:
@@ -319,8 +319,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
     def _gen_classifier(self, in_features, n_classes):
         if self.taxonomy is not None:
             if self.taxonomy == 'rtc':
-                model_cls = get_model(self.module_cls, nodes).cuda()
-                model_cls = nn.DataParallel(model_cls, device_ids=range(n_gpu))
+                model_cls = get_model(self.module_cls, self.current_tax_tree.gen_partial_tree().nodes()).cuda()
+                model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
             else:
                 raise NotImplementedError('')

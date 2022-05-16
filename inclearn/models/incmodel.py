@@ -90,15 +90,27 @@ class IncModel(IncrementalLearner):
     def eval(self):
         self._parallel_network.eval()
 
-    def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, tax_tree):
+    # def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, tax_tree):
+    #     self._task = task
+    #     self._task_size = increment
+    #     self._increments.append(self._task_size)
+    #     self._total_n_classes = total_n_classes
+    #     self._n_train_data = n_train_data
+    #     self._n_test_data = n_test_data
+    #     self._n_tasks = n_tasks
+    #     self._current_tax_tree = tax_tree
+
+    def set_task_info(self, task, task_size, tax_tree, taxonomy_order, taxonomy_stage, n_train_data,
+                      n_test_data, n_tasks):
         self._task = task
-        self._task_size = increment
+        self._task_size = task_size
         self._increments.append(self._task_size)
-        self._total_n_classes = total_n_classes
+        self._current_tax_tree = tax_tree
+        self._taxonomy_order = taxonomy_order
+        self._taxonomy_stage = taxonomy_stage
         self._n_train_data = n_train_data
         self._n_test_data = n_test_data
         self._n_tasks = n_tasks
-        self._current_tax_tree = tax_tree
 
     def train(self):
         if self._der:
@@ -122,6 +134,7 @@ class IncModel(IncrementalLearner):
         self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
+        self._network.current_tax_tree = self._current_tax_tree
         self._network.add_classes(self._task_size)
         self._network.task_size = self._task_size
         self.set_optimizer()

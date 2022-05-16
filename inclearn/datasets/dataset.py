@@ -90,6 +90,18 @@ class iCIFAR100(iCIFAR10):
         transforms.ToTensor(),
         transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
     ])
+    hiera_index_dic = {'vehicles_1': [48, 13, 90, 8, 58], 'trees': [56, 96, 47, 52, 59],
+                            'large_man-made_outdoor_things': [12, 68, 76, 37, 17],
+                            'food_containers': [16, 28, 61, 10, 9], 'small_mammals': [36, 50, 74, 65, 80],
+                            'large_omnivores_and_herbivores': [19, 15, 21, 38, 31], 'flowers': [70, 92, 62, 54, 82],
+                            'large_natural_outdoor_scenes': [33, 60, 23, 49, 71], 'reptiles': [93, 27, 29, 44, 78],
+                            'household_furniture': [94, 5, 25, 20, 84], 'fruit_and_vegetables': [0, 57, 51, 83, 53],
+                            'large_carnivores': [3, 42, 88, 97, 43], 'vehicles_2': [81, 89, 85, 41, 69],
+                            'people': [46, 11, 35, 2, 98], 'insects': [14, 6, 7, 18, 24],
+                            'household_electrical_devices': [40, 87, 86, 39, 22],
+                            'non-insect_invertebrates': [26, 77, 45, 99, 79], 'aquatic_mammals': [30, 95, 55, 72, 4],
+                            'fish': [1, 32, 67, 91, 73], 'medium_mammals': [66, 34, 63, 75, 64]}
+    taxonomy_tree = Tree('cifar100', hiera_index_dic)
 
     def __init__(self, data_folder, train, is_fine_label=False):
         self.base_dataset = self.base_dataset_cls(data_folder, train=train, download=True)
@@ -97,18 +109,7 @@ class iCIFAR100(iCIFAR10):
         self.targets = self.base_dataset.targets
         self.n_cls = 100
         self.transform_type = 'torchvision'
-        self.hiera_index_dic = {'vehicles_1': [48, 13, 90, 8, 58], 'trees': [56, 96, 47, 52, 59],
-                           'large_man-made_outdoor_things': [12, 68, 76, 37, 17],
-                           'food_containers': [16, 28, 61, 10, 9], 'small_mammals': [36, 50, 74, 65, 80],
-                           'large_omnivores_and_herbivores': [19, 15, 21, 38, 31], 'flowers': [70, 92, 62, 54, 82],
-                           'large_natural_outdoor_scenes': [33, 60, 23, 49, 71], 'reptiles': [93, 27, 29, 44, 78],
-                           'household_furniture': [94, 5, 25, 20, 84], 'fruit_and_vegetables': [0, 57, 51, 83, 53],
-                           'large_carnivores': [3, 42, 88, 97, 43], 'vehicles_2': [81, 89, 85, 41, 69],
-                           'people': [46, 11, 35, 2, 98], 'insects': [14, 6, 7, 18, 24],
-                           'household_electrical_devices': [40, 87, 86, 39, 22],
-                           'non-insect_invertebrates': [26, 77, 45, 99, 79], 'aquatic_mammals': [30, 95, 55, 72, 4],
-                           'fish': [1, 32, 67, 91, 73], 'medium_mammals': [66, 34, 63, 75, 64]}
-        self.taxonomy_tree = Tree('cifar100', self.hiera_index_dic)
+
 
     @property
     def is_proc_inc_data(self):

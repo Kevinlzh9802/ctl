@@ -4,7 +4,7 @@ from torch import optim
 
 from inclearn import models
 from inclearn.convnet import resnet, cifar_resnet, modified_resnet_cifar, preact_resnet
-from inclearn.datasets import data
+from inclearn.datasets import data, dataset
 
 
 def get_optimizer(params, optimizer, lr, weight_decay=0.0):
@@ -41,7 +41,8 @@ def get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset):
 
 
 def get_data(cfg, trial_i):
-    return data.IncrementalTaxonomyDataset(
+    tax_tree = dataset.get_dataset(cfg["dataset"]).taxonomy_tree
+    return data.IncrementalDataset(
         trial_i=trial_i,
         dataset_name=cfg["dataset"],
         random_order=cfg["random_classes"],
@@ -53,6 +54,7 @@ def get_data(cfg, trial_i):
         increment=cfg["increment"],
         data_folder=cfg["data_folder"],
         start_class=cfg["start_class"],
+        taxonomy_tree=tax_tree,
 
     # return data.IncrementalTaxonomyDataset(
     #     trial_i=trial_i,
