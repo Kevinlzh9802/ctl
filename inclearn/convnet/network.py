@@ -179,7 +179,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         init="kaiming",
         device=None,
         dataset="cifar100",
-        current_tax_tree=None
+        current_tax_tree=None,
+        current_task=0
     ):
         super(TaxonomicDer, self).__init__()
         self.nf = nf
@@ -195,6 +196,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.reuse_oldfc = cfg['reuse_oldfc']
         self.module_cls = cfg['model_cls']
         self.current_tax_tree = current_tax_tree
+        self.current_task = current_task
 
         if self.der:
             print("Enable dynamical reprensetation expansion!")
@@ -319,7 +321,10 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
     def _gen_classifier(self, in_features, n_classes):
         if self.taxonomy is not None:
             if self.taxonomy == 'rtc':
-                model_cls = get_model(self.module_cls, self.current_tax_tree.nodes).cuda()
+                used_nodes = setup_tree(self.current_task, self.current_tax_tree)
+                model_dict = {'arch': self.module_cls, 'feat_size': in_features}
+                # model_cls = get_model(model_dict, used_nodes).cuda()
+                model_cls = get_model(model_dict, used_nodes)
                 model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
             else:

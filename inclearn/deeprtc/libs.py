@@ -37,12 +37,12 @@ class TreeNode():
         )
         return attr
 
-    # def copy(self):
-    #     new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx, self.parent)
-    #     new_node.children = self.children.copy()
-    #     if self.cond:
-    #         new_node.cond = self.cond.copy()
-    #     return new_node
+    def copy(self):
+        new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx, self.parent)
+        new_node.children = self.children.copy()
+        if self.cond:
+            new_node.cond = self.cond.copy()
+        return new_node
 
     def get_all_info(self):
         return [self.name, self.label_index, self.depth, self.node_id, self.children, self.child_idx, self.parent,self.codeword, self.cond, self.children_unid, self.mask]
@@ -205,7 +205,7 @@ class Tree():
                 parent = self.nodes.get(parent.parent)
             parent.set_codeword(idx)
 
-    def gen_rel_label_index(self):
+    def gen_rel_path(self):
         name2Id = {v: k for k, v in self.used_nodes.items()}
         for idx, n in self.used_nodes.items():
             node = self.nodes.get(n)

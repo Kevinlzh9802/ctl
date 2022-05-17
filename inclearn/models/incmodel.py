@@ -137,6 +137,8 @@ class IncModel(IncrementalLearner):
         self._network.current_tax_tree = self._current_tax_tree
         self._network.add_classes(self._task_size)
         self._network.task_size = self._task_size
+        self._network.task_size = self._task_size
+        self._network.current_task = self._task
         self.set_optimizer()
 
     def set_optimizer(self, lr=None):
@@ -150,6 +152,8 @@ class IncModel(IncrementalLearner):
             weight_decay = self._weight_decay
         self._ex.logger.info("Step {} weight decay {:.5f}".format(self._task, weight_decay))
 
+        # In DER model, freeze the previous network parameters
+        # only updates parameters for the current network
         if self._der and self._task > 0:
             for i in range(self._task):
                 for p in self._parallel_network.module.convnets[i].parameters():
@@ -180,9 +184,9 @@ class IncModel(IncrementalLearner):
         train_new_accu = ClassErrorMeter(accuracy=True)
         train_old_accu = ClassErrorMeter(accuracy=True)
 
-        utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "Initial trainset")
-        utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-                                   self._increments, "Initial trainset")
+        # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "Initial trainset")
+        # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
+        #                            self._increments, "Initial trainset")
 
         self._optimizer.zero_grad()
         self._optimizer.step()

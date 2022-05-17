@@ -17,7 +17,7 @@ use_bias: False
 last_relu: False
 
 der: True
-use_aux_cls: True
+use_aux_cls: False
 aux_n+1: True
 distillation: "none"
 temperature: 2
@@ -44,7 +44,7 @@ lr_decay: 0.1
 optimizer: "sgd"
 epochs: 170
 resampling: False
-warmup: True
+warmup: False
 warmup_epochs: 10
 
 postprocessor:
@@ -61,7 +61,7 @@ postprocessor:
   weight_decay: 0.0005
 
 decouple:
-  enable: True
+  enable: False
   epochs: 50
   fullset: False
   lr: 0.05

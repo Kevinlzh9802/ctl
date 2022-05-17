@@ -14,11 +14,11 @@ random.seed(1337)
 def setup_tree(task_i, tree):
     # build tree
     out_dir = '../../data/hiernet_data/task'
-    np.save(os.path.join(out_dir + str(task_i), 'tree.npy'), tree)
+    # np.save(os.path.join(out_dir + str(task_i), 'tree.npy'), tree)
 
     # find leaves and generate codeword, relation path as each node
-    if args.display:
-        tree.show()
+    # if args.display:
+    #     tree.show()
     tree.gen_codeword()
     tree.gen_rel_path()
 
@@ -35,22 +35,23 @@ def setup_tree(task_i, tree):
             assert used_nodes[n_id].mask[idx] == 0
             used_nodes[n_id].mask[idx] = 1
     print('number of used nodes: {}'.format(len(used_nodes)))
-    np.save(os.path.join(out_dir, 'used_nodes.npy'), used_nodes)
+    # np.save(os.path.join(out_dir, 'used_nodes.npy'), used_nodes)
+    return used_nodes
 
     # save leaf nodes
-    leaf_id = {v: k for k, v in tree.leaf_nodes.items()}       # node_name: id
-    print('number of classes: {}'.format(len(leaf_id)))
-    np.save(os.path.join(out_dir, 'leaf_nodes.npy'), leaf_id)
-
+    # leaf_id = {v: k for k, v in tree.leaf_nodes.items()}       # node_name: id
+    # print('number of classes: {}'.format(len(leaf_id)))
+    # np.save(os.path.join(out_dir, 'leaf_nodes.npy'), leaf_id)
+    #
     # save label at each node for each class
-    node_labels = defaultdict(list)
-    for k in tree.leaf_nodes.keys():
-        for n_id in used_nodes.keys():
-            chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
-            if len(chd_idx) > 0:
-                node_labels[k].append([n_id, chd_idx[0]])
-
-    np.save(os.path.join(out_dir, 'node_labels.npy'), node_labels)
+    # node_labels = defaultdict(list)
+    # for k in tree.leaf_nodes.keys():
+    #     for n_id in used_nodes.keys():
+    #         chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
+    #         if len(chd_idx) > 0:
+    #             node_labels[k].append([n_id, chd_idx[0]])
+    #
+    # np.save(os.path.join(out_dir, 'node_labels.npy'), node_labels)
 
     # load subsamples
     # if args.subsample:
@@ -90,8 +91,8 @@ def setup_tree(task_i, tree):
     # write_file(os.path.join(out_dir, 'gt_{}.txt'.format(split)), data)
 
 
-if __name__ == '__main__':
-    global args
+# if __name__ == '__main__':
+#     global args
 
     # parser = argparse.ArgumentParser()
     # parser.add_argument(
