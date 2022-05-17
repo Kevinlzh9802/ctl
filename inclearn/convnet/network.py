@@ -8,8 +8,8 @@ import torch.nn.functional as F
 from inclearn.tools import factory
 from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
-from inclearn.convnet import get_model
-from inclearn.datasets.libs import Tree
+from inclearn.deeprtc import get_model
+from inclearn.deeprtc.prepro import setup_tree
 from inclearn.datasets.dataset import iCIFAR10, iCIFAR100
 
 
@@ -319,7 +319,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
     def _gen_classifier(self, in_features, n_classes):
         if self.taxonomy is not None:
             if self.taxonomy == 'rtc':
-                model_cls = get_model(self.module_cls, self.current_tax_tree.gen_partial_tree().nodes()).cuda()
+                model_cls = get_model(self.module_cls, self.current_tax_tree.nodes).cuda()
                 model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
             else:

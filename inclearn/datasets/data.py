@@ -93,6 +93,8 @@ class IncrementalDataset:
 
         self.taxonomy_tree = taxonomy_tree
         self.taxonomy_order = self.taxonomy_tree.get_coarse_node_list()  # list of coarse nodes
+        self.taxonomy_id_order = [self.taxonomy_order[i].node_id for i in range(len(self.taxonomy_order))]
+
         self.cur_parent_node = self.taxonomy_order[self._current_task]
 
     @property
@@ -123,7 +125,7 @@ class IncrementalDataset:
             "task": self._current_task,
             "task_size": len(self.cur_parent_node.children),
             "full_tree": self.taxonomy_tree,
-            "partial_tree": self.taxonomy_tree.gen_partial_tree(self.taxonomy_order[:self._current_task]),
+            "partial_tree": self.taxonomy_tree.gen_partial_tree(self.taxonomy_id_order[:self._current_task + 1]),
             "taxonomy_order": self.taxonomy_order,
             "taxonomy_stage": self.cur_parent_node.name,
             "max_task": len(self.taxonomy_order),

@@ -287,20 +287,37 @@ class Tree():
     def gen_partial_tree(self, node_id_list):
         partial_dic = {}
         for node_id_i in node_id_list:
-            # print(node_id_i)
-            # print(self.nodes)
             node_i = list(self.nodes.values())[node_id_i]
-            if node_i.depth != 2:
+            if node_i.depth == 1:
+                node_i_children_name = list(node_i.children.values())
+                for child_node_i in node_i_children_name:
+                    partial_dic[child_node_i] = []
+
+            elif node_i.depth == 2:
+
+                node_i_children_name = list(node_i.children.values())
+                partial_dic[node_i.name] = node_i_children_name
+
+            else:
                 raise 'partial_tree node depth error'
-            node_i_children_name = list(node_i.children.values())
-            partial_dic[node_i.name] = node_i_children_name
 
         tree = Tree('cifar100', partial_dic)
 
         for node_i in tree.nodes.values():
             if node_i.name != 'root' and node_i.name != 'cifar100':
-                ori_node_i = self.nodes.get(node_i.name, None)
-                node_i.set_all_info(ori_node_i.get_all_info())
+
+                if node_i.node_id in node_id_list:
+                    ori_node_i = self.nodes.get(node_i.name, None)
+                    node_i.set_all_info(ori_node_i.get_all_info())
+                else:
+                    ori_node_i = self.nodes.get(node_i.name, None)
+                    ori_node_i_all_info = ori_node_i.get_all_info()
+
+                    ori_node_i_all_info[4] = {}
+                    for ind in [7, 8, 9, 10]:
+                        ori_node_i_all_info[ind] = None
+
+                    node_i.set_all_info(ori_node_i_all_info)
 
         return tree
 
