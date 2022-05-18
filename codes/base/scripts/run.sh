@@ -2,7 +2,7 @@
 name='10scifar100_trial0_debug'
 debug='1'
 comments='None'
-expid='1'
+expid='2'
 
 
 if [ ${debug} -eq '0' ]; then
@@ -17,7 +17,7 @@ if [ ${debug} -eq '0' ]; then
         -p \
         -c "${comments}" \
         --force \
-        --mongo_db=10.10.10.100:30620:classil
+#        --mongo_db=10.10.10.100:30620:classil
         # --mongo_db=10.10.10.100:30620:classil
 else
     python -m main train with "./configs/${expid}.yaml" \
