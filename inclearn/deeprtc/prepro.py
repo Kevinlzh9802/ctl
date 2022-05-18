@@ -36,21 +36,20 @@ def setup_tree(task_i, tree):
             used_nodes[n_id].mask[idx] = 1
     print('number of used nodes: {}'.format(len(used_nodes)))
     # np.save(os.path.join(out_dir, 'used_nodes.npy'), used_nodes)
-    return used_nodes
 
     # save leaf nodes
-    # leaf_id = {v: k for k, v in tree.leaf_nodes.items()}       # node_name: id
-    # print('number of classes: {}'.format(len(leaf_id)))
+    leaf_id = {v: k for k, v in tree.leaf_nodes.items()}       # node_name: id
+    print('number of classes: {}'.format(len(leaf_id)))
     # np.save(os.path.join(out_dir, 'leaf_nodes.npy'), leaf_id)
-    #
+
     # save label at each node for each class
-    # node_labels = defaultdict(list)
-    # for k in tree.leaf_nodes.keys():
-    #     for n_id in used_nodes.keys():
-    #         chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
-    #         if len(chd_idx) > 0:
-    #             node_labels[k].append([n_id, chd_idx[0]])
-    #
+    node_labels = defaultdict(list)
+    for k in tree.leaf_nodes.keys():
+        for n_id in used_nodes.keys():
+            chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
+            if len(chd_idx) > 0:
+                node_labels[k].append([n_id, chd_idx[0]])
+
     # np.save(os.path.join(out_dir, 'node_labels.npy'), node_labels)
 
     # load subsamples
@@ -84,6 +83,7 @@ def setup_tree(task_i, tree):
     #             impath = os.path.join(root, img)
     #             data.append((impath, label))
 
+    return used_nodes, node_labels, leaf_id
     # shuffle data
     # N = len(data)
     # data = [(i, x) for i, x in enumerate(data)]

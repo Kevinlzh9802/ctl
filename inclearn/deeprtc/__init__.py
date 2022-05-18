@@ -2,6 +2,7 @@
 import copy
 import torch.nn as nn
 from .hierNet import hiernet
+from .pivot import Pivot
 
 
 def get_model(model_dict, nodes=None):
@@ -31,7 +32,7 @@ def _get_model_instance(name):
             # 'resnet32': resnet32,
             # 'resnet50': resnet50,
             'hiernet': hiernet,
-            # 'pivot': pivot
+            'pivot': pivot
         }[name]
     except:
         raise ('Model {} not available'.format(name))

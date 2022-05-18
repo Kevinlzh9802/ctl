@@ -10,6 +10,7 @@ from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
 from inclearn.deeprtc import get_model
 from inclearn.deeprtc.prepro import setup_tree
+from inclearn.deeprtc.pivot import Pivot
 from inclearn.datasets.dataset import iCIFAR10, iCIFAR100
 
 
@@ -195,6 +196,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.aux_nplus1 = cfg['aux_n+1']
         self.reuse_oldfc = cfg['reuse_oldfc']
         self.module_cls = cfg['model_cls']
+        self.module_pivot = cfg['model_pivot']
         self.current_tax_tree = current_tax_tree
         self.current_task = current_task
 
@@ -244,10 +246,14 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         else:
             features = self.convnet(x)
 
-        logits = self.classifier(features)
+        gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
+        gate[:, 0] = 1
+        output, nout, sfmx_base = self.classifier(x=features, gate=gate)
 
+        # logits = self.classifier(features)
         aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
-        return {'feature': features, 'logit': logits, 'aux_logit': aux_logits}
+        # return {'feature': features, 'logit': logits, 'aux_logit': aux_logits}
+        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base}
 
     @property
     def features_dim(self):
@@ -320,16 +326,21 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
     def _gen_classifier(self, in_features, n_classes):
         if self.taxonomy is not None:
+            self._update_tree_info()
             if self.taxonomy == 'rtc':
-                used_nodes = setup_tree(self.current_task, self.current_tax_tree)
+                # classifier
+                # used_nodes = setup_tree(self.current_task, self.current_tax_tree)
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
                 if self.device.type == 'gpu':
-                    model_cls = get_model(model_dict, used_nodes).cuda()
+                    model_cls = get_model(model_dict, self.used_nodes).cuda()
                     model_cls = nn.DataParallel(model_cls, device_ids=range(1))
                 else:
-                    model_cls = get_model(model_dict, used_nodes)
+                    model_cls = get_model(model_dict, self.used_nodes)
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
+
+                # pivot
+                self._gen_pivot()
             else:
                 raise NotImplementedError('')
         else:
@@ -343,3 +354,17 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                     nn.init.constant_(classifier.bias, 0.0)
 
         return classifier
+
+    def _gen_pivot(self):
+        if self.device.type == 'gpu':
+            model_pivot = get_model(self.module_pivot).cuda()
+            model_pivot = nn.DataParallel(model_pivot, device_ids=range(1))
+        else:
+            model_pivot = get_model(self.module_pivot)
+        self.model_pivot = model_pivot
+
+    def _update_tree_info(self):
+        used_nodes, node_labels, leaf_id = setup_tree(self.current_task, self.current_tax_tree)
+        self.used_nodes = used_nodes
+        self.node_labels = node_labels
+        self.leaf_id = leaf_id
