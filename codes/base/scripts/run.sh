@@ -2,7 +2,7 @@
 name='10scifar100_trial0_debug'
 debug='1'
 comments='None'
-expid='2'
+expid='3'
 
 
 if [ ${debug} -eq '0' ]; then

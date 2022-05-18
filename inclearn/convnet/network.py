@@ -323,9 +323,12 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             if self.taxonomy == 'rtc':
                 used_nodes = setup_tree(self.current_task, self.current_tax_tree)
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
-                # model_cls = get_model(model_dict, used_nodes).cuda()
-                model_cls = get_model(model_dict, used_nodes)
-                model_cls = nn.DataParallel(model_cls, device_ids=range(0))
+                if self.device.type == 'gpu':
+                    model_cls = get_model(model_dict, used_nodes).cuda()
+                    model_cls = nn.DataParallel(model_cls, device_ids=range(1))
+                else:
+                    model_cls = get_model(model_dict, used_nodes)
+                    # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
             else:
                 raise NotImplementedError('')
