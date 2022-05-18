@@ -2,7 +2,7 @@ import os.path as osp
 import numpy as np
 
 import albumentations as A
-from ctl.inclearn.deeprtc.libs import Tree
+from inclearn.deeprtc.libs import Tree
 from albumentations.pytorch import ToTensorV2
 
 from torchvision import datasets, transforms
