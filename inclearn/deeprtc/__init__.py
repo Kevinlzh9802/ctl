@@ -2,7 +2,7 @@
 import copy
 import torch.nn as nn
 from .hierNet import hiernet
-from .pivot import Pivot
+from .pivot import pivot
 
 
 def get_model(model_dict, nodes=None):
@@ -11,7 +11,8 @@ def get_model(model_dict, nodes=None):
     model = _get_model_instance(name)
     param_dict = copy.deepcopy(model_dict)
     param_dict.pop('arch')
-    param_dict.pop('feat_size', None)
+    if param_dict.get('feat_size', None) is not None:
+        param_dict.pop('feat_size', None)
 
     if name == 'hiernet':
         param_dict['input_size'] = feat_size

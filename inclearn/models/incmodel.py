@@ -216,9 +216,10 @@ class IncModel(IncrementalLearner):
                 # new_classes = targets >= (self._n_classes - self._task_size)
                 old_classes = 0
                 new_classes = 0
-                loss_ce, loss_aux = self._forward_loss(inputs, targets, old_classes, new_classes, nlosses, stslosses,
-                                                       losses, acc, accu=accu, new_accu=train_new_accu,
-                                                       old_accu=train_old_accu)
+                nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, old_classes, new_classes,
+                                                               nlosses, stslosses, losses, acc, accu=accu,
+                                                               new_accu=train_new_accu, old_accu=train_old_accu)
+
 
                 # if self._cfg["use_aux_cls"] and self._task > 0:
                 #     loss = loss_ce + loss_aux
@@ -237,8 +238,9 @@ class IncModel(IncrementalLearner):
                         for p in self._network.classifier.parameters():
                             p.data.clamp_(0.0)
 
-                _loss += loss_ce
-                _loss_aux += loss_aux
+                # _loss += loss_ce
+                # _loss_aux += loss_aux
+                _loss += loss
             _loss = _loss.item()
             _loss_aux = _loss_aux.item()
             if not self._warmup:
@@ -311,7 +313,7 @@ class IncModel(IncrementalLearner):
         # if old_accu is not None:
         #     old_accu.add(logits[old_classes].detach(), targets[old_classes].cpu().numpy())
         # return self._compute_loss(inputs, targets, outputs, old_classes, new_classes)
-        return nlosses, stslosses, losses, acc
+        return nloss, stsloss, loss, acc
 
     def _compute_loss(self, inputs, targets, outputs, old_classes, new_classes):
         loss = F.cross_entropy(outputs['logit'], targets)
