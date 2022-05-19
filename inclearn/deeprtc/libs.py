@@ -140,7 +140,7 @@ class Tree():
 
         elif depth == 1:
             for chd_label_index in self.data_root_dir.keys():
-                chd_label_index = int(chd_label_index)
+                # chd_label_index = int(chd_label_index)
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
@@ -149,17 +149,16 @@ class Tree():
                 self._buildTree(child, depth + 1)
 
         elif depth == 2:
-            for chd_label_index in self.data_root_dir[str(root.label_index)]:
+            # for chd_label_index in self.data_root_dir[str(root.label_index)]:
+            for chd_label_index in self.data_root_dir[root.label_index]:
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
                 child = TreeNode(chd_label_index, chd_label_index, depth + 1, node_id, child_idx, root.name)
                 self.nodes[chd_label_index] = child
-
                 self._buildTree(child, depth + 1)
         elif depth == 3:
             pass
-
         self.depth = max(self.depth, depth)
 
     def show(self, node_name='root', root_depth=-1, max_depth=np.Inf):
@@ -248,16 +247,24 @@ class Tree():
 
     def get_coarse_node_list(self):
         nodes_label = [i for i in self.nodes]
-        inner_nodes_label = [i for i in nodes_label if type(i) != int]
+        nodes_label.remove('root')
+        nodes_label.remove('cifar100')
+        # inner_nodes_label = [i for i in nodes_label if type(i) != int]
+        inner_nodes_label = [i for i in nodes_label if i < 0]
         if 'root' in inner_nodes_label:
             inner_nodes_label.remove('root')
+        inner_nodes_label.append('root')
+        inner_nodes_label.append('cifar100')
         inner_nodes_list = [self.nodes.get(i, None) for i in inner_nodes_label]
         return inner_nodes_list
 
     def get_finest_label(self, node):
         if node.depth == 0 or node.depth == 1:
             nodes_label = [i for i in self.nodes]
-            finest_nodes_label = [i for i in nodes_label if type(i) == int]
+            nodes_label.remove('root')
+            nodes_label.remove('cifar100')
+            # finest_nodes_label = [i for i in nodes_label if type(i) == int]
+            finest_nodes_label = [i for i in nodes_label if i >= 0]
         elif node.depth == 2:
             finest_nodes_label = list(node.children.values())
         elif node.depth == 3:
@@ -297,13 +304,10 @@ class Tree():
                     partial_dic[child_node_i] = []
 
             elif node_i.depth == 2:
-
                 node_i_children_name = list(node_i.children.values())
                 partial_dic[node_i.name] = node_i_children_name
-
             else:
                 raise 'partial_tree node depth error'
-
         tree = Tree('cifar100', partial_dic)
 
         for node_i in tree.nodes.values():
