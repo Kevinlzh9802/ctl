@@ -211,7 +211,6 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
-                print(targets.type())
                 self.train()
                 self._optimizer.zero_grad()
                 # old_classes = targets < (self._n_classes - self._task_size)
@@ -221,7 +220,6 @@ class IncModel(IncrementalLearner):
                 nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, old_classes, new_classes,
                                                                nlosses, stslosses, losses, acc, accu=accu,
                                                                new_accu=train_new_accu, old_accu=train_old_accu)
-
 
                 # if self._cfg["use_aux_cls"] and self._task > 0:
                 #     loss = loss_ce + loss_aux
@@ -276,7 +274,7 @@ class IncModel(IncrementalLearner):
                       new_accu=None, old_accu=None):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-
+        print(self._device)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
         # this is equivalent to self._network.forward(inputs)
