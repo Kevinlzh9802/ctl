@@ -45,7 +45,8 @@ class TreeNode():
         return new_node
 
     def get_all_info(self):
-        return [self.name, self.label_index, self.depth, self.node_id, self.children, self.child_idx, self.parent,self.codeword, self.cond, self.children_unid, self.mask]
+        return [self.name, self.label_index, self.depth, self.node_id, self.children, self.child_idx,
+                self.parent, self.codeword, self.cond, self.children_unid, self.mask]
 
     def set_all_info(self, all_info):
         self.name = all_info[0]
@@ -61,7 +62,8 @@ class TreeNode():
         self.mask = all_info[10]
 
     # def copy(self):
-    #     new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx, self.parent, codeword=self.codeword, cond=self.cond, children_unid=self.children_unid, mask=self.mask)
+    #     new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx,
+    #     self.parent, codeword=self.codeword, cond=self.cond, children_unid=self.children_unid, mask=self.mask)
     #     new_node.children = self.children.copy()
     #
     #     return new_node
@@ -136,8 +138,9 @@ class Tree():
             self.nodes[self.dataset_name] = child
             self._buildTree(child, depth + 1)
 
-        elif depth==1:
+        elif depth == 1:
             for chd_label_index in self.data_root_dir.keys():
+                chd_label_index = int(chd_label_index)
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
@@ -146,7 +149,7 @@ class Tree():
                 self._buildTree(child, depth + 1)
 
         elif depth == 2:
-            for chd_label_index in self.data_root_dir[root.label_index]:
+            for chd_label_index in self.data_root_dir[str(root.label_index)]:
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
@@ -329,10 +332,7 @@ def write_file(file_name, data_list):
             f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
 
 
-
 if __name__ == '__main__':
-
-
     hiera_dic = {'vehicles_1': ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
      'trees': ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
      'large_man-made_outdoor_things': ['bridge', 'road', 'skyscraper', 'house', 'castle'],
@@ -354,7 +354,6 @@ if __name__ == '__main__':
      'fish': ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],
      'medium_mammals': ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']}
     hiera_index_dic = {'vehicles_1': [48, 13, 90, 8, 58], 'trees': [56, 96, 47, 52, 59], 'large_man-made_outdoor_things': [12, 68, 76, 37, 17], 'food_containers': [16, 28, 61, 10, 9], 'small_mammals': [36, 50, 74, 65, 80], 'large_omnivores_and_herbivores': [19, 15, 21, 38, 31], 'flowers': [70, 92, 62, 54, 82], 'large_natural_outdoor_scenes': [33, 60, 23, 49, 71], 'reptiles': [93, 27, 29, 44, 78], 'household_furniture': [94, 5, 25, 20, 84], 'fruit_and_vegetables': [0, 57, 51, 83, 53], 'large_carnivores': [3, 42, 88, 97, 43], 'vehicles_2': [81, 89, 85, 41, 69], 'people': [46, 11, 35, 2, 98], 'insects': [14, 6, 7, 18, 24], 'household_electrical_devices': [40, 87, 86, 39, 22], 'non-insect_invertebrates': [26, 77, 45, 99, 79], 'aquatic_mammals': [30, 95, 55, 72, 4], 'fish': [1, 32, 67, 91, 73], 'medium_mammals': [66, 34, 63, 75, 64]}
-
 
     # print(hiera_dic)
     # print(hiera_index_dic)
