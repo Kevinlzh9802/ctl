@@ -274,7 +274,6 @@ class IncModel(IncrementalLearner):
                       new_accu=None, old_accu=None):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-        print(self._device.type)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
         # this is equivalent to self._network.forward(inputs)
@@ -284,8 +283,10 @@ class IncModel(IncrementalLearner):
         sfmx_base = outputs['sfmx_base']
         nloss = []
 
+        print(inputs.size(0))
+        print(len(targets.cpu().numpy()))
         for idx in range(inputs.size(0)):
-            for n_id, n_l in self._network.node_labels[targets.detach().numpy()[idx]]:
+            for n_id, n_l in self._network.node_labels[targets.cpu().numpy()[idx]]:
                 nloss.append(criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda()))
 
         nloss = torch.mean(torch.stack(nloss))
