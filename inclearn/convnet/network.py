@@ -331,7 +331,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 # classifier
                 # used_nodes = setup_tree(self.current_task, self.current_tax_tree)
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
-                if self.device.type == 'gpu':
+                if self.device.type == 'cuda':
                     model_cls = get_model(model_dict, self.used_nodes).cuda()
                     model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
                 else:
@@ -356,7 +356,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         return classifier
 
     def _gen_pivot(self):
-        if self.device.type == 'gpu':
+        if self.device.type == 'cuda':
             model_pivot = get_model(self.module_pivot).cuda()
             model_pivot = nn.DataParallel(model_pivot, device_ids=range(torch.cuda.device_count()))
         else:

@@ -253,8 +253,8 @@ class Tree():
         inner_nodes_label = [i for i in nodes_label if i < 0]
         if 'root' in inner_nodes_label:
             inner_nodes_label.remove('root')
-        inner_nodes_label.append('root')
-        inner_nodes_label.append('cifar100')
+
+        inner_nodes_label.insert(0, 'cifar100')
         inner_nodes_list = [self.nodes.get(i, None) for i in inner_nodes_label]
         return inner_nodes_list
 
