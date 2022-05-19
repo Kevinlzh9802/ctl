@@ -333,7 +333,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
                 if self.device.type == 'gpu':
                     model_cls = get_model(model_dict, self.used_nodes).cuda()
-                    model_cls = nn.DataParallel(model_cls, device_ids=range(1))
+                    model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
                 else:
                     model_cls = get_model(model_dict, self.used_nodes)
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
