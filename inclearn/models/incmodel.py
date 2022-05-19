@@ -274,7 +274,7 @@ class IncModel(IncrementalLearner):
                       new_accu=None, old_accu=None):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-        print(self._device)
+        print(self._device.type)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
         # this is equivalent to self._network.forward(inputs)
