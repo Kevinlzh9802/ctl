@@ -283,11 +283,10 @@ class IncModel(IncrementalLearner):
         sfmx_base = outputs['sfmx_base']
         nloss = []
 
-        print(inputs.size(0))
-        print(len(targets.cpu().numpy()))
         for idx in range(inputs.size(0)):
             for n_id, n_l in self._network.node_labels[targets.cpu().numpy()[idx]]:
                 nloss.append(criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda()))
+                print(len(nloss))
 
         nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
