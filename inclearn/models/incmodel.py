@@ -209,7 +209,10 @@ class IncModel(IncrementalLearner):
                     self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
-            for i, (inputs, targets) in enumerate(train_loader, start=1):
+            for i, data in enumerate(train_loader, start=1):
+                inputs, targets = data
+                print(inputs.type())
+                print(targets.type())
                 self.train()
                 self._optimizer.zero_grad()
                 # old_classes = targets < (self._n_classes - self._task_size)
