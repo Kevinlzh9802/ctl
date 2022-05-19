@@ -285,7 +285,7 @@ class IncModel(IncrementalLearner):
         nloss = []
 
         for idx in range(inputs.size(0)):
-            for n_id, n_l in self._network.node_labels[targets.cpu().numpy()[idx]]:
+            for n_id, n_l in self._network.node_labels[targets.detach().numpy()[idx]]:
                 nloss.append(criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda()))
 
         nloss = torch.mean(torch.stack(nloss))
