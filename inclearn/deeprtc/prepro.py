@@ -44,7 +44,7 @@ def setup_tree(task_i, tree):
 
     # save label at each node for each class
     node_labels = defaultdict(list)
-    for k in tree.leaf_nodes.keys():
+    for k in tree.leaf_nodes.values():
         for n_id in used_nodes.keys():
             chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
             if len(chd_idx) > 0:
