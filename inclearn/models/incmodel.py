@@ -293,7 +293,7 @@ class IncModel(IncrementalLearner):
         nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
-        # compute stochastic tree ssampling loss
+        # compute stochastic tree sampling loss
         gt_z = torch.gather(output, 1, targets.view(-1, 1))
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
         stslosses.update(stsloss.item(), inputs.size(0))

@@ -88,17 +88,49 @@ class iCIFAR100(iCIFAR10):
         transforms.ToTensor(),
         transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
     ])
-    hiera_index_dic_with_onehot = {-1: [48, 13, 90, 8, 58], -2: [56, 96, 47, 52, 59], -3: [12, 68, 76, 37, 17],
-                                   -4: [16, 28, 61, 10, 9],
-                                   -5: [36, 50, 74, 65, 80], -6: [19, 15, 21, 38, 31], -7: [70, 92, 62, 54, 82],
-                                   -8: [33, 60, 23, 49, 71],
-                                   -9: [93, 27, 29, 44, 78], -10: [94, 5, 25, 20, 84], -11: [0, 57, 51, 83, 53],
-                                   -12: [3, 42, 88, 97, 43],
-                                   -13: [81, 89, 85, 41, 69], -14: [46, 11, 35, 2, 98], -15: [14, 6, 7, 18, 24],
-                                   -16: [40, 87, 86, 39, 22],
-                                   -17: [26, 77, 45, 99, 79], -18: [30, 95, 55, 72, 4], -19: [1, 32, 67, 91, 73],
-                                   -20: [66, 34, 63, 75, 64]}
-    taxonomy_tree = Tree('cifar100', hiera_index_dic_with_onehot)
+    data_name_hier_dict = {'vehicles_1': ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
+     'trees': ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
+     'large_man-made_outdoor_things': ['bridge', 'road', 'skyscraper', 'house', 'castle'],
+     'food_containers': ['can', 'cup', 'plate', 'bowl', 'bottle'],
+     'small_mammals': ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],
+     'large_omnivores_and_herbivores': ['cattle', 'camel', 'chimpanzee', 'kangaroo', 'elephant'],
+     'flowers': ['rose', 'tulip', 'poppy', 'orchid', 'sunflower'],
+     'large_natural_outdoor_scenes': ['forest', 'plain', 'cloud', 'mountain', 'sea'],
+     'reptiles': ['turtle', 'crocodile', 'dinosaur', 'lizard', 'snake'],
+     'household_furniture': ['wardrobe', 'bed', 'couch', 'chair', 'table'],
+     'fruit_and_vegetables': ['apple', 'pear', 'mushroom', 'sweet_pepper', 'orange'],
+     'large_carnivores': ['bear', 'leopard', 'tiger', 'wolf', 'lion'],
+     'vehicles_2': ['streetcar', 'tractor', 'tank', 'lawn_mower', 'rocket'],
+     'people': ['man', 'boy', 'girl', 'baby', 'woman'],
+     'insects': ['butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach'],
+     'household_electrical_devices': ['lamp', 'television', 'telephone', 'keyboard', 'clock'],
+     'non-insect_invertebrates': ['crab', 'snail', 'lobster', 'worm', 'spider'],
+     'aquatic_mammals': ['dolphin', 'whale', 'otter', 'seal', 'beaver'],
+     'fish': ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],
+     'medium_mammals': ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']}
+
+    data_label_index_dict = {'medium_mammals': -20, 'fish': -19, 'aquatic_mammals': -18, 'non-insect_invertebrates': -17,
+     'household_electrical_devices': -16, 'insects': -15, 'people': -14, 'vehicles_2': -13, 'large_carnivores': -12,
+     'fruit_and_vegetables': -11, 'household_furniture': -10, 'reptiles': -9, 'large_natural_outdoor_scenes': -8,
+     'flowers': -7, 'large_omnivores_and_herbivores': -6, 'small_mammals': -5, 'food_containers': -4,
+     'large_man-made_outdoor_things': -3, 'trees': -2, 'vehicles_1': -1, 'apple': 0, 'aquarium_fish': 1, 'baby': 2,
+     'bear': 3, 'beaver': 4, 'bed': 5, 'bee': 6, 'beetle': 7, 'bicycle': 8, 'bottle': 9, 'bowl': 10, 'boy': 11,
+     'bridge': 12, 'bus': 13, 'butterfly': 14, 'camel': 15, 'can': 16, 'castle': 17, 'caterpillar': 18, 'cattle': 19,
+     'chair': 20, 'chimpanzee': 21, 'clock': 22, 'cloud': 23, 'cockroach': 24, 'couch': 25, 'crab': 26, 'crocodile': 27,
+     'cup': 28, 'dinosaur': 29, 'dolphin': 30, 'elephant': 31, 'flatfish': 32, 'forest': 33, 'fox': 34, 'girl': 35,
+     'hamster': 36, 'house': 37, 'kangaroo': 38, 'keyboard': 39, 'lamp': 40, 'lawn_mower': 41, 'leopard': 42,
+     'lion': 43, 'lizard': 44, 'lobster': 45, 'man': 46, 'maple_tree': 47, 'motorcycle': 48, 'mountain': 49,
+     'mouse': 50, 'mushroom': 51, 'oak_tree': 52, 'orange': 53, 'orchid': 54, 'otter': 55, 'palm_tree': 56, 'pear': 57,
+     'pickup_truck': 58, 'pine_tree': 59, 'plain': 60, 'plate': 61, 'poppy': 62, 'porcupine': 63, 'possum': 64,
+     'rabbit': 65, 'raccoon': 66, 'ray': 67, 'road': 68, 'rocket': 69, 'rose': 70, 'sea': 71, 'seal': 72, 'shark': 73,
+     'shrew': 74, 'skunk': 75, 'skyscraper': 76, 'snail': 77, 'snake': 78, 'spider': 79, 'squirrel': 80,
+     'streetcar': 81, 'sunflower': 82, 'sweet_pepper': 83, 'table': 84, 'tank': 85, 'telephone': 86, 'television': 87,
+     'tiger': 88, 'tractor': 89, 'train': 90, 'trout': 91, 'tulip': 92, 'turtle': 93, 'wardrobe': 94, 'whale': 95,
+     'willow_tree': 96, 'wolf': 97, 'woman': 98, 'worm': 99}
+
+    # taxonomy_tree = Tree('cifar100', hiera_index_dic_with_onehot)
+    taxonomy_tree = Tree('cifar100', data_name_hier_dict, data_label_index_dict, dict_depth=2)
+    used_nodes, leaf_id, node_labels = taxonomy_tree.prepro()
 
     def __init__(self, data_folder, train, is_fine_label=False):
         self.base_dataset = self.base_dataset_cls(data_folder, train=train, download=True)

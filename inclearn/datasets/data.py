@@ -151,7 +151,7 @@ class IncrementalDataset:
         x_plain = np.array(x[idxes])
         y_plain, _ = np.array(self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth + 1))
         beta = 0.4
-        gamma = self.taxonomy_tree.depth - (self.cur_parent_node.depth + 1)
+        gamma = self.taxonomy_tree.max_depth - (self.cur_parent_node.depth + 1)
         sel_ind = random.sample(range(len(x_plain)), round(pow(beta, gamma) * len(x_plain)))
         return x_plain[sel_ind], y_plain[sel_ind]
 

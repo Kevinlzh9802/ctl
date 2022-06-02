@@ -1,11 +1,13 @@
-
 import numpy as np
 import os
+import copy
+
+from collections import defaultdict
 
 
 class TreeNode():
-    def __init__(self, name, label_index, depth, node_id, child_idx=-1, parent=None, codeword=None,
-                 cond=None, children_unid=None, mask=None):
+    def __init__(self, name, label_index, depth, node_id, child_idx=-1, parent=None, codeword=None, cond=None,
+                 children_unid=None, mask=None):
         self.name = name
         self.label_index = label_index
         self.depth = depth
@@ -44,124 +46,99 @@ class TreeNode():
             new_node.cond = self.cond.copy()
         return new_node
 
-    def get_all_info(self):
-        return [self.name, self.label_index, self.depth, self.node_id, self.children, self.child_idx,
-                self.parent, self.codeword, self.cond, self.children_unid, self.mask]
-
-    def set_all_info(self, all_info):
-        self.name = all_info[0]
-        self.label_index = all_info[1]
-        self.depth = all_info[2]
-        self.node_id = all_info[3]
-        self.children = all_info[4]
-        self.child_idx = all_info[5]
-        self.parent = all_info[6]
-        self.codeword = all_info[7]
-        self.cond = all_info[8]
-        self.children_unid = all_info[9]
-        self.mask = all_info[10]
-
-    # def copy(self):
-    #     new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx,
-    #     self.parent, codeword=self.codeword, cond=self.cond, children_unid=self.children_unid, mask=self.mask)
-    #     new_node.children = self.children.copy()
-    #
-    #     return new_node
-
-
-# class TreeNode():
-#
-#     def __init__(self, name, label_index, depth, node_id, child_idx=-1, parent=None):
-#         self.name = name
-#         self.label_index = label_index
-#         self.depth = depth
-#         self.node_id = node_id
-#         self.children = {}
-#         self.child_idx = child_idx
-#         self.parent = parent
-#         self.codeword = None
-#         self.cond = None
-#         self.children_unid = None
-#         self.mask = None
-#
-#     def add_child(self, child):
-#         self.children[len(self.children)] = child
-#
-#     def init_codeword(self, cw_size):
-#         self.codeword = np.zeros([cw_size])
-#
-#     def set_codeword(self, idx):
-#         self.codeword[idx] = 1
-#
-#     def set_cond(self, parent_idx):
-#         self.cond = [parent_idx, self.child_idx]
-#
-#     def __str__(self):
-#         attr = 'name={}, node_id={}, depth={}, children={}'.format(
-#                     self.name, self.node_id, self.depth,
-#                     ','.join([chd for chd in self.children.values()])
-#                 )
-#         return  attr
-#
-#     # def copy(self):
-#     #     new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx, self.parent)
-#     #     new_node.children = self.children.copy()
-#     #     if self.cond:
-#     #         new_node.cond = self.cond.copy()
-#     #     return new_node
-#
-#     def copy(self):
-#         new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, -1, self.parent)
-#         # new_node.children = self.children.copy()
-#         # if self.cond:
-#         #     new_node.cond = self.cond.copy()
-#         return new_node
-
 
 class Tree():
-    def __init__(self, dataset_name, data_root_dir):
+    def __init__(self, dataset_name, data_name_hier_dict, data_label_index_dict, dict_depth):
         self.dataset_name = dataset_name
-        self.data_root_dir = data_root_dir
-        self.root = TreeNode('root', data_root_dir, 0, 0)
-        self.depth = 0
+        self.data_name_hier_dict = data_name_hier_dict
+        self.data_label_index_dict = data_label_index_dict
+        self.root = TreeNode('root', 'root', 0, 0)
+        # self.max_depth = 0              # max depth
+        self.max_depth = dict_depth + 1  # including root(0) and datasets(1)
+        self.dict_depth = dict_depth
         self.nodes = {'root': self.root}
-        self._buildTree(self.root)
-        self.used_nodes = {}
-        self.leaf_nodes = {}
+        self.depth_dict = {}
+        self._buildTree(self.root, data_name_hier_dict, depth=0)
+        self.used_nodes = {}        # inter nodes pair {id: Treenode}
+        self.leaf_nodes = {}        # leaf nodes pair {id: Treenode}
+        self.id2name = {}
+        self.gen_codeword()
+        self.gen_rel_path()
+        self.gen_Id2name()
 
-    def _buildTree(self, root, depth=0):
-        if depth == 0:
+    def prepro(self, save_path=None):
+        # find nodes we want, and get codewords under these nodes
+        used_nodes = {}
+        for n_id, name in self.used_nodes.items():
+            used_nodes[n_id] = self.nodes.get(name).copy()
+            used_nodes[n_id].codeword = self.get_codeword(name)
+            # generate mask for internal nodes other than root node
+            if n_id > 0:
+                n_cw = self.nodes.get(name).codeword
+                idx = n_cw.tolist().index(1)
+                used_nodes[n_id].mask = 1 - n_cw
+                assert used_nodes[n_id].mask[idx] == 0
+                used_nodes[n_id].mask[idx] = 1
+        # print('number of used nodes: {}'.format(len(used_nodes)))
+
+        # save leaf nodes
+        leaf_id = {v: k for k, v in self.leaf_nodes.items()}  # node_name: id
+
+        # save label at each node for each class
+        node_labels = defaultdict(list)
+        for k in self.leaf_nodes.keys():
+            for n_id in used_nodes.keys():
+                chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
+                if len(chd_idx) > 0:
+                    node_labels[k].append([n_id, chd_idx[0]])
+
+        if save_path:
+            # np.save(os.path.join(save_path, 'tree.npy'), self)
+            np.save(os.path.join(save_path, 'used_nodes.npy'), used_nodes)
+            np.save(os.path.join(save_path, 'leaf_nodes.npy'), leaf_id)
+            np.save(os.path.join(save_path, 'node_labels.npy'), node_labels)
+
+        return used_nodes, leaf_id, node_labels
+
+    def _buildTree(self, root, partial_data_name_hier_dir, depth=0):
+        if depth == 0: # dataset_level
             child_idx = len(root.children)
             root.add_child(self.dataset_name)
             node_id = len(self.nodes)
             child = TreeNode(self.dataset_name, self.dataset_name, depth + 1, node_id, child_idx, root.name)
             self.nodes[self.dataset_name] = child
-            self._buildTree(child, depth + 1)
 
-        elif depth == 1:
-            for chd_label_index in self.data_root_dir.keys():
+            self._buildTree(child, partial_data_name_hier_dir, depth + 1)
+
+        elif depth == self.max_depth-1:
+            for chd_label_index in partial_data_name_hier_dir:
                 # chd_label_index = int(chd_label_index)
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
-                child = TreeNode(chd_label_index, chd_label_index, depth + 1, node_id, child_idx, root.name)
+                child = TreeNode(chd_label_index, self.data_label_index_dict[chd_label_index], depth + 1, node_id, child_idx, root.name)
                 self.nodes[chd_label_index] = child
-                self._buildTree(child, depth + 1)
 
-        elif depth == 2:
-            # for chd_label_index in self.data_root_dir[str(root.label_index)]:
-            for chd_label_index in self.data_root_dir[root.label_index]:
+                self._buildTree(child, [chd_label_index], depth + 1)
+
+        elif depth != 0 and depth != self.max_depth - 1 and depth != self.max_depth:
+            for chd_label_index in partial_data_name_hier_dir.keys():
+                # chd_label_index = int(chd_label_index)
+
                 child_idx = len(root.children)
                 root.add_child(chd_label_index)
                 node_id = len(self.nodes)
-                child = TreeNode(chd_label_index, chd_label_index, depth + 1, node_id, child_idx, root.name)
+                child = TreeNode(chd_label_index, self.data_label_index_dict[chd_label_index], depth + 1, node_id, child_idx, root.name)
                 self.nodes[chd_label_index] = child
-                self._buildTree(child, depth + 1)
-        elif depth == 3:
-            pass
-        self.depth = max(self.depth, depth)
 
-    def show(self, node_name='root', root_depth=-1, max_depth=np.Inf):
+                self._buildTree(child, partial_data_name_hier_dir[chd_label_index], depth + 1)
+
+        if depth in self.depth_dict.keys():
+            self.depth_dict[depth].append(root.name)
+        else:
+            self.depth_dict[depth] = [root.name]
+
+    def show(self, node_name='root', root_depth=-1, max_depth=np.Inf, show_label_index=False):
         root = self.nodes.get(node_name, None)
         if not root:
             raise ValueError('{} is not in the tree'.format(node_name))
@@ -169,23 +146,25 @@ class Tree():
         if root_depth == -1:
             print(root.name)
             root_depth = root.depth
-            max_depth = min(self.depth, max_depth)
+            max_depth = min(self.max_depth, max_depth)
 
         if root.depth - root_depth < max_depth:
             for chd in root.children.values():
                 child = self.nodes[chd]
                 print('--' * (child.depth - root_depth), end='')
-                print(child.name)
-                self.show(chd, root_depth, max_depth)
+                if show_label_index:
+                    print(child.label_index)
+                else:
+                    print(child.name)
+                self.show(chd, root_depth, max_depth, show_label_index)
 
     def gen_codeword(self, max_depth=np.Inf):
-
         if max_depth == np.Inf:
             leaf_nodes = sorted([x.name for x in self.nodes.values() if len(x.children) == 0])
-        elif max_depth <= self.depth:
+        elif max_depth <= self.max_depth:
             leaf_nodes = sorted([x.name for x in self.nodes.values() if x.depth == max_depth])
         else:
-            raise ValueError('max_depth should be equal or smaller than {}'.format(self.depth))
+            raise ValueError('max_depth should be equal or smaller than {}'.format(self.max_depth))
 
         used_nodes = [x for x in self.nodes.values() if x.depth < max_depth and x.name not in leaf_nodes]
         used_nodes = sorted(used_nodes, key=lambda x: x.node_id)
@@ -217,7 +196,6 @@ class Tree():
                 node.set_cond(idx)
 
     def get_codeword(self, node_name=None):
-
         node = self.nodes.get(node_name, None)
         if not node:
             raise ValueError('{} is not in the tree'.format(node_name))
@@ -228,8 +206,11 @@ class Tree():
             child = self.nodes.get(chd)
             codeword.append(child.codeword)
         codeword = np.array(codeword)
-
         return codeword
+
+    def gen_Id2name(self):
+        for node_i in self.nodes.values():
+            self.id2name[node_i.node_id] = node_i.name
 
     def get_nodeId(self, node_name=None):
 
@@ -240,37 +221,28 @@ class Tree():
         return node.node_id
 
     def get_parent(self, node_name=None):
+
         node = self.nodes.get(node_name, None)
         if not node:
             raise ValueError('{} is not in the tree'.format(node_name))
+
         return node.parent
 
     def get_coarse_node_list(self):
-        nodes_label = [i for i in self.nodes]
-        nodes_label.remove('root')
-        nodes_label.remove('cifar100')
-        # inner_nodes_label = [i for i in nodes_label if type(i) != int]
-        inner_nodes_label = [i for i in nodes_label if i < 0]
-        if 'root' in inner_nodes_label:
-            inner_nodes_label.remove('root')
-
-        inner_nodes_label.insert(0, 'cifar100')
-        inner_nodes_list = [self.nodes.get(i, None) for i in inner_nodes_label]
-        return inner_nodes_list
+        return [self.nodes.get(i) for i in self.used_nodes.values() if i != 'root']
 
     def get_finest_label(self, node):
         if node.depth == 0 or node.depth == 1:
-            nodes_label = [i for i in self.nodes]
-            nodes_label.remove('root')
-            nodes_label.remove('cifar100')
-            # finest_nodes_label = [i for i in nodes_label if type(i) == int]
-            finest_nodes_label = [i for i in nodes_label if i >= 0]
-        elif node.depth == 2:
-            finest_nodes_label = list(node.children.values())
-        elif node.depth == 3:
+            finest_nodes_label = list(self.leaf_nodes.values())
+        elif node.depth == self.max_depth:
             finest_nodes_label = [node.name]
         else:
-            raise 'node depth error'
+            finest_nodes_label = []
+            children_nodes_list = [self.nodes.get(i) for i in node.children.values()]
+            for children_node_i in children_nodes_list:
+                finest_nodes_label += self.get_finest_label(children_node_i)[0]
+            # finest_nodes_label = list(node.children.values())
+
         finest_nodes_label_id = [self.get_nodeId(i) for i in finest_nodes_label]
         return finest_nodes_label, finest_nodes_label_id
 
@@ -284,7 +256,7 @@ class Tree():
         for node_name_i in node_name_list:
 
             node_i = self.nodes.get(node_name_i, None)
-            if n_layer < 0 or n_layer > 3:
+            if n_layer < 0 or n_layer > self.max_depth:
                 raise 'n_layer error'
 
             for i in range(node_i.depth - n_layer):
@@ -294,50 +266,92 @@ class Tree():
 
         return parent_name_list, parent_name_id_list
 
-    def gen_partial_tree(self, node_id_list):
-        partial_dic = {}
+    def gen_partial_tree(self, node_id_parent_list):
+        if 0 in node_id_parent_list:
+            raise 'node 0 in node_id_parent_list'
+
+        for node_id_i in node_id_parent_list:
+
+            if self.id2name[node_id_i] in self.depth_dict[self.max_depth]:
+                raise 'node is leaf node'
+        node_id_list = []
+        for node_id_parent_i in node_id_parent_list:
+            for children_node_j in self.nodes.get(self.id2name[node_id_parent_i]).children.values():
+                node_id_list.append(self.get_nodeId(children_node_j))
+
+        for node_id_i in node_id_parent_list:
+            if node_id_i in node_id_list:
+                node_id_list.remove(node_id_i)
+
+        node_list = []
+        inter_name_list = []
+        full_name_list = []
         for node_id_i in node_id_list:
-            node_i = list(self.nodes.values())[node_id_i]
-            if node_i.depth == 1:
-                node_i_children_name = list(node_i.children.values())
-                for child_node_i in node_i_children_name:
-                    partial_dic[child_node_i] = []
+            name_i = self.id2name[node_id_i]
+            node_i = self.nodes.get(name_i)
+            node_list.append(node_i)
 
-            elif node_i.depth == 2:
-                node_i_children_name = list(node_i.children.values())
-                partial_dic[node_i.name] = node_i_children_name
+        for node_i in node_list:
+            # inter_name_list.append(node_i.name)
+            full_name_list.append(node_i.name)
+            node_i_parent = node_i.parent
+            while node_i_parent:
+                inter_name_list.append(node_i_parent)
+                node_i_parent = self.nodes.get(node_i_parent).parent
+
+        inter_name_list = list(set(inter_name_list))
+        inter_name_list.remove('root')
+        inter_name_list.remove(self.dataset_name)
+        full_name_list += inter_name_list
+        full_name_list = list(set(full_name_list))
+        full_name_list_with_depth = [(i, self.nodes.get(i).depth) for i in full_name_list]
+        full_name_list_with_depth.sort(key=lambda x: x[1], reverse=True)
+
+        def build_dict(full_name_list_with_depth, curr_depth, temp_dict):
+            if curr_depth == 2:
+                for node_i in full_name_list_with_depth:
+                    if node_i[1] == 2:
+                        if node_i[0] not in temp_dict.keys():
+                            temp_dict[node_i[0]] = {}
+                return temp_dict
             else:
-                raise 'partial_tree node depth error'
-        tree = Tree('cifar100', partial_dic)
 
-        for node_i in tree.nodes.values():
-            if node_i.name != 'root' and node_i.name != 'cifar100':
+                for node_i in full_name_list_with_depth:
+                    if node_i[1] == curr_depth:
+                        node_i_parent = self.nodes.get(node_i[0]).parent
+                        if node_i_parent in temp_dict.keys():
+                            if type(temp_dict[node_i_parent]) == list:
+                                temp_dict[node_i_parent].append(node_i[0])
+                            else:
+                                if node_i[0] in temp_dict:
+                                    temp_dict[node_i_parent][node_i[0]] = temp_dict[node_i[0]]
+                                    temp_dict.pop(node_i[0])
+                                else:
+                                    temp_dict[node_i_parent][node_i[0]] = []
+                        else:
+                            if node_i[0] in temp_dict:
+                                temp_dict[node_i_parent] = {node_i[0]: temp_dict[node_i[0]]}
+                                temp_dict.pop(node_i[0])
+                            else:
+                                if curr_depth != self.max_depth:
+                                    temp_dict[node_i_parent] = {node_i[0]: []}
+                                else:
+                                    temp_dict[node_i_parent] = [node_i[0]]
 
-                if node_i.node_id in node_id_list:
-                    ori_node_i = self.nodes.get(node_i.name, None)
-                    node_i.set_all_info(ori_node_i.get_all_info())
-                else:
-                    ori_node_i = self.nodes.get(node_i.name, None)
-                    ori_node_i_all_info = ori_node_i.get_all_info()
+                return build_dict(full_name_list_with_depth, curr_depth - 1, temp_dict)
 
-                    ori_node_i_all_info[4] = {}
-                    for ind in [7, 8, 9, 10]:
-                        ori_node_i_all_info[ind] = None
-
-                    node_i.set_all_info(ori_node_i_all_info)
-
+        partial_dict = build_dict(full_name_list_with_depth, full_name_list_with_depth[0][1] + 1, {})
+        tree = Tree('cifar100', partial_dict, self.data_label_index_dict, full_name_list_with_depth[0][1] - 1)
         return tree
 
-
 def write_file(file_name, data_list):
-
     with open(file_name, 'w') as f:
         for data in data_list:
             f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
 
 
 if __name__ == '__main__':
-    hiera_dic = {'vehicles_1': ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
+    data_name_hier_dict = {'vehicles_1': ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
      'trees': ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
      'large_man-made_outdoor_things': ['bridge', 'road', 'skyscraper', 'house', 'castle'],
      'food_containers': ['can', 'cup', 'plate', 'bowl', 'bottle'],
@@ -357,23 +371,38 @@ if __name__ == '__main__':
      'aquatic_mammals': ['dolphin', 'whale', 'otter', 'seal', 'beaver'],
      'fish': ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],
      'medium_mammals': ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']}
-    hiera_index_dic = {'vehicles_1': [48, 13, 90, 8, 58], 'trees': [56, 96, 47, 52, 59], 'large_man-made_outdoor_things': [12, 68, 76, 37, 17], 'food_containers': [16, 28, 61, 10, 9], 'small_mammals': [36, 50, 74, 65, 80], 'large_omnivores_and_herbivores': [19, 15, 21, 38, 31], 'flowers': [70, 92, 62, 54, 82], 'large_natural_outdoor_scenes': [33, 60, 23, 49, 71], 'reptiles': [93, 27, 29, 44, 78], 'household_furniture': [94, 5, 25, 20, 84], 'fruit_and_vegetables': [0, 57, 51, 83, 53], 'large_carnivores': [3, 42, 88, 97, 43], 'vehicles_2': [81, 89, 85, 41, 69], 'people': [46, 11, 35, 2, 98], 'insects': [14, 6, 7, 18, 24], 'household_electrical_devices': [40, 87, 86, 39, 22], 'non-insect_invertebrates': [26, 77, 45, 99, 79], 'aquatic_mammals': [30, 95, 55, 72, 4], 'fish': [1, 32, 67, 91, 73], 'medium_mammals': [66, 34, 63, 75, 64]}
 
-    # print(hiera_dic)
-    # print(hiera_index_dic)
+    data_label_index_dict = {'medium_mammals': -20, 'fish': -19, 'aquatic_mammals': -18, 'non-insect_invertebrates': -17,
+     'household_electrical_devices': -16, 'insects': -15, 'people': -14, 'vehicles_2': -13, 'large_carnivores': -12,
+     'fruit_and_vegetables': -11, 'household_furniture': -10, 'reptiles': -9, 'large_natural_outdoor_scenes': -8,
+     'flowers': -7, 'large_omnivores_and_herbivores': -6, 'small_mammals': -5, 'food_containers': -4,
+     'large_man-made_outdoor_things': -3, 'trees': -2, 'vehicles_1': -1, 'apple': 0, 'aquarium_fish': 1, 'baby': 2,
+     'bear': 3, 'beaver': 4, 'bed': 5, 'bee': 6, 'beetle': 7, 'bicycle': 8, 'bottle': 9, 'bowl': 10, 'boy': 11,
+     'bridge': 12, 'bus': 13, 'butterfly': 14, 'camel': 15, 'can': 16, 'castle': 17, 'caterpillar': 18, 'cattle': 19,
+     'chair': 20, 'chimpanzee': 21, 'clock': 22, 'cloud': 23, 'cockroach': 24, 'couch': 25, 'crab': 26, 'crocodile': 27,
+     'cup': 28, 'dinosaur': 29, 'dolphin': 30, 'elephant': 31, 'flatfish': 32, 'forest': 33, 'fox': 34, 'girl': 35,
+     'hamster': 36, 'house': 37, 'kangaroo': 38, 'keyboard': 39, 'lamp': 40, 'lawn_mower': 41, 'leopard': 42,
+     'lion': 43, 'lizard': 44, 'lobster': 45, 'man': 46, 'maple_tree': 47, 'motorcycle': 48, 'mountain': 49,
+     'mouse': 50, 'mushroom': 51, 'oak_tree': 52, 'orange': 53, 'orchid': 54, 'otter': 55, 'palm_tree': 56, 'pear': 57,
+     'pickup_truck': 58, 'pine_tree': 59, 'plain': 60, 'plate': 61, 'poppy': 62, 'porcupine': 63, 'possum': 64,
+     'rabbit': 65, 'raccoon': 66, 'ray': 67, 'road': 68, 'rocket': 69, 'rose': 70, 'sea': 71, 'seal': 72, 'shark': 73,
+     'shrew': 74, 'skunk': 75, 'skyscraper': 76, 'snail': 77, 'snake': 78, 'spider': 79, 'squirrel': 80,
+     'streetcar': 81, 'sunflower': 82, 'sweet_pepper': 83, 'table': 84, 'tank': 85, 'telephone': 86, 'television': 87,
+     'tiger': 88, 'tractor': 89, 'train': 90, 'trout': 91, 'tulip': 92, 'turtle': 93, 'wardrobe': 94, 'whale': 95,
+     'willow_tree': 96, 'wolf': 97, 'woman': 98, 'worm': 99}
 
-    res = Tree('cifar100', hiera_index_dic)
-    # # res.show()
-    node_id = 1
-    node_i = list(res.nodes.values())[node_id]
-    res_2 = res.gen_partial_tree([2, 8, 14, 20, 116]) # depth=2: 6k+2 [2, 116]
-    res_2.show()
+    data_name_hier_dir_2 = {'vehicles_1': {'motorcycle':['bus', 'train', 'bicycle', 'pickup_truck'], 'small_mammals': ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],},
+                          }
 
-    node_id = 2
-    node_ori_tree = list(res.nodes.values())[node_id]
-    node_copied_tree = list(res_2.nodes.values())[node_id]
+    # tree = Tree('cifar100', data_name_hier_dict, data_label_index_dict, dict_depth = 2)
+    tree = Tree('cifar100', data_name_hier_dir_2, data_label_index_dict, dict_depth = 3)
+    tree.show()
+    used_nodes, leaf_id, node_labels = tree.prepro()
+    test_list = [3, 9, 10]
+    for i in test_list:
+        print(tree.nodes.get(tree.id2name[i]).name)
 
-    print(node_ori_tree.get_all_info())
-    print(node_copied_tree.get_all_info())
-    #
-    # parent_name_list, parent_name_id_list  = res.get_parent_n_layer(node_name_list=[1, 12, 3], n_layer=2)
+    tree_2 = tree.gen_partial_tree_2(test_list)
+    used_nodes, leaf_id, node_labels = tree_2.prepro()
+    print(tree_2.leaf_nodes)
+    tree_2.show()
