@@ -233,28 +233,30 @@ class Tree():
 
     def get_finest_label(self, node):
         if node.depth == 0 or node.depth == 1:
-            finest_nodes_label = list(self.leaf_nodes.values())
+            finest_nodes_name = list(self.leaf_nodes.values())
         elif node.depth == self.max_depth:
-            finest_nodes_label = [node.name]
+            finest_nodes_name = [node.name]
         else:
-            finest_nodes_label = []
+            finest_nodes_id = []
             children_nodes_list = [self.nodes.get(i) for i in node.children.values()]
             for children_node_i in children_nodes_list:
-                finest_nodes_label += self.get_finest_label(children_node_i)[0]
+                finest_nodes_id += self.get_finest_label(children_node_i)[1]
             # finest_nodes_label = list(node.children.values())
+            finest_nodes_name = [self.id2name[i] for i in finest_nodes_id]
 
-        finest_nodes_label_id = [self.get_nodeId(i) for i in finest_nodes_label]
-        return finest_nodes_label, finest_nodes_label_id
+        finest_nodes_label = [self.nodes.get(i).label_index for i in finest_nodes_name]
+        finest_nodes_id = [self.get_nodeId(i) for i in finest_nodes_name]
+        return finest_nodes_label, finest_nodes_id
 
     def get_children_label(self, node_name):
         node = self.nodes.get(node_name, None)
         return list(node.children.values()), [self.get_nodeId(i) for i in node.children.values()]
 
-    def get_parent_n_layer(self, node_name_list=None, n_layer=0):
+    def get_parent_n_layer(self, node_id_list=None, n_layer=0):
         parent_name_list = []
         parent_name_id_list = []
-        for node_name_i in node_name_list:
-
+        for node_id_i in node_id_list:
+            node_name_i = self.id2name[node_id_i]
             node_i = self.nodes.get(node_name_i, None)
             if n_layer < 0 or n_layer > self.max_depth:
                 raise 'n_layer error'

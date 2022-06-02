@@ -139,14 +139,14 @@ class IncrementalDataset:
 
     def _get_cur_data_for_all_children(self):
         # get all finest labels with id, this time use labels in label_index
-        label_index, _ = self.taxonomy_tree.get_finest_label(self.cur_parent_node)
-        x_train, y_train = self._select_from_idx(self.data_train, self.targets_train, label_index)
-        x_test, y_test = self._select_from_idx(self.data_test, self.targets_test, label_index)
+        label_index_id, _ = self.taxonomy_tree.get_finest_label(self.cur_parent_node)
+        x_train, y_train = self._select_from_idx(self.data_train, self.targets_train, label_index_id)
+        x_test, y_test = self._select_from_idx(self.data_test, self.targets_test, label_index_id)
         return x_train, y_train, x_test, y_test
 
-    def _select_from_idx(self, x, y, fine_level_idx):
-        # fine_level_idx: fine level labels
-        idxes = np.isin(y, fine_level_idx)
+    def _select_from_idx(self, x, y, fine_level_id):
+        # fine_level_idx: fine level ids
+        idxes = np.isin(y, fine_level_id)
         # get labels corresponding to current coarse level
         x_plain = np.array(x[idxes])
         y_plain, _ = np.array(self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth + 1))
