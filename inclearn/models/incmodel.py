@@ -245,6 +245,7 @@ class IncModel(IncrementalLearner):
             _loss = _loss.item()
             # _loss_aux = _loss_aux.item()
             _loss_aux = 0
+
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
@@ -269,7 +270,7 @@ class IncModel(IncrementalLearner):
 
         # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
         # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-        #                            self._increments, "Trainset")
+                                   # self._increments, "Trainset")
         self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
     def _forward_loss(self, inputs, targets, old_classes, new_classes, nlosses, stslosses, losses, acc, accu=None,
@@ -297,14 +298,9 @@ class IncModel(IncrementalLearner):
 
         # compute stochastic tree sampling loss
         leaf_id_index_list = []
-        # for target_i in list(np.array(targets.cpu())):
-        #     leaf_id_index_list.append(self._network.leaf_id[target_i])
-        # leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
-
-        for target_i in list(np.array(targets)):
+        for target_i in list(np.array(targets.cpu())):
             leaf_id_index_list.append(self._network.leaf_id[target_i])
-        leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
+        leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
         # gt_z = torch.gather(output, 1, targets.view(-1, 1))
         gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
@@ -340,8 +336,7 @@ class IncModel(IncrementalLearner):
                 aux_targets[new_classes] -= sum(self._inc_dataset.increments[:self._task]) - 1
             aux_loss = F.cross_entropy(outputs['aux_logit'], aux_targets)
         else:
-            # aux_loss = torch.zeros([1]).cuda()
-            aux_loss = torch.zeros([1])
+            aux_loss = torch.zeros([1]).cuda()
         return loss, aux_loss
 
     def _after_task(self, taski, inc_dataset):
