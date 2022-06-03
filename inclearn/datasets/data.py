@@ -114,8 +114,8 @@ class IncrementalDataset:
                 x_train = np.concatenate((x_train, self.data_memory))
                 y_train = np.concatenate((y_train, self.targets_memory))
         #
-        # self.data_inc, self.targets_inc = x_train, y_train
-        # self.data_test_inc, self.targets_test_inc = x_test, y_test
+        self.data_inc, self.targets_inc = x_train, y_train
+        self.data_test_inc, self.targets_test_inc = x_test, y_test
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
         val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
