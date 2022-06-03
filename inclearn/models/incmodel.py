@@ -288,8 +288,8 @@ class IncModel(IncrementalLearner):
         for idx in range(inputs.size(0)):
             for n_id, n_l in self._network.node_labels[self._network.leaf_id[targets.cpu().numpy()[idx]]]:
 
-                # res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda())
-                res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
+                res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda())
+                # res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
                 nloss.append(res)
 
         nloss = torch.mean(torch.stack(nloss))
