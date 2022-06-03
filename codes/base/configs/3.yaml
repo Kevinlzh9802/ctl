@@ -34,7 +34,7 @@ load_mem: True
 
 
 #Optimization;Training related
-task_max: 10
+task_max: 2
 lr_min: 0.00005
 lr: 0.1
 weight_decay: 0.0005
@@ -45,7 +45,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
