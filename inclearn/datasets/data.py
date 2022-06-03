@@ -149,7 +149,8 @@ class IncrementalDataset:
         idxes = np.isin(y, fine_level_id)
         # get labels corresponding to current coarse level
         x_plain = np.array(x[idxes])
-        y_plain, _ = np.array(self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth + 1))
+        _, y_plain = self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth + 1)
+        y_plain = np.array(y_plain)
         beta = 0.4
         gamma = self.taxonomy_tree.max_depth - (self.cur_parent_node.depth + 1)
         sel_ind = random.sample(range(len(x_plain)), round(pow(beta, gamma) * len(x_plain)))

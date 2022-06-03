@@ -62,6 +62,7 @@ class Tree():
         self.used_nodes = {}        # inter nodes pair {id: Treenode}
         self.leaf_nodes = {}        # leaf nodes pair {id: Treenode}
         self.id2name = {}
+        self.label2name = {}
         self.gen_codeword()
         self.gen_rel_path()
         self.gen_Id2name()
@@ -101,7 +102,7 @@ class Tree():
         return used_nodes, leaf_id, node_labels
 
     def _buildTree(self, root, partial_data_name_hier_dir, depth=0):
-        if depth == 0: # dataset_level
+        if depth == 0:  # dataset_level
             child_idx = len(root.children)
             root.add_child(self.dataset_name)
             node_id = len(self.nodes)
@@ -211,6 +212,7 @@ class Tree():
     def gen_Id2name(self):
         for node_i in self.nodes.values():
             self.id2name[node_i.node_id] = node_i.name
+            self.label2name[node_i.label_index] = node_i.name
 
     def get_nodeId(self, node_name=None):
 
@@ -252,11 +254,11 @@ class Tree():
         node = self.nodes.get(node_name, None)
         return list(node.children.values()), [self.get_nodeId(i) for i in node.children.values()]
 
-    def get_parent_n_layer(self, node_id_list=None, n_layer=0):
+    def get_parent_n_layer(self, node_label_list=None, n_layer=0):
         parent_name_list = []
-        parent_name_id_list = []
-        for node_id_i in node_id_list:
-            node_name_i = self.id2name[node_id_i]
+        parent_label_index_list = []
+        for node_label_i in node_label_list:
+            node_name_i = self.label2name[node_label_i]
             node_i = self.nodes.get(node_name_i, None)
             if n_layer < 0 or n_layer > self.max_depth:
                 raise 'n_layer error'
@@ -264,9 +266,9 @@ class Tree():
             for i in range(node_i.depth - n_layer):
                 node_i = self.nodes.get(node_i.parent, None)
             parent_name_list.append(node_i.name)
-            parent_name_id_list.append(node_i.node_id)
+            parent_label_index_list.append(node_i.label_index)
 
-        return parent_name_list, parent_name_id_list
+        return parent_name_list, parent_label_index_list
 
     def gen_partial_tree(self, node_id_parent_list):
         if 0 in node_id_parent_list:
