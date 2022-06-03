@@ -63,6 +63,7 @@ class Tree():
         self.leaf_nodes = {}        # leaf nodes pair {id: Treenode}
         self.id2name = {}
         self.label2name = {}
+
         self.gen_codeword()
         self.gen_rel_path()
         self.gen_Id2name()
@@ -83,7 +84,7 @@ class Tree():
         # print('number of used nodes: {}'.format(len(used_nodes)))
 
         # save leaf nodes
-        leaf_id = {v: k for k, v in self.leaf_nodes.items()}  # node_name: id
+        leaf_id = {self.nodes.get(v).label_index: k for k, v in self.leaf_nodes.items()}  # node_name: id
 
         # save label at each node for each class
         node_labels = defaultdict(list)
@@ -92,6 +93,7 @@ class Tree():
                 chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
                 if len(chd_idx) > 0:
                     node_labels[k].append([n_id, chd_idx[0]])
+                    # node_labels[self.nodes.get(self.leaf_nodes[k]).label_index].append([n_id, chd_idx[0]])
 
         if save_path:
             # np.save(os.path.join(save_path, 'tree.npy'), self)
@@ -102,7 +104,7 @@ class Tree():
         return used_nodes, leaf_id, node_labels
 
     def _buildTree(self, root, partial_data_name_hier_dir, depth=0):
-        if depth == 0:  # dataset_level
+        if depth == 0: # dataset_level
             child_idx = len(root.children)
             root.add_child(self.dataset_name)
             node_id = len(self.nodes)
@@ -398,15 +400,18 @@ if __name__ == '__main__':
     data_name_hier_dir_2 = {'vehicles_1': {'motorcycle':['bus', 'train', 'bicycle', 'pickup_truck'], 'small_mammals': ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],},
                           }
 
-    # tree = Tree('cifar100', data_name_hier_dict, data_label_index_dict, dict_depth = 2)
-    tree = Tree('cifar100', data_name_hier_dir_2, data_label_index_dict, dict_depth = 3)
+    tree = Tree('cifar100', data_name_hier_dict, data_label_index_dict, dict_depth = 2)
+    # tree = Tree('cifar100', data_name_hier_dir_2, data_label_index_dict, dict_depth = 3)
     tree.show()
     used_nodes, leaf_id, node_labels = tree.prepro()
-    test_list = [3, 9, 10]
-    for i in test_list:
-        print(tree.nodes.get(tree.id2name[i]).name)
 
-    tree_2 = tree.gen_partial_tree_2(test_list)
-    used_nodes, leaf_id, node_labels = tree_2.prepro()
-    print(tree_2.leaf_nodes)
-    tree_2.show()
+    print(node_labels)
+    # used_nodes, leaf_id, node_labels = tree.prepro()
+    # test_list = [3, 9, 10]
+    # for i in test_list:
+    #     print(tree.nodes.get(tree.id2name[i]).name)
+    #
+    # tree_2 = tree.gen_partial_tree_2(test_list)
+    # used_nodes, leaf_id, node_labels = tree_2.prepro()
+    # print(tree_2.leaf_nodes)
+    # tree_2.show()

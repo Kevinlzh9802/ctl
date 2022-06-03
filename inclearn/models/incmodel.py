@@ -211,6 +211,7 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
+
                 self.train()
                 self._optimizer.zero_grad()
                 # old_classes = targets < (self._n_classes - self._task_size)
@@ -242,7 +243,8 @@ class IncModel(IncrementalLearner):
                 # _loss_aux += loss_aux
                 _loss += loss
             _loss = _loss.item()
-            _loss_aux = _loss_aux.item()
+            # _loss_aux = _loss_aux.item()
+            _loss_aux = 0
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
@@ -265,9 +267,9 @@ class IncModel(IncrementalLearner):
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = train_loader.dataset.share_memory
 
-        utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
-        utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-                                   self._increments, "Trainset")
+        # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
+        # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
+        #                            self._increments, "Trainset")
         self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
     def _forward_loss(self, inputs, targets, old_classes, new_classes, nlosses, stslosses, losses, acc, accu=None,
@@ -284,17 +286,27 @@ class IncModel(IncrementalLearner):
         nloss = []
 
         for idx in range(inputs.size(0)):
-            print(idx)
-            print()
-            for n_id, n_l in self._network.node_labels[targets.cpu().numpy()[idx]]:
-                nloss.append(criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda()))
-                print(len(nloss))
+            for n_id, n_l in self._network.node_labels[self._network.leaf_id[targets.cpu().numpy()[idx]]]:
+
+                # res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda())
+                res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
+                nloss.append(res)
 
         nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
         # compute stochastic tree sampling loss
-        gt_z = torch.gather(output, 1, targets.view(-1, 1))
+        leaf_id_index_list = []
+        # for target_i in list(np.array(targets.cpu())):
+        #     leaf_id_index_list.append(self._network.leaf_id[target_i])
+        # leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
+
+        for target_i in list(np.array(targets)):
+            leaf_id_index_list.append(self._network.leaf_id[target_i])
+        leaf_id_indexes = torch.tensor(leaf_id_index_list)
+
+        # gt_z = torch.gather(output, 1, targets.view(-1, 1))
+        gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
         stslosses.update(stsloss.item(), inputs.size(0))
 
@@ -304,11 +316,12 @@ class IncModel(IncrementalLearner):
         # measure accuracy
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-        iscorrect = torch.gather(preds, 1, targets.view(-1, 1)).flatten().float()
+        # iscorrect = torch.gather(preds, 1, targets.view(-1, 1)).flatten().float()
+        iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
         acc.update(torch.mean(iscorrect).item(), inputs.size(0))
 
-        if accu is not None:
-            accu.add(outputs['logit'], targets)
+        # if accu is not None:
+        #     accu.add(outputs['logit'], targets)
             # accu.add(logits.detach(), targets.cpu().numpy())
         # if new_accu is not None:
         #     new_accu.add(logits[new_classes].detach(), targets[new_classes].cpu().numpy())
@@ -327,8 +340,8 @@ class IncModel(IncrementalLearner):
                 aux_targets[new_classes] -= sum(self._inc_dataset.increments[:self._task]) - 1
             aux_loss = F.cross_entropy(outputs['aux_logit'], aux_targets)
         else:
-            aux_loss = torch.zeros([1]).cuda()
-
+            # aux_loss = torch.zeros([1]).cuda()
+            aux_loss = torch.zeros([1])
         return loss, aux_loss
 
     def _after_task(self, taski, inc_dataset):
