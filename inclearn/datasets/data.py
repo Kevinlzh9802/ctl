@@ -9,6 +9,10 @@ from multiprocessing import Pool
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import random
+
+import warnings
+warnings.filterwarnings("ignore", "Corrupt EXIF data", UserWarning)
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
@@ -17,8 +21,6 @@ from torchvision.datasets.folder import pil_loader
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
-import warnings
-warnings.filterwarnings("ignore", "Corrupt EXIF data", UserWarning)
 
 
 def get_data_folder(data_folder, dataset_name):
@@ -26,8 +28,21 @@ def get_data_folder(data_folder, dataset_name):
 
 
 class IncrementalDataset:
-    def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, batch_size=128, seed=1,
-                 increment=10, validation_split=0.0, resampling=False, data_folder="./data", start_class=0):
+    def __init__(
+        self,
+        trial_i,
+        dataset_name,
+        random_order=False,
+        shuffle=True,
+        workers=10,
+        batch_size=128,
+        seed=1,
+        increment=10,
+        validation_split=0.0,
+        resampling=False,
+        data_folder="./data",
+        start_class=0
+    ):
 
         # The info about incremental split
         self.trial_i = trial_i
@@ -50,7 +65,6 @@ class IncrementalDataset:
         dataset_class = get_dataset(dataset_name)
         self._setup_data(dataset_class)
 
-        self._seed = seed
         self._workers = workers
         self._shuffle = shuffle
         self._batch_size = batch_size
@@ -68,6 +82,7 @@ class IncrementalDataset:
         self._current_task = 0
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
+
         # memory Mt
         self.data_memory = None
         self.targets_memory = None
@@ -84,9 +99,11 @@ class IncrementalDataset:
 
         self.y_range = []
 
+
     @property
     def n_tasks(self):
         return len(self.curriculum)
+
 
     def new_task(self):
         # x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
@@ -107,10 +124,14 @@ class IncrementalDataset:
 
         curr_new_y_train_label = list(set(y_train))
 
+
+
+
         self.data_inc, self.targets_inc = x_train, y_train
         self.data_test_inc, self.targets_test_inc = x_test, y_test_parent_level
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
+
         val_loader = self._get_loader(x_test, y_test_parent_level, shuffle=False, mode="test")
         test_loader = self._get_loader(x_test, y_test_parent_level, shuffle=False, mode="test")
 
@@ -127,6 +148,8 @@ class IncrementalDataset:
 
         self._current_task += 1
         return task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label
+
+
 
     def _get_cur_data_for_all_children(self):
         name_coarse = self.curriculum[self._current_task]
@@ -189,6 +212,7 @@ class IncrementalDataset:
         assert leaf_depth >= parent_depth
         return -1 if leaf_depth == parent_depth else 0.3
 
+
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])
         max_class = sum(self.increments[:self._current_task + 1])
@@ -197,16 +221,17 @@ class IncrementalDataset:
         x_test, y_test = self._select(self.data_test, self.targets_test, low_range=0, high_range=max_class)
         return min_class, max_class, x_train, y_train, x_test, y_test
 
-    # --------------------------------
+    #--------------------------------
     #           Data Setup
-    # --------------------------------
+    #--------------------------------
     def _setup_data(self, dataset):
         # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []
         self.dict_val, self.dict_train, self.dict_test = {}, {}, {}
-
+        # self.increments = []
+        # self.class_order = []
         # current_class_idx = 0  # When using multiple datasets
         self.train_dataset = dataset(self.data_folder, train=True)
         self.test_dataset = dataset(self.data_folder, train=False)
@@ -282,6 +307,8 @@ class IncrementalDataset:
         x_train, y_train = np.concatenate(x_train), np.concatenate(y_train)
 
         return x_val, y_val, x_train, y_train, dict_val, dict_train
+
+
 
     @staticmethod
     def _map_new_class_index(y, order):

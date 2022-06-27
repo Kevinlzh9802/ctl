@@ -16,14 +16,13 @@ import numpy as np
 import random
 from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
-from torchinfo import summary
 
 repo_name = 'ctl'
 base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name)]
 sys.path.append(base_dir)
 
 from sacred import Experiment
-ex = Experiment(base_dir=base_dir, save_git_info=False)
+ex = Experiment(base_dir=base_dir)
 
 # Save which files
 # ex.add_source_file(osp.join(base_dir, "inclearn/models/icarl.py"))
@@ -97,18 +96,17 @@ def _train(cfg, _run, ex, tensorboard):
     results = results_utils.get_template_results(cfg)
 
     for task_i in range(inc_dataset.n_tasks):
-        task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label = inc_dataset.new_task()
-
+        task_info, train_loader, val_loader, test_loader = inc_dataset.new_task()
+        c = 0
         model.set_task_info(
             task=task_info["task"],
-            # total_n_classes=task_info["max_class"],
-            # increment=task_info["increment"],
             task_size=task_info["task_size"],
             tax_tree=task_info["partial_tree"],
             n_train_data=task_info["n_train_data"],
             n_test_data=task_info["n_test_data"],
             n_tasks=inc_dataset.n_tasks,
         )
+
         model.before_task(task_i, inc_dataset)
         # TODO: Move to incmodel.py
         if 'min_class' in task_info:
@@ -123,15 +121,13 @@ def _train(cfg, _run, ex, tensorboard):
             model._parallel_network.load_state_dict(state_dict)
             inc_dataset.shared_data_inc = train_loader.dataset.share_memory
         else:
-            print(f'task {task_i}')
-            summary(model._network, (10, 3, 32, 32))
             model.train_task(train_loader, val_loader)
-        # model.after_task(task_i, inc_dataset)
-        model.after_task(task_i, inc_dataset, x_train, y_train, curr_new_y_train_label)
+        model.after_task(task_i, inc_dataset)
 
-        # ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
+        ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
         ypred, ytrue = model.eval_task(test_loader)
         acc_stats = utils.compute_accuracy(ypred, ytrue, increments=model._increments, n_classes=model._n_classes)
+
         #Logging
         model._tensorboard.add_scalar(f"taskaccu/trial{trial_i}", acc_stats["top1"]["total"], task_i)
 
@@ -192,40 +188,35 @@ def test(_run, _rnd, _seed):
     trial_i = cfg['trial']
     cfg.data_folder = osp.join(base_dir, "data")
     inc_dataset = factory.get_data(cfg, trial_i)
-    # inc_dataset._current_task = task_i
+    # inc_dataset._current_task = taski
     # train_loader = inc_dataset._get_loader(inc_dataset.data_cur, inc_dataset.targets_cur)
     model = factory.get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
     model._network.task_size = cfg.increment
 
     test_results = results_utils.get_template_results(cfg)
-    for task_i in range(inc_dataset.n_tasks):
-        # task_info, train_loader, _, test_loader = inc_dataset.new_task()
-        task_info, train_loader, val_loader, test_loader, x_train, y_train, _ = inc_dataset.new_task()
+    for taski in range(inc_dataset.n_tasks):
+        task_info, train_loader, _, test_loader = inc_dataset.new_task()
         model.set_task_info(
             task=task_info["task"],
-            # total_n_classes=task_info["max_class"],
-            # increment=task_info["increment"],
-            task_size=task_info["task_size"],
-            tax_tree=task_info["partial_tree"],
+            total_n_classes=task_info["max_class"],
+            increment=task_info["increment"],
             n_train_data=task_info["n_train_data"],
             n_test_data=task_info["n_test_data"],
-            n_tasks=inc_dataset.n_tasks,
+            n_tasks=task_info["max_task"]
         )
-
-        model.before_task(task_i, inc_dataset)
-        state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
+        model.before_task(taski, inc_dataset)
+        state_dict = torch.load(f'./ckpts/step{taski}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
         model.eval()
 
         #Build exemplars
-        # model.after_task(task_i, inc_dataset, None, None)
-
+        model.after_task(taski, inc_dataset)
 
         ypred, ytrue = model.eval_task(test_loader)
 
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=model._increments, n_classes=model._n_classes)
         test_results['results'].append(test_acc_stats)
-        ex.logger.info(f"task{task_i} test top1acc:{test_acc_stats['top1']}")
+        ex.logger.info(f"task{taski} test top1acc:{test_acc_stats['top1']}")
 
     avg_test_acc = results_utils.compute_avg_inc_acc(test_results['results'])
     ex.logger.info(f"Test Average Incremental Accuracy: {avg_test_acc}")
