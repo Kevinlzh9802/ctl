@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 name='10scifar100_trial0_debug'
-debug='0'
+debug='1'
 comments='None'
 expid='4'
 

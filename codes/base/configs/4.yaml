@@ -88,7 +88,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100" # 'imagenet100', 'cifar100'
-trial: 2
+trial: 5
 increment: 10
 batch_size: 128
 workers: 8
