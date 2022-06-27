@@ -222,7 +222,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
         self.n_classes = 0
         self.ntask = 0
-        self.device = device
+        # self.device = device
+        self.device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" , index = 0)
 
         if cfg['postprocessor']['enable']:
             if cfg['postprocessor']['type'].lower() == "bic":
@@ -251,7 +252,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         output, nout, sfmx_base = self.classifier(x=features, gate=gate)
 
         # logits = self.classifier(features)
-        aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
+        # aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
         # return {'feature': features, 'logit': logits, 'aux_logit': aux_logits}
         return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base}
 
@@ -291,13 +292,14 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             new_clf.load_state_dict(self.convnets[-1].state_dict())
             self.convnets.append(new_clf)
 
-        if self.classifier is not None:
-            weight = copy.deepcopy(self.classifier.weight.data)
+        # if self.classifier is not None:
+        #     weight = copy.deepcopy(self.classifier.weight.data)
 
         fc = self._gen_classifier(self.out_dim * len(self.convnets), self.n_classes + n_classes)
 
         if self.classifier is not None and self.reuse_oldfc:
             fc.weight.data[:self.n_classes, :self.out_dim * (len(self.convnets) - 1)] = weight
+
         del self.classifier
         self.classifier = fc
 

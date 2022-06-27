@@ -30,7 +30,10 @@ class HierNet(nn.Module):
             out_masks = []
             # root node (no dependency to other nodes)
             cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
+
             outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
+
+
             # other internal nodes
             for i in range(1, self.num_nodes):
                 cw = torch.from_numpy(self.nodes[i].codeword).float().to(nout[i].device)

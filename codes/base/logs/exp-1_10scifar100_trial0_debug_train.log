@@ -1,6 +1,144 @@
 
- 2022-06-02 15:41:56,922 | INFO | root 	 {'exp': {'name': '10scifar100_trial0_debug', 'savedir': './logs', 'tensorboard_dir': './tensorboard/', 'debug': False, 'ckptdir': './logs/'}, 'model': 'incmodel', 'convnet': 'resnet18', 'train_head': 'softmax', 'infer_head': 'softmax', 'channel': 64, 'use_bias': False, 'last_relu': False, 'der': True, 'use_aux_cls': False, 'aux_n+1': True, 'distillation': 'none', 'reuse_oldfc': False, 'weight_normalization': False, 'val_per_n_epoch': -1, 'save_ckpt': True, 'display_norm': False, 'task_max': 10, 'lr_min': 5e-05, 'lr': 0.1, 'weight_decay': 0.0005, 'dynamic_weight_decay': False, 'scheduler': 'multistep', 'scheduling': [100, 120], 'lr_decay': 0.1, 'optimizer': 'sgd', 'epochs': 170, 'postprocessor': {'enable': False, 'type': 'bic', 'epochs': 1, 'batch_size': 128, 'lr': 0.1, 'scheduling': [60, 90, 120], 'lr_decay_factor': 0.1, 'weight_decay': 0.0005}, 'decouple': {'enable': False, 'epochs': 50, 'fullset': False, 'lr': 0.05, 'scheduling': [15, 30], 'lr_decay': 0.1, 'weight_decay': 0.0005, 'temperature': 5.0}, 'dataset': 'cifar100', 'trial': 0, 'increment': 10, 'batch_size': 128, 'workers': 8, 'validation': 0, 'random_classes': False, 'start_class': 0, 'start_task': 0, 'max_task': None, 'coreset_strategy': 'iCaRL', 'mem_size_mode': 'uniform_fixed_total_mem', 'memory_size': 2000, 'fixed_memory_per_cls': 20, 'device': -1, 'seed': 1993, 'load_mem': False, 'model_cls': 'hiernet', 'model_pivot': {'arch': 'pivot', 'dropout_rate': 0.1}, 'pretrain': {'epochs': 200, 'lr': 0.1, 'lr_decay': 0.1, 'scheduling': [60, 120, 160], 'weight_decay': 0.0005}, 'resampling': False, 'save_mem': True, 'taxonomy': 'rtc', 'temperature': 2, 'warmup': False, 'warmup_epochs': 10}
+ 2022-06-27 13:34:46,803 | INFO | root 	 {'exp': {'name': '10scifar100_trial0_debug', 'savedir': './logs', 'tensorboard_dir': './tensorboard/', 'debug': False, 'ckptdir': './logs/'}, 'model': 'incmodel', 'convnet': 'resnet18', 'train_head': 'softmax', 'infer_head': 'softmax', 'channel': 64, 'use_bias': False, 'last_relu': False, 'der': True, 'use_aux_cls': False, 'aux_n+1': True, 'distillation': 'none', 'reuse_oldfc': False, 'weight_normalization': False, 'val_per_n_epoch': -1, 'save_ckpt': True, 'display_norm': False, 'task_max': 2, 'lr_min': 5e-05, 'lr': 0.1, 'weight_decay': 0.0005, 'dynamic_weight_decay': False, 'scheduler': 'multistep', 'scheduling': [100, 120], 'lr_decay': 0.1, 'optimizer': 'sgd', 'epochs': 2, 'postprocessor': {'enable': False, 'type': 'bic', 'epochs': 1, 'batch_size': 128, 'lr': 0.1, 'scheduling': [60, 90, 120], 'lr_decay_factor': 0.1, 'weight_decay': 0.0005}, 'decouple': {'enable': False, 'epochs': 50, 'fullset': False, 'lr': 0.05, 'scheduling': [15, 30], 'lr_decay': 0.1, 'weight_decay': 0.0005, 'temperature': 5.0}, 'dataset': 'cifar100', 'trial': 5, 'increment': 10, 'batch_size': 10, 'workers': 8, 'validation': 0, 'random_classes': False, 'start_class': 0, 'start_task': 0, 'max_task': None, 'coreset_strategy': 'iCaRL', 'mem_size_mode': 'uniform_fixed_total_mem', 'memory_size': 2000, 'fixed_memory_per_cls': 20, 'device': -1, 'seed': 1993, 'load_mem': False, 'model_cls': 'hiernet', 'model_pivot': {'arch': 'pivot', 'dropout_rate': 0.1}, 'pretrain': {'epochs': 200, 'lr': 0.1, 'lr_decay': 0.1, 'scheduling': [60, 120, 160], 'weight_decay': 0.0005}, 'resampling': False, 'save_mem': True, 'taxonomy': 'rtc', 'temperature': 2, 'warmup': False, 'warmup_epochs': 10}
 
- 2022-06-02 15:41:58,521 | INFO | root 	 classes_order
+ 2022-06-27 13:34:51,171 | INFO | root 	 classes_order
 
- 2022-06-02 15:41:58,521 | INFO | root 	 [[62, 54, 84, 20, 94, 22, 40, 29, 78, 27, 26, 79, 17, 76, 68, 88, 3, 19, 31, 21, 33, 60, 24, 14, 6, 10, 16, 82, 70, 92, 25, 5, 28, 9, 61, 36, 50, 90, 8, 48, 47, 56, 11, 98, 35, 93, 44, 64, 75, 66, 15, 38, 97, 42, 43, 12, 37, 55, 72, 95, 18, 7, 23, 71, 49, 53, 57, 86, 39, 87, 34, 63, 81, 89, 69, 46, 2, 1, 73, 32, 67, 91, 0, 51, 83, 13, 58, 80, 74, 65, 4, 30, 45, 77, 99, 85, 41, 96, 59, 52]]
+ 2022-06-27 13:34:51,171 | INFO | root 	 [['medium_mammals', 'fish', 'aquatic_mammals', 'non-insect_invertebrates', 'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores', 'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes', 'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers', 'large_man-made_outdoor_things', 'trees', 'vehicles_1'], ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'], ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'], ['bridge', 'road', 'skyscraper', 'house', 'castle'], ['can', 'cup', 'plate', 'bowl', 'bottle'], ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'], ['cattle', 'camel', 'chimpanzee', 'kangaroo', 'elephant'], ['rose', 'tulip', 'poppy', 'orchid', 'sunflower'], ['forest', 'plain', 'cloud', 'mountain', 'sea'], ['turtle', 'crocodile', 'dinosaur', 'lizard', 'snake'], ['wardrobe', 'bed', 'couch', 'chair', 'table'], ['apple', 'pear', 'mushroom', 'sweet_pepper', 'orange'], ['bear', 'leopard', 'tiger', 'wolf', 'lion'], ['streetcar', 'tractor', 'tank', 'lawn_mower', 'rocket'], ['man', 'boy', 'girl', 'baby', 'woman'], ['butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach'], ['lamp', 'television', 'telephone', 'keyboard', 'clock'], ['crab', 'snail', 'lobster', 'worm', 'spider'], ['dolphin', 'whale', 'otter', 'seal', 'beaver'], ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'], ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']]
+
+ 2022-06-27 13:35:01,769 | INFO | root 	 Begin step 0
+
+ 2022-06-27 13:35:01,769 | INFO | root 	 Now [105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105] examplars per class.
+
+ 2022-06-27 13:35:01,785 | INFO | root 	 Step 0 weight decay 0.00050
+
+ 2022-06-27 13:35:02,706 | INFO | root 	 nb 200
+
+ 2022-06-27 13:35:09,447 | INFO | root 	 Task 1/21, Epoch 1/2 => Clf loss: 8.574 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:35:15,637 | INFO | root 	 Task 1/21, Epoch 2/2 => Clf loss: 4.583 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:35:15,684 | INFO | root 	 save model
+
+ 2022-06-27 13:35:15,781 | INFO | root 	 build memory
+
+ 2022-06-27 13:35:15,797 | INFO | root 	 Building & updating memory.(iCaRL)
+
+ 2022-06-27 13:36:40,558 | INFO | root 	 Save step0 memory!
+
+ 2022-06-27 13:36:51,874 | INFO | root 	 top1:{'total': 0.0, '00-19': nan}
+
+ 2022-06-27 13:36:51,874 | INFO | root 	 top5:{'total': 0.0, '00-19': nan}
+
+ 2022-06-27 13:37:03,823 | INFO | root 	 Begin step 1
+
+ 2022-06-27 13:37:03,824 | INFO | root 	 Now [86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86] examplars per class.
+
+ 2022-06-27 13:37:04,128 | INFO | root 	 Step 1 weight decay 0.00050
+
+ 2022-06-27 13:37:04,701 | INFO | root 	 nb 163
+
+ 2022-06-27 13:37:12,207 | INFO | root 	 Task 2/21, Epoch 1/2 => Clf loss: 5.094 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:37:19,143 | INFO | root 	 Task 2/21, Epoch 2/2 => Clf loss: 5.246 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:37:19,222 | INFO | root 	 save model
+
+ 2022-06-27 13:37:19,440 | INFO | root 	 build memory
+
+ 2022-06-27 13:37:19,440 | INFO | root 	 Building & updating memory.(iCaRL)
+
+ 2022-06-27 13:38:44,133 | INFO | root 	 Save step1 memory!
+
+ 2022-06-27 13:38:47,942 | INFO | root 	 top1:{'total': 0.0, '00-19': 0.0, '20-24': nan}
+
+ 2022-06-27 13:38:47,942 | INFO | root 	 top5:{'total': 0.0, '00-19': 0.0, '20-24': nan}
+
+ 2022-06-27 13:38:58,292 | INFO | root 	 Begin step 2
+
+ 2022-06-27 13:38:58,292 | INFO | root 	 Now [74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74] examplars per class.
+
+ 2022-06-27 13:38:58,448 | INFO | root 	 Step 2 weight decay 0.00050
+
+ 2022-06-27 13:38:58,807 | INFO | root 	 nb 163
+
+ 2022-06-27 13:39:06,538 | INFO | root 	 Task 3/21, Epoch 1/2 => Clf loss: 4.921 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:39:14,062 | INFO | root 	 Task 3/21, Epoch 2/2 => Clf loss: 4.993 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:39:14,171 | INFO | root 	 save model
+
+ 2022-06-27 13:39:14,421 | INFO | root 	 build memory
+
+ 2022-06-27 13:39:14,421 | INFO | root 	 Building & updating memory.(iCaRL)
+
+ 2022-06-27 13:40:50,254 | INFO | root 	 Save step2 memory!
+
+ 2022-06-27 13:40:53,914 | INFO | root 	 top1:{'total': 0.0, '00-19': nan, '20-24': nan, '25-29': nan}
+
+ 2022-06-27 13:40:53,914 | INFO | root 	 top5:{'total': 0.0, '00-19': nan, '20-24': nan, '25-29': nan}
+
+ 2022-06-27 13:41:05,250 | INFO | root 	 Begin step 3
+
+ 2022-06-27 13:41:05,250 | INFO | root 	 Now [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64] examplars per class.
+
+ 2022-06-27 13:41:05,406 | INFO | root 	 Step 3 weight decay 0.00050
+
+ 2022-06-27 13:41:06,187 | INFO | root 	 nb 163
+
+ 2022-06-27 13:41:15,016 | INFO | root 	 Task 4/21, Epoch 1/2 => Clf loss: 5.2 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:41:23,690 | INFO | root 	 Task 4/21, Epoch 2/2 => Clf loss: 5.979 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:41:23,846 | INFO | root 	 save model
+
+ 2022-06-27 13:41:24,080 | INFO | root 	 build memory
+
+ 2022-06-27 13:41:24,080 | INFO | root 	 Building & updating memory.(iCaRL)
+
+ 2022-06-27 13:43:20,776 | INFO | root 	 Save step3 memory!
+
+ 2022-06-27 13:43:21,242 | INFO | root 	 top1:{'total': 10.0, '00-19': 25.0, '20-24': nan, '25-29': nan, '30-34': nan}
+
+ 2022-06-27 13:43:21,242 | INFO | root 	 top5:{'total': 10.0, '00-19': 25.0, '20-24': nan, '25-29': nan, '30-34': nan}
+
+ 2022-06-27 13:43:31,944 | INFO | root 	 Begin step 4
+
+ 2022-06-27 13:43:31,944 | INFO | root 	 Now [57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57] examplars per class.
+
+ 2022-06-27 13:43:32,100 | INFO | root 	 Step 4 weight decay 0.00050
+
+ 2022-06-27 13:43:32,772 | INFO | root 	 nb 166
+
+ 2022-06-27 13:43:42,738 | INFO | root 	 Task 5/21, Epoch 1/2 => Clf loss: 5.708 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:43:52,730 | INFO | root 	 Task 5/21, Epoch 2/2 => Clf loss: 5.242 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:43:55,104 | INFO | root 	 save model
+
+ 2022-06-27 13:43:55,401 | INFO | root 	 build memory
+
+ 2022-06-27 13:43:55,416 | INFO | root 	 Building & updating memory.(iCaRL)
+
+ 2022-06-27 13:46:03,172 | INFO | root 	 Save step4 memory!
+
+ 2022-06-27 13:46:06,886 | INFO | root 	 top1:{'total': 0.0, '00-19': 0.0, '20-24': nan, '25-29': 0.0, '30-34': nan, '35-39': nan}
+
+ 2022-06-27 13:46:06,886 | INFO | root 	 top5:{'total': 10.0, '00-19': 16.667, '20-24': nan, '25-29': -100.0, '30-34': nan, '35-39': nan}
+
+ 2022-06-27 13:46:18,086 | INFO | root 	 Begin step 5
+
+ 2022-06-27 13:46:18,086 | INFO | root 	 Now [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51] examplars per class.
+
+ 2022-06-27 13:46:18,242 | INFO | root 	 Step 5 weight decay 0.00050
+
+ 2022-06-27 13:46:18,852 | INFO | root 	 nb 169
+
+ 2022-06-27 13:46:30,490 | INFO | root 	 Task 6/21, Epoch 1/2 => Clf loss: 5.704 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:46:42,053 | INFO | root 	 Task 6/21, Epoch 2/2 => Clf loss: 5.225 Aux loss: 0.0, Train Accu: nan, Train@5 Acc: nan, old acc:nan
+
+ 2022-06-27 13:46:42,267 | INFO | root 	 save model
+
+ 2022-06-27 13:46:42,583 | INFO | root 	 build memory
+
+ 2022-06-27 13:46:42,583 | INFO | root 	 Building & updating memory.(iCaRL)

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 name='10scifar100_trial0_debug'
-debug='1'
+debug='0'
 comments='None'
-expid='3'
+expid='4'
 
 
 if [ ${debug} -eq '0' ]; then
@@ -11,13 +11,12 @@ if [ ${debug} -eq '0' ]; then
         exp.savedir="./logs/" \
         exp.ckptdir="./logs/" \
         exp.tensorboard_dir="./tensorboard/" \
-        trial=0 \
+        trial=5 \
         --name="${name}" \
         -D \
         -p \
         -c "${comments}" \
         --force \
-#        --mongo_db=10.10.10.100:30620:classil
         # --mongo_db=10.10.10.100:30620:classil
 else
     python -m main train with "./configs/${expid}.yaml" \

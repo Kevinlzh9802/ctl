@@ -40,12 +40,15 @@ class IncrementalLearner(abc.ABC):
     def train_task(self, train_loader, val_loader):
         LOGGER.info("train task")
         self.train()
-        self._train_task(train_loader, val_loader)
+        train_dataset = self._train_task(train_loader, val_loader)
 
-    def after_task(self, taski, inc_dataset):
+        return train_dataset
+
+    def after_task(self, taski, inc_dataset, x_train, y_train_parent_level, curr_new_y_train_label):
+
         LOGGER.info("after task")
         self.eval()
-        self._after_task(taski, inc_dataset)
+        self._after_task(taski, inc_dataset, x_train, y_train_parent_level, curr_new_y_train_label)
 
     def eval_task(self, data_loader):
         LOGGER.info("eval task")

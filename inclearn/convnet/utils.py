@@ -77,17 +77,25 @@ def finetune_last_layer(
 
 
 def extract_features(model, loader):
+
     targets, features = [], []
     model.eval()
     with torch.no_grad():
         for _inputs, _targets in loader:
-            _inputs = _inputs.cuda()
+
+            # _inputs = _inputs.cuda()
+            _inputs = _inputs
             _targets = _targets.numpy()
             _features = model(_inputs)['feature'].detach().cpu().numpy()
             features.append(_features)
             targets.append(_targets)
+    if len(targets) == 1:
+        return np.array(features), np.array(targets)
+    else:
+        return np.concatenate(features), np.concatenate(targets)
 
-    return np.concatenate(features), np.concatenate(targets)
+
+
 
 
 def calc_class_mean(network, loader, class_idx, metric):
