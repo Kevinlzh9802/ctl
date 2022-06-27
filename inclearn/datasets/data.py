@@ -9,10 +9,6 @@ from multiprocessing import Pool
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import random
-
-import warnings
-warnings.filterwarnings("ignore", "Corrupt EXIF data", UserWarning)
-
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
@@ -21,6 +17,8 @@ from torchvision.datasets.folder import pil_loader
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
+import warnings
+warnings.filterwarnings("ignore", "Corrupt EXIF data", UserWarning)
 
 
 def get_data_folder(data_folder, dataset_name):
@@ -65,6 +63,7 @@ class IncrementalDataset:
         dataset_class = get_dataset(dataset_name)
         self._setup_data(dataset_class)
 
+        self._seed = seed
         self._workers = workers
         self._shuffle = shuffle
         self._batch_size = batch_size
@@ -82,7 +81,6 @@ class IncrementalDataset:
         self._current_task = 0
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
-
         # memory Mt
         self.data_memory = None
         self.targets_memory = None
@@ -99,11 +97,9 @@ class IncrementalDataset:
 
         self.y_range = []
 
-
     @property
     def n_tasks(self):
         return len(self.curriculum)
-
 
     def new_task(self):
         # x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
@@ -123,9 +119,6 @@ class IncrementalDataset:
                 y_train = np.concatenate((y_train, self.targets_memory))
 
         curr_new_y_train_label = list(set(y_train))
-
-
-
 
         self.data_inc, self.targets_inc = x_train, y_train
         self.data_test_inc, self.targets_test_inc = x_test, y_test_parent_level
@@ -148,8 +141,6 @@ class IncrementalDataset:
 
         self._current_task += 1
         return task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label
-
-
 
     def _get_cur_data_for_all_children(self):
         name_coarse = self.curriculum[self._current_task]
@@ -197,8 +188,6 @@ class IncrementalDataset:
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
                 # x_selected = np.concatenate((x_selected, lfx_all))
                 # y_selected = np.concatenate((y_selected, lfy_all))
-                # print(lfx_all.shape)
-                # print(lfy_all.shape)
                 # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
 
                 # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
@@ -212,7 +201,6 @@ class IncrementalDataset:
         assert leaf_depth >= parent_depth
         return -1 if leaf_depth == parent_depth else 0.3
 
-
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])
         max_class = sum(self.increments[:self._current_task + 1])
@@ -221,9 +209,9 @@ class IncrementalDataset:
         x_test, y_test = self._select(self.data_test, self.targets_test, low_range=0, high_range=max_class)
         return min_class, max_class, x_train, y_train, x_test, y_test
 
-    #--------------------------------
+    # --------------------------------
     #           Data Setup
-    #--------------------------------
+    # --------------------------------
     def _setup_data(self, dataset):
         # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
@@ -273,7 +261,6 @@ class IncrementalDataset:
             order = dataset.class_order(self.trial_i)
         self.curriculum = order
 
-
     @staticmethod
     def _split_per_class(x, y, validation_split=0.0):
         """Splits train data for a subset of validation data.
@@ -308,8 +295,6 @@ class IncrementalDataset:
 
         return x_val, y_val, x_train, y_train, dict_val, dict_train
 
-
-
     @staticmethod
     def _map_new_class_index(y, order):
         """Transforms targets for new class order."""
@@ -323,9 +308,9 @@ class IncrementalDataset:
             selected_x = x[idxes]
         return selected_x, y[idxes]
 
-    #--------------------------------
+    # --------------------------------
     #           Get Loader
-    #--------------------------------
+    # --------------------------------
     def get_datainc_loader(self, mode='train'):
         train_loader = self._get_loader(self.data_inc, self.targets_inc, mode=mode)
         return train_loader
