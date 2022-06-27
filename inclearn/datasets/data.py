@@ -8,6 +8,7 @@ import multiprocessing as mp
 from multiprocessing import Pool
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import random
 
 import warnings
 warnings.filterwarnings("ignore", "Corrupt EXIF data", UserWarning)
@@ -40,8 +41,7 @@ class IncrementalDataset:
         validation_split=0.0,
         resampling=False,
         data_folder="./data",
-        start_class=0,
-        taxonomy_tree=None,
+        start_class=0
     ):
 
         # The info about incremental split
@@ -62,18 +62,26 @@ class IncrementalDataset:
         self.test_dataset = None
         self.n_tot_cls = -1
         # datasets is the object
-        datasets = get_dataset(dataset_name)
-        self._setup_data(datasets)
+        dataset_class = get_dataset(dataset_name)
+        self._setup_data(dataset_class)
 
         self._workers = workers
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
         # Currently, don't support multiple datasets
-        self.train_transforms = datasets.train_transforms
-        self.test_transforms = datasets.test_transforms
+        self.train_transforms = dataset_class.train_transforms
+        self.test_transforms = dataset_class.test_transforms
         # torchvision or albumentations
-        self.transform_type = datasets.transform_type
+        self.transform_type = dataset_class.transform_type
+
+        # Taxonomy setting
+        # Current states for Incremental Learning Stage.
+        self.curriculum = None
+        self._setup_curriculum(dataset_class)
+        self._current_task = 0
+        self.taxonomy_tree = dataset_class.taxonomy_tree
+
 
         # memory Mt
         self.data_memory = None
@@ -84,77 +92,126 @@ class IncrementalDataset:
         # Available data \tilde{D}_t = D_t \cup M_t
         self.data_inc = None  # Cur task data + memory
         self.targets_inc = None
+        self.targets_ori = None
         # Available data stored in cpu memory.
         self.shared_data_inc = None
         self.shared_test_data = None
 
-        # Current states for Incremental Learning Stage.
-        self._current_task = 0
+        self.y_range = []
 
-        self.taxonomy_tree = taxonomy_tree
-        self.taxonomy_order = self.taxonomy_tree.get_coarse_node_list()  # list of coarse nodes
-        self.taxonomy_id_order = [self.taxonomy_order[i].node_id for i in range(len(self.taxonomy_order))]
-
-        self.cur_parent_node = self.taxonomy_order[self._current_task]
 
     @property
     def n_tasks(self):
-        return len(self.increments)
+        return len(self.curriculum)
+
 
     def new_task(self):
-        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
-        if self._current_task >= len(self.taxonomy_order):
+        # x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
+
+        x_train, y_train, x_test, y_test_parent_level = self._get_cur_data_for_all_children()
+        if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
-        #
-        # self.data_cur, self.targets_cur = x_train, y_train
-        #
+
         if self.data_memory is not None:
             print("Set memory of size: {}.".format(len(self.data_memory)))
             if len(self.data_memory) != 0:
+
                 x_train = np.concatenate((x_train, self.data_memory))
+                # y_train: finest label [58 58  8  8 13 13 48 48 90 90]
+                # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
+
                 y_train = np.concatenate((y_train, self.targets_memory))
-        #
+
+        curr_new_y_train_label = list(set(y_train))
+
+
+
+
         self.data_inc, self.targets_inc = x_train, y_train
-        self.data_test_inc, self.targets_test_inc = x_test, y_test
+        self.data_test_inc, self.targets_test_inc = x_test, y_test_parent_level
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
-        val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
-        test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
+
+        val_loader = self._get_loader(x_test, y_test_parent_level, shuffle=False, mode="test")
+        test_loader = self._get_loader(x_test, y_test_parent_level, shuffle=False, mode="test")
+
+        cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
 
         task_info = {
             "task": self._current_task,
-            "task_size": len(self.cur_parent_node.children),
+            "task_size": len(self.curriculum[self._current_task]),
             "full_tree": self.taxonomy_tree,
-            "partial_tree": self.taxonomy_tree.gen_partial_tree(self.taxonomy_id_order[:self._current_task + 1]),
-            "taxonomy_order": self.taxonomy_order,
-            "taxonomy_stage": self.cur_parent_node.name,
-            "max_task": len(self.taxonomy_order),
+            "partial_tree": self.taxonomy_tree.gen_partial_tree(cur_names),
             "n_train_data": len(x_train),
             "n_test_data": len(y_train),
         }
 
         self._current_task += 1
-        self.cur_parent_node = self.taxonomy_order[self._current_task]
-        return task_info, train_loader, val_loader, test_loader
+        return task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label
+
+
 
     def _get_cur_data_for_all_children(self):
-        # get all finest labels with id, this time use labels in label_index
-        label_index_id, _ = self.taxonomy_tree.get_finest_label(self.cur_parent_node)
-        x_train, y_train = self._select_from_idx(self.data_train, self.targets_train, label_index_id)
-        x_test, y_test = self._select_from_idx(self.data_test, self.targets_test, label_index_id)
+        name_coarse = self.curriculum[self._current_task]
+        name_map_fine = []
+        label_map = {}
+        for nc in name_coarse:
+            lc = self.taxonomy_tree.nodes.get(nc).label_index
+            name_map_single = self.taxonomy_tree.get_finest(nc)
+            name_map_fine += name_map_single
+            for nf in name_map_single:
+                lf = self.taxonomy_tree.nodes.get(nf).label_index
+                # position 0: coarse label; position 1: leaf node depth; position 2: parent node depth
+                label_map[lf] = [lc, self.taxonomy_tree.nodes.get(nf).depth, self.taxonomy_tree.nodes.get(nc).depth]
+        x_train, y_train = self._select_from_idx(self.dict_train, label_map, train=True)
+        x_test, y_test = self._select_from_idx(self.dict_test, label_map, train=False)
         return x_train, y_train, x_test, y_test
 
-    def _select_from_idx(self, x, y, fine_level_id):
-        # fine_level_idx: fine level ids
-        idxes = np.isin(y, fine_level_id)
-        # get labels corresponding to current coarse level
-        x_plain = np.array(x[idxes])
-        _, y_plain = self.taxonomy_tree.get_parent_n_layer(y[idxes], self.cur_parent_node.depth + 1)
-        y_plain = np.array(y_plain)
-        beta = 0.4
-        gamma = self.taxonomy_tree.max_depth - (self.cur_parent_node.depth + 1)
-        sel_ind = random.sample(range(len(x_plain)), round(pow(beta, gamma) * len(x_plain)))
-        return x_plain[sel_ind], y_plain[sel_ind]
+    def _select_from_idx(self, data_dict, label_map, train=True):
+        x_selected = np.empty([0, 32, 32, 3], dtype=np.int8)
+        y_selected = np.empty([0], dtype=np.int8)
+        if train:
+            for lf in label_map:
+                lfx_all = data_dict[lf]
+                lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
+                lfx_used_idx = self.dict_train_used[lf]
+                idx_available = np.where(lfx_used_idx == 0)[0]
+                # position 1: leaf node depth; position 2: parent node depth
+                # if coarse node, select by a fraction; if leaf node, select all remaining
+                data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2])
+                if data_frac > 0:
+                    # sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                    # sel_ind = random.sample(list(idx_available), 1)
+                    sel_ind = random.sample(list(idx_available), 2)
+                else:
+                    # sel_ind = idx_available
+                    # sel_ind = random.sample(list(idx_available), 1)
+                    sel_ind = random.sample(list(idx_available), 2)
+
+                x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
+                y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
+                self.dict_train_used[lf][sel_ind] = 1
+        else:
+            for lf in label_map:
+                lfx_all = data_dict[lf]
+                lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
+                # x_selected = np.concatenate((x_selected, lfx_all))
+                # y_selected = np.concatenate((y_selected, lfy_all))
+                # print(lfx_all.shape)
+                # print(lfy_all.shape)
+                # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
+
+                # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
+                # y_selected = np.concatenate((y_selected, np.array([lfy_all[0]])))
+                x_selected = np.concatenate((x_selected, np.array(lfx_all[0:2]).reshape((2, 32, 32, 3))))
+                y_selected = np.concatenate((y_selected, np.array(lfy_all[0:2])))
+        return x_selected, y_selected
+
+    @staticmethod
+    def _sample_rate(leaf_depth, parent_depth):
+        assert leaf_depth >= parent_depth
+        return -1 if leaf_depth == parent_depth else 0.3
+
 
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])
@@ -172,17 +229,15 @@ class IncrementalDataset:
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []
-        self.increments = []
-        self.class_order = []
+        self.dict_val, self.dict_train, self.dict_test = {}, {}, {}
+        # self.increments = []
+        # self.class_order = []
+        # current_class_idx = 0  # When using multiple datasets
+        self.train_dataset = dataset(self.data_folder, train=True)
+        self.test_dataset = dataset(self.data_folder, train=False)
+        self.n_tot_cls = self.train_dataset.n_cls  # number of classes in whole dataset
 
-        current_class_idx = 0  # When using multiple datasets
-        train_dataset = dataset(self.data_folder, train=True)
-        test_dataset = dataset(self.data_folder, train=False)
-        self.train_dataset = train_dataset
-        self.test_datasets = test_dataset
-        self.n_tot_cls = self.train_dataset.n_cls  #number of classes in whole dataset
-
-        self._setup_data_for_raw_data(dataset, train_dataset, test_dataset, current_class_idx)
+        self._setup_data_for_raw_data(self.train_dataset, self.test_dataset)
         # !list
         self.data_train = np.concatenate(self.data_train)
         self.targets_train = np.concatenate(self.targets_train)
@@ -190,44 +245,34 @@ class IncrementalDataset:
         self.targets_val = np.concatenate(self.targets_val)
         self.data_test = np.concatenate(self.data_test)
         self.targets_test = np.concatenate(self.targets_test)
+        self.dict_train_used = {y: np.zeros(len(self.dict_train[y])) for y in self.dict_train}
 
-    def _setup_data_for_raw_data(self, dataset, train_dataset, test_dataset, current_class_idx=0):
-        increment = self.task_size
-
+    def _setup_data_for_raw_data(self, train_dataset, test_dataset):
         x_train, y_train = train_dataset.data, np.array(train_dataset.targets)
-        x_val, y_val, x_train, y_train = self._split_per_class(x_train, y_train, self.validation_split)
+        x_val, y_val, x_train, y_train, dict_val, dict_train = \
+            self._split_per_class(x_train, y_train, self.validation_split)
         x_test, y_test = test_dataset.data, np.array(test_dataset.targets)
-
-        # Get Class Order
-        order = [i for i in range(len(np.unique(y_train)))]
-        if self.random_order:
-            random.seed(self._seed)  # Ensure that following order is determined by seed:
-            random.shuffle(order)
-        elif dataset.class_order(self.trial_i) is not None:
-            order = dataset.class_order(self.trial_i)
-
-        self.class_order.append(order)
-        y_train = self._map_new_class_index(y_train, order)
-        y_val = self._map_new_class_index(y_val, order)
-        y_test = self._map_new_class_index(y_test, order)
-
-        y_train += current_class_idx
-        y_val += current_class_idx
-        y_test += current_class_idx
-
-        current_class_idx += len(order)
-        if self.start_class == 0:
-            self.increments = [increment for _ in range(len(order) // increment)]
-        else:
-            self.increments.append(self.start_class)
-            for _ in range((len(order) - self.start_class) // increment):
-                self.increments.append(increment)
+        _, _, x_test, y_test, _, dict_test = self._split_per_class(x_test, y_test, 0)
         self.data_train.append(x_train)
         self.targets_train.append(y_train)
         self.data_val.append(x_val)
         self.targets_val.append(y_val)
         self.data_test.append(x_test)
         self.targets_test.append(y_test)
+        self.dict_val.update(dict_val)
+        self.dict_train.update(dict_train)
+        self.dict_test.update(dict_test)
+
+    def _setup_curriculum(self, dataset):
+        # Get Class Order
+        order = [i for i in range(len(np.unique(self.targets_train)))]
+        if self.random_order:
+            random.seed(self._seed)  # Ensure that following order is determined by seed:
+            random.shuffle(order)
+        elif dataset.class_order(self.trial_i) is not None:
+            order = dataset.class_order(self.trial_i)
+        self.curriculum = order
+
 
     @staticmethod
     def _split_per_class(x, y, validation_split=0.0):
@@ -241,6 +286,7 @@ class IncrementalDataset:
 
         x_val, y_val = [], []
         x_train, y_train = [], []
+        dict_val, dict_train = {}, {}
 
         for class_id in np.unique(y):
             class_indexes = np.where(y == class_id)[0]
@@ -253,12 +299,16 @@ class IncrementalDataset:
             y_val.append(y[val_indexes])
             x_train.append(x[train_indexes])
             y_train.append(y[train_indexes])
+            dict_val[class_id] = x[val_indexes]
+            dict_train[class_id] = x[train_indexes]
 
         # !list
         x_val, y_val = np.concatenate(x_val), np.concatenate(y_val)
         x_train, y_train = np.concatenate(x_train), np.concatenate(y_train)
 
-        return x_val, y_val, x_train, y_train
+        return x_val, y_val, x_train, y_train, dict_val, dict_train
+
+
 
     @staticmethod
     def _map_new_class_index(y, order):
@@ -277,7 +327,6 @@ class IncrementalDataset:
     #           Get Loader
     #--------------------------------
     def get_datainc_loader(self, mode='train'):
-        print(self.data_inc.shape)
         train_loader = self._get_loader(self.data_inc, self.targets_inc, mode=mode)
         return train_loader
 
@@ -776,9 +825,11 @@ class DummyDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         x, y, = self.x[idx], self.y[idx]
+
         if isinstance(x, np.ndarray):
             # assume cifar
-            x = Image.fromarray(x)
+            x = Image.fromarray(np.uint8(x))
+
         else:
             # Assume the dataset is ImageNet
             if idx < len(self.share_memory):

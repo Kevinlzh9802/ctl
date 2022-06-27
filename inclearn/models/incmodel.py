@@ -27,7 +27,8 @@ class IncModel(IncrementalLearner):
     def __init__(self, cfg, trial_i, _run, ex, tensorboard, inc_dataset):
         super().__init__()
         self._cfg = cfg
-        self._device = cfg['device']
+        # self._device = cfg['device']
+        self._device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" , index = 0)
         self._ex = ex
         self._run = _run  # the sacred _run object.
 
@@ -101,14 +102,11 @@ class IncModel(IncrementalLearner):
     #     self._n_tasks = n_tasks
     #     self._current_tax_tree = tax_tree
 
-    def set_task_info(self, task, task_size, tax_tree, taxonomy_order, taxonomy_stage, n_train_data,
-                      n_test_data, n_tasks):
+    def set_task_info(self, task, task_size, tax_tree, n_train_data, n_test_data, n_tasks):
         self._task = task
         self._task_size = task_size
         self._increments.append(self._task_size)
         self._current_tax_tree = tax_tree
-        self._taxonomy_order = taxonomy_order
-        self._taxonomy_stage = taxonomy_stage
         self._n_train_data = n_train_data
         self._n_test_data = n_test_data
         self._n_tasks = n_tasks
@@ -128,11 +126,12 @@ class IncModel(IncrementalLearner):
 
         # Update Task info
         self._task = taski
-        self._n_classes += self._task_size
-
+        self._n_classes = len(self._current_tax_tree.leaf_nodes)
+        print(self._n_classes)
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
-        self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
+
+        self._memory_size.update_memory_per_cls(self._network, self._n_classes-1, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
         self._network.current_tax_tree = self._current_tax_tree
@@ -245,7 +244,6 @@ class IncModel(IncrementalLearner):
             _loss = _loss.item()
             # _loss_aux = _loss_aux.item()
             _loss_aux = 0
-
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
@@ -270,8 +268,9 @@ class IncModel(IncrementalLearner):
 
         # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
         # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-                                   # self._increments, "Trainset")
+        #                            self._increments, "Trainset")
         self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
+
 
     def _forward_loss(self, inputs, targets, old_classes, new_classes, nlosses, stslosses, losses, acc, accu=None,
                       new_accu=None, old_accu=None):
@@ -286,23 +285,40 @@ class IncModel(IncrementalLearner):
         sfmx_base = outputs['sfmx_base']
         nloss = []
 
-        for idx in range(inputs.size(0)):
-            for n_id, n_l in self._network.node_labels[self._network.leaf_id[targets.cpu().numpy()[idx]]]:
+        leaf_id_keys = self._network.leaf_id.keys()
 
-                res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda())
-                # res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
+        for idx in range(inputs.size(0)):
+
+            index = targets.cpu().numpy()[idx]
+            if index in leaf_id_keys:
+                index = self._network.leaf_id[index]
+            for n_id, n_l in self._network.node_labels[index]:
+                # res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]).cuda())
+                res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
                 nloss.append(res)
+
 
         nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
         # compute stochastic tree sampling loss
         leaf_id_index_list = []
-        for target_i in list(np.array(targets.cpu())):
-            leaf_id_index_list.append(self._network.leaf_id[target_i])
-        leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
+        # for target_i in list(np.array(targets.cpu())):
+        #     leaf_id_index_list.append(self._network.leaf_id[target_i])
+        # leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
+
+        for target_i in list(np.array(targets)):
+            if target_i in leaf_id_keys:
+                leaf_id_index_list.append(self._network.leaf_id[target_i])
+            # else:
+            #     leaf_id_index_list.append(target_i)
+        leaf_id_indexes = torch.tensor(leaf_id_index_list)
+
+
+
         # gt_z = torch.gather(output, 1, targets.view(-1, 1))
         gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
+
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
         stslosses.update(stsloss.item(), inputs.size(0))
 
@@ -336,10 +352,12 @@ class IncModel(IncrementalLearner):
                 aux_targets[new_classes] -= sum(self._inc_dataset.increments[:self._task]) - 1
             aux_loss = F.cross_entropy(outputs['aux_logit'], aux_targets)
         else:
-            aux_loss = torch.zeros([1]).cuda()
+            # aux_loss = torch.zeros([1]).cuda()
+            aux_loss = torch.zeros([1])
+
         return loss, aux_loss
 
-    def _after_task(self, taski, inc_dataset):
+    def _after_task(self, taski, inc_dataset, x_train, y_train_parent_level, curr_new_y_train_label):
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
@@ -382,7 +400,8 @@ class IncModel(IncrementalLearner):
 
         if self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
-            self.build_exemplars(inc_dataset, self._coreset_strategy)
+
+            self.build_exemplars(inc_dataset, self._coreset_strategy, x_train, y_train_parent_level, curr_new_y_train_label)
 
             if self._cfg["save_mem"]:
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
@@ -419,7 +438,17 @@ class IncModel(IncrementalLearner):
         with torch.no_grad():
             for i, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-                _preds = self._parallel_network(inputs)['logit']
+
+                # _preds = self._parallel_network(inputs)['logit']
+
+
+
+                _output = self._parallel_network(inputs)['output']
+
+                max_z = torch.max(_output, dim=1)[0]
+                _preds = torch.eq(_output, max_z.view(-1, 1))
+
+
                 if self._cfg["postprocessor"]["enable"] and self._task > 0:
                     _preds = self._network.postprocessor.post_process(_preds, self._task_size)
                 preds.append(_preds.detach().cpu().numpy())
@@ -477,7 +506,7 @@ class IncModel(IncrementalLearner):
                                                 share_memory=self._inc_dataset.shared_data_inc,
                                                 metric='None')
 
-    def build_exemplars(self, inc_dataset, coreset_strategy):
+    def build_exemplars(self, inc_dataset, coreset_strategy, x_train, y_train_parent_level, curr_new_y_train_label):
         save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)
@@ -501,15 +530,28 @@ class IncModel(IncrementalLearner):
         elif coreset_strategy == "iCaRL":
             from inclearn.tools.memory import herding
             data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None else self._inc_dataset.data_inc
+            # self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
+            #     self._n_classes,
+            #     self._task_size,
+            #     self._parallel_network,
+            #     self._herding_matrix,
+            #     inc_dataset,
+            #     data_inc,
+            #     self._memory_per_class,
+            #     self._ex.logger,
+            # )
             self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
                 self._n_classes,
                 self._task_size,
                 self._parallel_network,
                 self._herding_matrix,
                 inc_dataset,
+                x_train,
+                y_train_parent_level,
                 data_inc,
                 self._memory_per_class,
                 self._ex.logger,
+                curr_new_y_train_label
             )
         else:
             raise ValueError()

@@ -88,7 +88,7 @@ class Weight_Align(IncrementalLearner):
 
     def _before_task(self, taski, inc_dataset):
         self._task = taski
-        self._n_classes += self._task_size
+        self._n_classes += izeself._task_s
         self._memory_size.update_n_classes(self._n_classes)
         self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
@@ -310,7 +310,8 @@ class Weight_Align(IncrementalLearner):
         elif coreset_strategy == "iCaRL":
             from inclearn.tools.memory import herding
             data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None else self._inc_dataset.data_inc
-            self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
+            self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix, _ = herding(
+            # self._inc_dataset.data_memory, _, self._herding_matrix, self._inc_dataset.targets_memory = herding(
                 self._n_classes,
                 self._task_size,
                 self._parallel_network,
