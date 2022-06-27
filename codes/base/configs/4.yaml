@@ -5,7 +5,7 @@ exp:
   debug: False
 
 
-#Model Cfg
+# Model Cfg
 model: "incmodel"
 model_cls: "hiernet"
 model_pivot:
@@ -33,7 +33,7 @@ save_mem: True
 load_mem: True
 
 
-#Optimization;Training related
+# Optimization; Training related
 task_max: 10
 lr_min: 0.00005
 lr: 0.1
@@ -87,7 +87,7 @@ pretrain:
 
 
 # Dataset Cfg
-dataset: "cifar100" #'imagenet100', 'cifar100'
+dataset: "cifar100" # 'imagenet100', 'cifar100'
 trial: 2
 increment: 10
 batch_size: 128
@@ -98,13 +98,13 @@ start_class: 0 # number of tasks for the first step, start from 0.
 start_task: 0
 max_task: # Cap the number of task
 
-#Memory
+# Memory
 coreset_strategy: "iCaRL"  # iCaRL, random
 mem_size_mode: "uniform_fixed_total_mem" #uniform_fixed_per_cls, uniform_fixed_total_mem
 memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
-device: 0 #GPU index to use, for cpu use -1
+device: 0 # GPU index to use, for cpu use -1
 seed: 1993
 
