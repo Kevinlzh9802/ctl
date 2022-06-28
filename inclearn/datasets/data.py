@@ -189,9 +189,7 @@ class IncrementalDataset:
                 # x_selected = np.concatenate((x_selected, lfx_all))
                 # y_selected = np.concatenate((y_selected, lfy_all))
                 # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
-
                 # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
-                # y_selected = np.concatenate((y_selected, np.array([lfy_all[0]])))
                 x_selected = np.concatenate((x_selected, np.array(lfx_all[0:2]).reshape((2, 32, 32, 3))))
                 y_selected = np.concatenate((y_selected, np.array(lfy_all[0:2])))
         return x_selected, y_selected

@@ -115,127 +115,6 @@ def random_selection(n_classes, task_size, network, logger, inc_dataset, memory_
     return tmp_data_memory, tmp_targets_memory
 
 
-# def herding(n_classes, task_size, network, herding_matrix, inc_dataset, train_loader, shared_data_inc, memory_per_class,logger):
-#     """Herding matrix: list
-#     """
-#     # final_inputs = np.array([])
-#     # for i, data in enumerate(train_loader, start=1):
-#     #
-#     #     print('test_1111')
-#     #     inputs, targets = data
-#     #
-#     #     if final_inputs.shape[0] != 0:
-#     #         final_inputs = np.vstack((final_inputs, inputs))
-#     #         final_targets = np.vstack((final_targets, targets))
-#     #     else:
-#     #         final_inputs = inputs
-#     #         final_targets = targets
-#     # final_targets = final_targets.reshape((final_targets.shape[0]*final_targets.shape[1]))
-#     # final_inputs = np.delete(final_inputs, np.where(final_targets == int((20-n_classes)/4)), 0)
-#     # final_targets = np.delete(final_targets, np.where(final_targets == int((20-n_classes)/4))), 0)
-#
-#
-#     logger.info("Building & updating memory.(iCaRL)")
-#     tmp_data_memory, tmp_targets_memory, tmp_data_memory_ori_label = [], [], []
-#
-#     for class_idx in range(n_classes):
-#         inputs = inc_dataset.data_train[inc_dataset.targets_train == class_idx]
-#
-#         targets = inc_dataset.targets_train[inc_dataset.targets_train == class_idx]
-#
-#         if class_idx >= n_classes - task_size:
-#             if len(shared_data_inc) > len(inc_dataset.targets_inc):
-#                 share_memory = [shared_data_inc[i] for i in np.where(inc_dataset.targets_inc == class_idx)[0].tolist()]
-#             else:
-#                 share_memory = []
-#                 for i in np.where(inc_dataset.targets_inc == class_idx)[0].tolist():
-#                     if i < len(shared_data_inc):
-#                         share_memory.append(shared_data_inc[i])
-#
-#             # share_memory = [shared_data_inc[i] for i in np.where(inc_dataset.targets_inc == class_idx)[0].tolist()]
-#
-#             # loader = inc_dataset._get_loader(inc_dataset.data_inc[inc_dataset.targets_inc == class_idx],
-#             #                                  inc_dataset.targets_inc[inc_dataset.targets_inc == class_idx],
-#             #                                  share_memory=share_memory,
-#             #                                  batch_size=1024,
-#             #                                  shuffle=False,
-#             #                                  mode="test")
-#
-#             leaf_id_index_list = []
-#             leaf_id_keys = network.module.leaf_id.keys()
-#             for target_i in list(np.array(inc_dataset.targets_inc)):
-#                 if target_i in leaf_id_keys:
-#                     leaf_id_index_list.append(network.module.leaf_id[target_i])
-#                 else:
-#                     leaf_id_index_list.append(target_i)
-#             leaf_id_indexes = torch.tensor(leaf_id_index_list)
-#
-#
-#             loader = inc_dataset._get_loader(inc_dataset.data_inc[leaf_id_indexes == class_idx],
-#                                              inc_dataset.targets_inc[leaf_id_indexes == class_idx],
-#                                              share_memory=share_memory,
-#                                              batch_size=2,
-#                                              shuffle=False,
-#                                              mode="test")
-#
-#
-#
-#
-#             # loader = inc_dataset._get_loader(inc_dataset.data_inc[inc_dataset.targets_inc == class_idx],
-#             #                                  inc_dataset.targets_inc[inc_dataset.targets_inc == class_idx],
-#             #                                  share_memory=share_memory,
-#             #                                  batch_size=2,
-#             #                                  shuffle=False,
-#             #                                  mode="test")
-#
-#             # for _inputs, _targets in loader:
-#             #     print(_inputs)
-#             #     print(_targets)
-#
-#
-#             try:
-#                 features, _ = extract_features(network, loader) #order
-#             except Exception as e:
-#
-#                 print(leaf_id_indexes)
-#                 print(class_idx)
-#                 print(inc_dataset.data_inc[leaf_id_indexes == class_idx])
-#                 print(inc_dataset.targets_inc[leaf_id_indexes == class_idx])
-#                 print(inc_dataset.data_inc[leaf_id_indexes == class_idx].shape)
-#
-#                 print(inc_dataset.targets_inc[leaf_id_indexes == class_idx].shape)
-#
-#                 raise(f'Error: {e}')
-#             #
-#             # try:
-#             #     features, _ = extract_features(network, loader)
-#             #
-#             # except:
-#             #     print(1)
-#             #     raise('Error')
-#             # features_flipped, _ = extract_features(network, inc_dataset.get_custom_loader(class_idx, mode="flip")[-1])
-#
-#             herding_matrix.append(select_examplars(features, memory_per_class[class_idx])[0])
-#
-#
-#         alph = herding_matrix[class_idx]
-#         alph = (alph > 0) * (alph < memory_per_class[class_idx] + 1) * 1.0
-#         # examplar_mean, alph = compute_examplar_mean(features, features_flipped, herding_matrix[class_idx],
-#         #                                             memory_per_class[class_idx])
-#         tmp_data_memory.append(inputs[np.where(alph == 1)[0]])
-#
-#         tmp_targets_memory.append(targets[np.where(alph == 1)[0]])
-#
-#         leaf_id_inv= {v:u for u, v in network.module.leaf_id.items()}
-#         new_array = np.array([leaf_id_inv[i] if i in leaf_id_inv.keys() else i for i in list(targets[np.where(alph == 1)[0]])])
-#         tmp_data_memory_ori_label.append(new_array)
-#
-#     tmp_data_memory = np.concatenate(tmp_data_memory)
-#     tmp_targets_memory = np.concatenate(tmp_targets_memory)
-#     tmp_data_memory_ori_label = np.concatenate(tmp_data_memory_ori_label)
-#
-#     return tmp_data_memory, tmp_data_memory_ori_label, herding_matrix
-
 def herding(n_classes, task_size, network, herding_matrix, inc_dataset, x_train, y_train_parent_level, shared_data_inc, memory_per_class,
             logger, curr_new_y_train_label):
     """Herding matrix: list
@@ -255,8 +134,6 @@ def herding(n_classes, task_size, network, herding_matrix, inc_dataset, x_train,
     # final_inputs = np.delete(final_inputs, np.where(final_targets == int((20 - n_classes) / 4)), 0)
     # final_targets = np.delete(final_targets, np.where(final_targets == int((20 - n_classes) / 4)), 0)
 
-
-
     final_inputs = np.delete(x_train, np.where(y_train_parent_level == int((20-n_classes)/4)-1), 0)
     final_targets = np.delete(y_train_parent_level, np.where(y_train_parent_level == int((20-n_classes)/4)-1), 0)
     curr_new_y_train_label = np.array(curr_new_y_train_label)
@@ -265,6 +142,7 @@ def herding(n_classes, task_size, network, herding_matrix, inc_dataset, x_train,
     logger.info("Building & updating memory.(iCaRL)")
     tmp_data_memory, tmp_targets_memory, tmp_data_memory_ori_label = [], [], []
 
+    # The following two blocks maps final_targets and curr_new_y_train_label into leaf_ids
     leaf_id_index_list = []
     leaf_id_keys = network.module.leaf_id.keys()
     for target_i in list(np.array(final_targets)):
@@ -282,9 +160,7 @@ def herding(n_classes, task_size, network, herding_matrix, inc_dataset, x_train,
         else:
             curr_new_y_train_id_indexes.append(target_i)
 
-
     leaf_id_indexes = np.array(leaf_id_index_list)
-
 
     for class_idx in curr_new_y_train_id_indexes:
         inputs = final_inputs[leaf_id_indexes == class_idx]

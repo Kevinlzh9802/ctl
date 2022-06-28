@@ -271,7 +271,6 @@ class IncModel(IncrementalLearner):
         #                            self._increments, "Trainset")
         self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
-
     def _forward_loss(self, inputs, targets, old_classes, new_classes, nlosses, stslosses, losses, acc, accu=None,
                       new_accu=None, old_accu=None):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
@@ -297,7 +296,6 @@ class IncModel(IncrementalLearner):
                 res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
                 nloss.append(res)
 
-
         nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
@@ -313,8 +311,6 @@ class IncModel(IncrementalLearner):
             # else:
             #     leaf_id_index_list.append(target_i)
         leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
-
 
         # gt_z = torch.gather(output, 1, targets.view(-1, 1))
         gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
@@ -365,7 +361,7 @@ class IncModel(IncrementalLearner):
             save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(save_path, self._task))
 
-        if (self._cfg["decouple"]['enable'] and taski > 0):
+        if self._cfg["decouple"]['enable'] and taski > 0:
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:

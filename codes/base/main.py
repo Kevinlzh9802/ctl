@@ -16,13 +16,17 @@ import numpy as np
 import random
 from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
+import torch
+
+from inclearn.tools import factory, results_utils, utils
+from inclearn.learn.pretrain import pretrain
+from inclearn.tools.metrics import IncConfusionMeter
 from torchinfo import summary
+from sacred import Experiment
 
 repo_name = 'ctl'
 base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name)]
 sys.path.append(base_dir)
-
-from sacred import Experiment
 ex = Experiment(base_dir=base_dir, save_git_info=False)
 
 # Save which files
@@ -34,14 +38,6 @@ ex = Experiment(base_dir=base_dir, save_git_info=False)
 # ex.add_source_file(osp.join(os.getcwd(), "network.py"))
 # ex.add_source_file(osp.join(os.getcwd(), "resnet.py"))
 
-# MongoDB Observer
-# ex.observers.append(MongoObserver.create(url='xx.xx.xx.xx:port', db_name='classil'))
-
-import torch
-
-from inclearn.tools import factory, results_utils, utils
-from inclearn.learn.pretrain import pretrain
-from inclearn.tools.metrics import IncConfusionMeter
 
 def initialization(config, seed, mode, exp_id):
     # Add it if your input size is fixed
@@ -64,7 +60,6 @@ def initialization(config, seed, mode, exp_id):
     #     shutil.move(tensorboard_dir, cfg["exp"]["tensorboard_dir"] + f"/../inbox/{time.time()}_{exp_name}")
 
     tensorboard = SummaryWriter(tensorboard_dir)
-
     return cfg, logger, tensorboard
 
 
@@ -84,7 +79,7 @@ def _train(cfg, _run, ex, tensorboard):
     trial_i = cfg['trial']
 
     inc_dataset = factory.get_data(cfg, trial_i)
-    ex.logger.info("classes_order")
+    ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
 
     model = factory.get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
@@ -132,7 +127,7 @@ def _train(cfg, _run, ex, tensorboard):
         # ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
         ypred, ytrue = model.eval_task(test_loader)
         acc_stats = utils.compute_accuracy(ypred, ytrue, increments=model._increments, n_classes=model._n_classes)
-        #Logging
+        # Logging
         model._tensorboard.add_scalar(f"taskaccu/trial{trial_i}", acc_stats["top1"]["total"], task_i)
 
         _run.log_scalar(f"trial{trial_i}_taskaccu", acc_stats["top1"]["total"], task_i)
@@ -184,6 +179,7 @@ def do_pretrain(cfg, ex, model, device, train_loader, test_loader):
     else:
         pretrain(cfg, ex, model, device, train_loader, test_loader, model_path)
 
+
 @ex.command
 def test(_run, _rnd, _seed):
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "test", _run._id)
@@ -217,18 +213,17 @@ def test(_run, _rnd, _seed):
         model._parallel_network.load_state_dict(state_dict)
         model.eval()
 
-        #Build exemplars
+        # Build exemplars
         # model.after_task(task_i, inc_dataset, None, None)
 
-
         ypred, ytrue = model.eval_task(test_loader)
-
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=model._increments, n_classes=model._n_classes)
         test_results['results'].append(test_acc_stats)
         ex.logger.info(f"task{task_i} test top1acc:{test_acc_stats['top1']}")
 
     avg_test_acc = results_utils.compute_avg_inc_acc(test_results['results'])
     ex.logger.info(f"Test Average Incremental Accuracy: {avg_test_acc}")
+
 
 if __name__ == "__main__":
     # ex.add_config('./codes/base/configs/default.yaml')
