@@ -92,16 +92,6 @@ class IncModel(IncrementalLearner):
     def eval(self):
         self._parallel_network.eval()
 
-    # def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, tax_tree):
-    #     self._task = task
-    #     self._task_size = increment
-    #     self._increments.append(self._task_size)
-    #     self._total_n_classes = total_n_classes
-    #     self._n_train_data = n_train_data
-    #     self._n_test_data = n_test_data
-    #     self._n_tasks = n_tasks
-    #     self._current_tax_tree = tax_tree
-
     def set_task_info(self, task, task_size, tax_tree, n_train_data, n_test_data, n_tasks):
         self._task = task
         self._task_size = task_size
@@ -130,7 +120,6 @@ class IncModel(IncrementalLearner):
         print(self._n_classes)
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
-
         self._memory_size.update_memory_per_cls(self._network, self._n_classes-1, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
@@ -396,8 +385,7 @@ class IncModel(IncrementalLearner):
 
         if self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
-
-            self.build_exemplars(inc_dataset, self._coreset_strategy, x_train, y_train_parent_level, curr_new_y_train_label)
+            self.build_exemplars(inc_dataset, self._coreset_strategy)
 
             if self._cfg["save_mem"]:
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
@@ -434,16 +422,10 @@ class IncModel(IncrementalLearner):
         with torch.no_grad():
             for i, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-
                 # _preds = self._parallel_network(inputs)['logit']
-
-
-
                 _output = self._parallel_network(inputs)['output']
-
                 max_z = torch.max(_output, dim=1)[0]
                 _preds = torch.eq(_output, max_z.view(-1, 1))
-
 
                 if self._cfg["postprocessor"]["enable"] and self._task > 0:
                     _preds = self._network.postprocessor.post_process(_preds, self._task_size)
@@ -502,7 +484,7 @@ class IncModel(IncrementalLearner):
                                                 share_memory=self._inc_dataset.shared_data_inc,
                                                 metric='None')
 
-    def build_exemplars(self, inc_dataset, coreset_strategy, x_train, y_train_parent_level, curr_new_y_train_label):
+    def build_exemplars(self, inc_dataset, coreset_strategy):
         save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)
@@ -525,29 +507,18 @@ class IncModel(IncrementalLearner):
             )
         elif coreset_strategy == "iCaRL":
             from inclearn.tools.memory import herding
-            data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None else self._inc_dataset.data_inc
-            # self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
-            #     self._n_classes,
-            #     self._task_size,
-            #     self._parallel_network,
-            #     self._herding_matrix,
-            #     inc_dataset,
-            #     data_inc,
-            #     self._memory_per_class,
-            #     self._ex.logger,
-            # )
+            data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None \
+                else self._inc_dataset.data_inc
+
             self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
                 self._n_classes,
                 self._task_size,
                 self._parallel_network,
                 self._herding_matrix,
                 inc_dataset,
-                x_train,
-                y_train_parent_level,
                 data_inc,
                 self._memory_per_class,
                 self._ex.logger,
-                curr_new_y_train_label
             )
         else:
             raise ValueError()

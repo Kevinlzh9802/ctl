@@ -366,7 +366,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.model_pivot = model_pivot
 
     def _update_tree_info(self):
-        # used_nodes, node_labels, leaf_id = setup_tree(self.current_task, self.current_tax_tree)
         used_nodes, leaf_id, node_labels = self.current_tax_tree.prepro()
         self.used_nodes = used_nodes
         self.node_labels = node_labels

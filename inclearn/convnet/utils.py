@@ -77,7 +77,6 @@ def finetune_last_layer(
 
 
 def extract_features(model, loader):
-
     targets, features = [], []
     model.eval()
     with torch.no_grad():
@@ -93,9 +92,6 @@ def extract_features(model, loader):
         return np.array(features), np.array(targets)
     else:
         return np.concatenate(features), np.concatenate(targets)
-
-
-
 
 
 def calc_class_mean(network, loader, class_idx, metric):

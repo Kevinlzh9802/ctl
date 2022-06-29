@@ -91,13 +91,11 @@ def _train(cfg, _run, ex, tensorboard):
 
     results = results_utils.get_template_results(cfg)
 
-    for task_i in range(inc_dataset.n_tasks):
+    for ti in range(inc_dataset.n_tasks):
         task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label = inc_dataset.new_task()
-
+        task_i = task_info["task"]
         model.set_task_info(
-            task=task_info["task"],
-            # total_n_classes=task_info["max_class"],
-            # increment=task_info["increment"],
+            task=task_i,
             task_size=task_info["task_size"],
             tax_tree=task_info["partial_tree"],
             n_train_data=task_info["n_train_data"],
