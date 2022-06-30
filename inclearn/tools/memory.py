@@ -113,7 +113,8 @@ def random_selection(n_classes, task_size, network, logger, inc_dataset, memory_
 def herding(n_classes, task_size, network, herding_matrix, inc_dataset, shared_data_inc, memory_per_class, logger):
     """Herding matrix: list
     """
-    delete_idx = np.where(inc_dataset.targets_inc == int((20-n_classes)/4)-1)
+    # delete_idx = np.where(inc_dataset.targets_inc == int((20-n_classes)/4)-1)
+    delete_idx = np.where(inc_dataset.targets_inc == -1000)
     final_inputs = np.delete(inc_dataset.data_inc, delete_idx, 0)
     final_targets = np.delete(inc_dataset.targets_inc, delete_idx, 0)
 
@@ -138,6 +139,7 @@ def herding(n_classes, task_size, network, herding_matrix, inc_dataset, shared_d
 
         alph = select_examplars(features, memory_per_class[0])[0]
         alph = (alph > 0) * (alph < memory_per_class[0] + 1) * 1.0
+        tmp_data_memory.append(inputs[np.where(alph == 1)[0]])
         tmp_targets_memory.append(targets[np.where(alph == 1)[0]])
 
     tmp_data_memory = np.concatenate(tmp_data_memory)

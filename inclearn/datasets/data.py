@@ -68,19 +68,13 @@ class IncrementalDataset:
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
         # memory Mt
-        self.data_memory = None
-        self.targets_memory = None
+        self.data_memory, self.targets_memory = None, None
         # Incoming data D_t
-        self.data_cur = None
-        self.targets_cur = None
+        self.data_cur, self.targets_cur = None, None
         # Available data \tilde{D}_t = D_t \cup M_t
-        self.data_inc = None  # Cur task data + memory
-        self.targets_inc = None
+        self.data_inc, self.targets_inc = None, None  # Cur task data + memory
         # Available data stored in cpu memory.
-        self.shared_data_inc = None
-        self.shared_test_data = None
-
-        self.y_range = []
+        self.shared_data_inc, self.shared_test_data = None, None
 
     @property
     def n_tasks(self):
@@ -94,7 +88,7 @@ class IncrementalDataset:
         self.data_cur, self.targets_cur = x_train, y_train
 
         # TODO: delete some memory based on training data
-        self._update_memory_for_new_task(y_train)
+        # self._update_memory_for_new_task(y_train)
         if self.data_memory is not None:
             print("Set memory of size: {}.".format(len(self.data_memory)))
             if len(self.data_memory) != 0:
@@ -128,8 +122,7 @@ class IncrementalDataset:
         return task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label
 
     def _update_memory_for_new_task(self, labels):
-        for x in labels:
-            parent_labels = [self.taxonomy_tree.get(x).parent.label_index for x in labels]
+        parent_labels = [self.taxonomy_tree.nodes.get(x).parent.label_index for x in labels]
         self.data_memory = np.delete(self.data_memory)
 
     def _get_cur_data_for_all_children(self):
@@ -252,7 +245,6 @@ class IncrementalDataset:
     @staticmethod
     def _split_per_class(x, y, validation_split=0.0):
         """Splits train data for a subset of validation data.
-
         Split is done so that each class has a much data.
         """
         shuffled_indexes = np.random.permutation(x.shape[0])

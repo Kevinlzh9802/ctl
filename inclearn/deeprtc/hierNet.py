@@ -33,8 +33,8 @@ class HierNet(nn.Module):
 
             outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
 
-
             # other internal nodes
+            # usually the hierNet is constructed by used_nodes, which only contains internal nodes
             for i in range(1, self.num_nodes):
                 cw = torch.from_numpy(self.nodes[i].codeword).float().to(nout[i].device)
                 cond = self.nodes[i].cond

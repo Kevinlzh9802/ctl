@@ -181,10 +181,12 @@ class Tree:
             parent = node.parent
             if parent:  # if parent is not None
                 idx = name2Id.get(parent)
+                # records the node_id of parent and child_id of child
                 node.set_cond(idx)
 
     def get_codeword(self, node_name=None):
         # concatenate all codewords of the parent node
+        # in column, i.e. each codeword of a child is in a row
         node = self.nodes.get(node_name, None)
         if not node:
             raise ValueError('{} is not in the tree'.format(node_name))

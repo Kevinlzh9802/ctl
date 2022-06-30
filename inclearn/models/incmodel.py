@@ -276,7 +276,6 @@ class IncModel(IncrementalLearner):
         leaf_id_keys = self._network.leaf_id.keys()
 
         for idx in range(inputs.size(0)):
-
             index = targets.cpu().numpy()[idx]
             if index in leaf_id_keys:
                 index = self._network.leaf_id[index]
