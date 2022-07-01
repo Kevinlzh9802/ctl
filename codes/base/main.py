@@ -13,7 +13,6 @@ from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
 import torch
 
-from torchinfo import summary
 from sacred import Experiment
 
 repo_name = 'ctl'
@@ -104,7 +103,6 @@ def _train(cfg, _run, ex, tensorboard):
         #     inc_dataset.shared_data_inc = train_loader.dataset.share_memory
         # else:
         print(f'task {task_i}')
-        summary(model._network, (10, 3, 32, 32))
         model.train_task()
         model.after_task(task_i, inc_dataset)
 
