@@ -101,8 +101,8 @@ class IncrementalDataset:
         self.data_test_inc, self.targets_test_inc = x_test, y_test
 
         train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
-        val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
-        test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
+        val_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
+        test_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
 
         cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
         task_info = {
@@ -322,7 +322,7 @@ class IncrementalDataset:
         data = np.concatenate(data)
         targets = np.concatenate(targets)
 
-        return data, targets, self._get_loader(data, targets, shuffle=False, mode=mode)
+        return data, targets, self._get_loader(data, targets, shuffle=True, mode=mode)
 
     def _get_loader(self, x, y, share_memory=None, shuffle=True, mode="train", batch_size=None, resample=None):
         if "balanced" in mode:
@@ -357,7 +357,7 @@ class IncrementalDataset:
                                        share_memory_=share_memory,
                                        dataset_name=self.dataset_name),
                           batch_size=batch_size,
-                          shuffle=False,
+                          shuffle=True,
                           num_workers=self._workers,
                           sampler=sampler,
                           pin_memory=False)
@@ -393,7 +393,7 @@ class IncrementalDataset:
         data = np.concatenate(data)
         targets = np.concatenate(targets)
 
-        return data, targets, self._get_loader(data, targets, shuffle=False, mode=mode)
+        return data, targets, self._get_loader(data, targets, shuffle=True, mode=mode)
 
 
 class DummyDataset(torch.utils.data.Dataset):
