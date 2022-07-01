@@ -99,6 +99,8 @@ class IncModel(IncrementalLearner):
                     os.mkdir(save_path)
         self.curr_acc_list = None
         self.acc_detail_path = cfg["acc_detail_path"]
+        if not os.path.exists(self.acc_detail_path):
+            os.mkdir(self.acc_detail_path)
 
     def eval(self):
         self._parallel_network.eval()
