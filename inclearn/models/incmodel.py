@@ -143,7 +143,6 @@ class IncModel(IncrementalLearner):
         self._network.current_tax_tree = self._current_tax_tree
         self._network.add_classes(self._task_size)
         self._network.task_size = self._task_size
-        self._network.task_size = self._task_size
         self._network.current_task = self._task
         self.set_optimizer()
 
@@ -186,13 +185,6 @@ class IncModel(IncrementalLearner):
         self._ex.logger.info(f"nb {len(self._train_loader.dataset)}")
 
         topk = 5 if self._n_classes > 5 else self._task_size
-        accu = ClassErrorMeter(accuracy=True, topk=[1, topk])
-        train_new_accu = ClassErrorMeter(accuracy=True)
-        train_old_accu = ClassErrorMeter(accuracy=True)
-
-        # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "Initial trainset")
-        # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-        #                            self._increments, "Initial trainset")
 
         self._optimizer.zero_grad()
         self._optimizer.step()
@@ -256,14 +248,11 @@ class IncModel(IncrementalLearner):
 
             if self._val_per_n_epoch > 0 and epoch % self._val_per_n_epoch == 0:
                 self.validate(self._val_loader)
+            acc_list.append(acc)
 
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = self._train_loader.dataset.share_memory
         self.curr_acc_list = acc_list
-
-        # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
-        # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
-        #                            self._increments, "Trainset")
         # self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
     def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc):
@@ -364,15 +353,16 @@ class IncModel(IncrementalLearner):
 
         return loss, aux_loss
 
-    def _after_task(self, taski, inc_dataset):
+    def _after_task(self):
+        inc_dataset = self._inc_dataset
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
-        if self._cfg["save_ckpt"] and taski >= self._cfg["start_task"]:
+        if self._cfg["save_ckpt"] and self._task >= self._cfg["start_task"]:
             save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(save_path, self._task))
 
-        if self._cfg["decouple"]['enable'] and taski > 0:
+        if self._cfg["decouple"]['enable'] and self._task > 0:
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:

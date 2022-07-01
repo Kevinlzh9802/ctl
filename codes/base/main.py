@@ -78,20 +78,8 @@ def _train(cfg, _run, ex, tensorboard):
     results = results_utils.get_template_results(cfg)
 
     for ti in range(inc_dataset.n_tasks):
-        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task()
-        # task_i = task_info["task"]
-        # model.set_task_info(
-        #     task=task_i,
-        #     task_size=task_info["task_size"],
-        #     tax_tree=task_info["partial_tree"],
-        #     n_train_data=task_info["n_train_data"],
-        #     n_test_data=task_info["n_test_data"],
-        #     n_tasks=inc_dataset.n_tasks,
-        # )
         model.before_task()
         task_i = model._task
-        # if 'min_class' in task_info:
-        #     ex.logger.info("Train on {}->{}.".format(task_info["min_class"], task_info["max_class"]))
 
         # Pretraining at step0 if needed
         # if task_i == 0 and cfg["start_class"] > 0:
@@ -104,7 +92,7 @@ def _train(cfg, _run, ex, tensorboard):
         # else:
         print(f'task {task_i}')
         model.train_task()
-        model.after_task(task_i, inc_dataset)
+        model.after_task()
 
         # ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
         ypred, ytrue = model.eval_task(model._test_loader)

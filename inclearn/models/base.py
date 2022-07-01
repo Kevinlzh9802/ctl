@@ -38,10 +38,10 @@ class IncrementalLearner(abc.ABC):
 
         return train_dataset
 
-    def after_task(self, taski, inc_dataset):
+    def after_task(self):
         LOGGER.info("after task")
         self.eval()
-        self._after_task(taski, inc_dataset)
+        self._after_task()
 
     def eval_task(self, data_loader):
         LOGGER.info("eval task")
@@ -63,7 +63,7 @@ class IncrementalLearner(abc.ABC):
     def _train_task(self):
         raise NotImplementedError
 
-    def _after_task(self, data_loader):
+    def _after_task(self):
         pass
 
     def _eval_task(self, data_loader):
