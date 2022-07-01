@@ -119,6 +119,7 @@ def _train(cfg, _run, ex, tensorboard):
         ex.logger.info(f"top5:{acc_stats['top5']}")
 
         results["results"].append(acc_stats)
+        model.save_acc_detail_info()
 
     top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])
 

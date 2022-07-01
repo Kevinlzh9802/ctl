@@ -31,7 +31,6 @@ save_ckpt: True
 save_mem: True
 load_mem: False
 
-
 #Optimization;Training related
 task_max: 2
 lr_min: 0.00005
@@ -49,6 +48,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
+acc_detail_path: 'results/acc_detail_path/'
 
 postprocessor:
   enable: False

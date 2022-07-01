@@ -1,5 +1,5 @@
 import numpy as np
-import time
+import pandas as pd
 import os
 from copy import deepcopy
 from scipy.spatial.distance import cdist
@@ -97,6 +97,8 @@ class IncModel(IncrementalLearner):
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
                 if not os.path.exists(save_path):
                     os.mkdir(save_path)
+        self.curr_acc_list = None
+        self.acc_detail_path = cfg["acc_detail_path"]
 
     def eval(self):
         self._parallel_network.eval()
@@ -193,11 +195,10 @@ class IncModel(IncrementalLearner):
         self._optimizer.zero_grad()
         self._optimizer.step()
 
+        acc_list = []
+
         for epoch in range(self._n_epochs):
             _loss, _loss_aux = 0.0, 0.0
-            accu.reset()
-            train_new_accu.reset()
-            train_old_accu.reset()
 
             nlosses = averageMeter()
             stslosses = averageMeter()
@@ -212,14 +213,9 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
             for i, data in enumerate(self._train_loader, start=1):
                 inputs, targets = data
-
                 self.train()
                 self._optimizer.zero_grad()
-                # old_classes = targets < (self._n_classes - self._task_size)
-                # new_classes = targets >= (self._n_classes - self._task_size)
-                nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc,
-                                                               accu=accu, new_accu=train_new_accu,
-                                                               old_accu=train_old_accu)
+                nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc)
 
                 # if self._cfg["use_aux_cls"] and self._task > 0:
                 #     loss = loss_ce + loss_aux
@@ -247,17 +243,13 @@ class IncModel(IncrementalLearner):
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
-                "Task {}/{}, Epoch {}/{} => Clf loss: {} Aux loss: {}, Train Accu: {}, Train@5 Acc: {}, old acc:{}".
-                format(
+                "Task {}/{}, Epoch {}/{} => Clf Avg Loss: {}, Avg Acc: {}".format(
                     self._task + 1,
                     self._n_tasks,
                     epoch + 1,
                     self._n_epochs,
                     round(_loss / i, 3),
-                    round(_loss_aux / i, 3),
-                    round(accu.value()[0], 3),
-                    round(accu.value()[1], 3),
-                    round(train_old_accu.value()[0], 3),
+                    round(acc.avg, 3),
                 ))
 
             if self._val_per_n_epoch > 0 and epoch % self._val_per_n_epoch == 0:
@@ -265,14 +257,14 @@ class IncModel(IncrementalLearner):
 
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = self._train_loader.dataset.share_memory
+        self.curr_acc_list = acc_list
 
         # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "After training")
         # utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
         #                            self._increments, "Trainset")
-        self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
+        # self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
-    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, accu=None,
-                      new_accu=None, old_accu=None):
+    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
         outputs = self._parallel_network(inputs)
@@ -323,19 +315,35 @@ class IncModel(IncrementalLearner):
         # measure accuracy
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-        # iscorrect = torch.gather(preds, 1, targets.view(-1, 1)).flatten().float()
+
         iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
         acc.update(torch.mean(iscorrect).item(), inputs.size(0))
 
-        # if accu is not None:
-        #     accu.add(outputs['logit'], targets)
-            # accu.add(logits.detach(), targets.cpu().numpy())
-        # if new_accu is not None:
-        #     new_accu.add(logits[new_classes].detach(), targets[new_classes].cpu().numpy())
-        # if old_accu is not None:
-        #     old_accu.add(logits[old_classes].detach(), targets[old_classes].cpu().numpy())
-        # return self._compute_loss(inputs, targets, outputs, old_classes, new_classes)
+        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
+                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+
+        acc.update(torch.mean(iscorrect).item(), inputs.size(0))
+        acc.update_detail(acc_update_info)
         return nloss, stsloss, loss, acc
+
+    def update_acc_detail(self, targets, pred, multi_pred_list):
+        res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in targets}
+
+        for i in range(len(targets)):
+            gt_label = targets[i]
+            pred_iscorrect = pred[i]
+            multi_pred = multi_pred_list[i]
+
+            res_dict[gt_label]['count'] += 1
+            res_dict[gt_label]['sum'] += pred_iscorrect
+            res_dict[gt_label]['multi_num'] += np.array(multi_pred)
+
+        for i in res_dict:
+            if res_dict[i]['count'] != 0:
+                res_dict[i]['avg'] = round(res_dict[i]['sum'] / res_dict[i]['count'], 3)
+                res_dict[i]['multi_rate'] = round(res_dict[i]['multi_num'] / res_dict[i]['count'], 3)
+
+        return res_dict
 
     def _compute_loss(self, inputs, targets, outputs, old_classes, new_classes):
         loss = F.cross_entropy(outputs['logit'], targets)
@@ -540,3 +548,33 @@ class IncModel(IncrementalLearner):
         ypred, ytrue = self._eval_task(data_loader)
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=self._increments, n_classes=self._n_classes)
         self._ex.logger.info(f"test top1acc:{test_acc_stats['top1']}")
+
+    def save_acc_detail_info(self):
+        class_index = []
+        sum_list = []
+        count_list = []
+        multi_num_list = []
+        avg_acc_list = []
+        multi_rate_list = []
+
+        for epoch_i in range(len(self.curr_acc_list)):
+            class_index.append(f'epoch_{epoch_i}')
+            sum_list.append('')
+            count_list.append('')
+            multi_num_list.append('')
+            avg_acc_list.append('')
+            multi_rate_list.append('')
+
+            acc_epoch_i_info = self.curr_acc_list[epoch_i].info_detail
+
+            for i in sorted(acc_epoch_i_info.keys()):
+                class_index.append(i)
+                sum_list.append(acc_epoch_i_info[i]['sum'])
+                count_list.append(acc_epoch_i_info[i]['count'])
+                multi_num_list.append(acc_epoch_i_info[i]['multi_num'])
+                avg_acc_list.append(acc_epoch_i_info[i]['avg'])
+                multi_rate_list.append(acc_epoch_i_info[i]['multi_rate'])
+
+        df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
+                           'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list})
+        df.to_csv(f'{self.acc_detail_path}/task_{self._task}.csv')
