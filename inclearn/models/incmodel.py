@@ -302,7 +302,7 @@ class IncModel(IncrementalLearner):
 
         # compute stochastic tree sampling loss
         leaf_id_index_list = []
-        for target_i in list(np.array(targets)):
+        for target_i in list(np.array(targets.cpu())):
             if target_i in leaf_id_keys:
                 leaf_id_index_list.append(self._network.leaf_id[target_i])
             # else:
