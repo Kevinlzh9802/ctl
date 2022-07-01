@@ -13,9 +13,6 @@ from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
 import torch
 
-from inclearn.tools import factory, results_utils, utils
-from inclearn.learn.pretrain import pretrain
-from inclearn.tools.metrics import IncConfusionMeter
 from torchinfo import summary
 from sacred import Experiment
 
@@ -23,6 +20,10 @@ repo_name = 'ctl'
 base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name)]
 sys.path.append(base_dir)
 ex = Experiment(base_dir=base_dir, save_git_info=False)
+
+from inclearn.tools import factory, results_utils, utils
+from inclearn.learn.pretrain import pretrain
+from inclearn.tools.metrics import IncConfusionMeter
 
 
 def initialization(config, seed, mode, exp_id):
