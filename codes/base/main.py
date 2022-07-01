@@ -92,7 +92,7 @@ def _train(cfg, _run, ex, tensorboard):
     results = results_utils.get_template_results(cfg)
 
     for ti in range(inc_dataset.n_tasks):
-        task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label = inc_dataset.new_task()
+        task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task()
         task_i = task_info["task"]
         model.set_task_info(
             task=task_i,
@@ -120,7 +120,7 @@ def _train(cfg, _run, ex, tensorboard):
             summary(model._network, (10, 3, 32, 32))
             model.train_task(train_loader, val_loader)
         # model.after_task(task_i, inc_dataset)
-        model.after_task(task_i, inc_dataset, x_train, y_train, curr_new_y_train_label)
+        model.after_task(task_i, inc_dataset)
 
         # ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
         ypred, ytrue = model.eval_task(test_loader)

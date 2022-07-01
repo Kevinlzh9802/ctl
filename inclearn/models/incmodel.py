@@ -341,7 +341,7 @@ class IncModel(IncrementalLearner):
 
         return loss, aux_loss
 
-    def _after_task(self, taski, inc_dataset, x_train, y_train_parent_level, curr_new_y_train_label):
+    def _after_task(self, taski, inc_dataset):
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
@@ -509,16 +509,16 @@ class IncModel(IncrementalLearner):
             data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None \
                 else self._inc_dataset.data_inc
 
-            self._inc_dataset.data_memory, self._inc_dataset.targets_memory, self._herding_matrix = herding(
+            self._inc_dataset.memory_dict = herding(
                 self._n_classes,
-                self._task_size,
                 self._parallel_network,
-                self._herding_matrix,
-                inc_dataset,
+                self._inc_dataset,
                 data_inc,
                 self._memory_per_class,
                 self._ex.logger,
+                self._device
             )
+            self._inc_dataset.update_memory_array()
         else:
             raise ValueError()
 

@@ -110,39 +110,43 @@ def random_selection(n_classes, task_size, network, logger, inc_dataset, memory_
     return tmp_data_memory, tmp_targets_memory
 
 
-def herding(n_classes, task_size, network, herding_matrix, inc_dataset, shared_data_inc, memory_per_class, logger):
+def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, logger, device):
     """Herding matrix: list
     """
-    # delete_idx = np.where(inc_dataset.targets_inc == int((20-n_classes)/4)-1)
-    delete_idx = np.where(inc_dataset.targets_inc == -1000)
-    final_inputs = np.delete(inc_dataset.data_inc, delete_idx, 0)
-    final_targets = np.delete(inc_dataset.targets_inc, delete_idx, 0)
 
     logger.info("Building & updating memory.(iCaRL)")
-    tmp_data_memory, tmp_targets_memory, tmp_data_memory_ori_label = [], [], []
+    tmp_memory_dict = {}
+    x_train = inc_dataset.data_cur
+    y_train = inc_dataset.targets_cur
 
-    for class_idx in np.intersect1d(np.unique(inc_dataset.targets_cur), np.unique(final_targets)):
-        sel_ind = np.array(final_targets == class_idx)
-        inputs = final_inputs[sel_ind]
-        targets = final_targets[sel_ind]
-        if len(shared_data_inc) > len(final_targets):
-            share_memory = [shared_data_inc[i] for i in np.where(sel_ind)[0].tolist()]
-        else:
-            share_memory = []
-            for i in np.where(sel_ind)[0].tolist():
-                if i < len(shared_data_inc):
-                    share_memory.append(shared_data_inc[i])
+    if inc_dataset.memory_dict:
+        memory_dict_ori = inc_dataset.memory_dict.copy()
+        for i in memory_dict_ori:
+            # if i != int((20 - n_classes) / 4) - 1:
+            tmp_memory_dict[i] = memory_dict_ori[i][:memory_per_class[0]]
+    else:
+        memory_dict_ori = {}
 
-        loader = inc_dataset._get_loader(inputs, targets, share_memory=share_memory, batch_size=1,
-                                         shuffle=False, mode="test")
-        features, _ = extract_features(network, loader)  # order
+    for class_i in set(y_train):
+        if class_i not in memory_dict_ori.keys():
+            inputs = x_train[y_train == class_i]
+            if len(shared_data_inc) > len(y_train):
+                share_memory = [shared_data_inc[i] for i in np.where(y_train == class_i)[0].tolist()]
+            else:
+                share_memory = []
+                for i in np.where(y_train == class_i)[0].tolist():
+                    if i < len(shared_data_inc):
+                        share_memory.append(shared_data_inc[i])
 
-        alph = select_examplars(features, memory_per_class[0])[0]
-        alph = (alph > 0) * (alph < memory_per_class[0] + 1) * 1.0
-        tmp_data_memory.append(inputs[np.where(alph == 1)[0]])
-        tmp_targets_memory.append(targets[np.where(alph == 1)[0]])
+            bs = 128 if str(device) == 'cuda:0' else 1
+            loader = inc_dataset._get_loader(inputs, [class_i] * inputs.shape[0], share_memory=share_memory,
+                                             batch_size=bs, shuffle=False, mode="test")
 
-    tmp_data_memory = np.concatenate(tmp_data_memory)
-    tmp_targets_memory = np.concatenate(tmp_targets_memory)
+            features, _ = extract_features(network, loader)  # order
 
-    return tmp_data_memory, tmp_targets_memory, herding_matrix
+            alph = select_examplars(features, memory_per_class[0])[0]
+            alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
+            alph_ranked.sort(key=lambda x: x[1])
+            tmp_memory_dict[class_i] = inputs[[i[0] for i in alph_ranked]]
+
+    return tmp_memory_dict

@@ -7,13 +7,11 @@ from PIL import Image
 import multiprocessing as mp
 from multiprocessing import Pool
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import random
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchvision import datasets, transforms
-from torchvision.datasets.folder import pil_loader
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
@@ -69,10 +67,12 @@ class IncrementalDataset:
 
         # memory Mt
         self.data_memory, self.targets_memory = None, None
+        self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
         # Available data \tilde{D}_t = D_t \cup M_t
         self.data_inc, self.targets_inc = None, None  # Cur task data + memory
+        self.data_test_inc, self.targets_test_inc = None, None
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
 
@@ -87,9 +87,11 @@ class IncrementalDataset:
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
 
-        # TODO: delete some memory based on training data
-        # self._update_memory_for_new_task(y_train)
+        # update memory
+        if self._current_task > 0:
+            self._update_memory_for_new_task(self.curriculum[self._current_task])
         if self.data_memory is not None:
+            # TODO: fix this bug!
             print("Set memory of size: {}.".format(len(self.data_memory)))
             if len(self.data_memory) != 0:
                 self.data_inc = np.concatenate((self.data_cur, self.data_memory))
@@ -98,17 +100,13 @@ class IncrementalDataset:
                 # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
         else:
             self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
-        curr_new_y_train_label = list(set(y_train))
-
         self.data_test_inc, self.targets_test_inc = x_test, y_test
 
         train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
-
         val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
-
         task_info = {
             "task": self._current_task,
             "task_size": len(self.curriculum[self._current_task]),
@@ -119,11 +117,24 @@ class IncrementalDataset:
         }
 
         self._current_task += 1
-        return task_info, train_loader, val_loader, test_loader, x_train, y_train, curr_new_y_train_label
+        return task_info, train_loader, val_loader, test_loader, x_train, y_train
 
     def _update_memory_for_new_task(self, labels):
-        parent_labels = [self.taxonomy_tree.nodes.get(x).parent.label_index for x in labels]
-        self.data_memory = np.delete(self.data_memory)
+        # delete the memory data with parent labels that have been replaced by finer labels
+        parent_names = set([self.taxonomy_tree.nodes[x].parent for x in labels])
+        parent_labels = set([self.taxonomy_tree.nodes[x].label_index for x in parent_names])
+        for lb in parent_labels:
+            self.memory_dict.pop(lb, -1)
+        self.update_memory_array()
+
+    def update_memory_array(self):
+        data_memory = []
+        target_memory = []
+        for i in self.memory_dict:
+            data_memory += [self.memory_dict[i]]
+            target_memory += [i] * self.memory_dict[i].shape[0]
+        self.data_memory = np.array(data_memory)
+        self.targets_memory = np.array(target_memory)
 
     def _get_cur_data_for_all_children(self):
         name_coarse = self.curriculum[self._current_task]
