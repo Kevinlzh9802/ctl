@@ -52,8 +52,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
         self.n_classes = 0
         self.ntask = 0
-        # self.device = device
-        self.device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" , index = 0)
+        self.device = device
+        # self.device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" , index = 0)
 
         if cfg['postprocessor']['enable']:
             if cfg['postprocessor']['type'].lower() == "bic":

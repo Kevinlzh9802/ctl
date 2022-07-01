@@ -50,23 +50,11 @@ def get_data(cfg, trial_i):
         batch_size=cfg["batch_size"],
         # workers=cfg["workers"],
         workers=0,
+        device=cfg["device"],
         validation_split=cfg["validation"],
         resampling=cfg["resampling"],
         increment=cfg["increment"],
         data_folder=cfg["data_folder"],
-
-    # return data.IncrementalTaxonomyDataset(
-    #     trial_i=trial_i,
-    #     dataset_name=cfg["dataset"],
-    #     random_order=cfg["random_classes"],
-    #     shuffle=True,
-    #     batch_size=cfg["batch_size"],
-    #     workers=cfg["workers"],
-    #     validation_split=cfg["validation"],
-    #     resampling=cfg["resampling"],
-    #     increment=cfg["increment"],
-    #     data_folder=cfg["data_folder"],
-    #     start_class=cfg["start_class"],
     )
 
 

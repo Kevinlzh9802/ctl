@@ -5,12 +5,10 @@ import os.path as osp
 from copy import deepcopy
 from PIL import Image
 import multiprocessing as mp
-from multiprocessing import Pool
 import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchvision import datasets, transforms
 
 from .dataset import get_dataset
@@ -24,8 +22,9 @@ def get_data_folder(data_folder, dataset_name):
 
 
 class IncrementalDataset:
-    def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, batch_size=128, seed=1,
-                 increment=10, validation_split=0.0, resampling=False, data_folder="./data", start_class=0):
+    def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, device=None,
+                 batch_size=128, seed=1, increment=10, validation_split=0.0, resampling=False, data_folder="./data",
+                 start_class=0):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -49,6 +48,7 @@ class IncrementalDataset:
 
         self._seed = seed
         self._workers = workers
+        self._device = device
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
@@ -59,13 +59,12 @@ class IncrementalDataset:
         self.transform_type = dataset_class.transform_type
 
         # Taxonomy setting
-        # Current states for Incremental Learning Stage.
         self.curriculum = None
         self._setup_curriculum(dataset_class)
         self._current_task = 0
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
-        # memory Mt
+        # Memory Mt
         self.data_memory, self.targets_memory = None, None
         self.memory_dict = {}
         # Incoming data D_t
@@ -91,7 +90,6 @@ class IncrementalDataset:
         if self._current_task > 0:
             self._update_memory_for_new_task(self.curriculum[self._current_task])
         if self.data_memory is not None:
-            # TODO: fix this bug!
             print("Set memory of size: {}.".format(len(self.data_memory)))
             if len(self.data_memory) != 0:
                 self.data_inc = np.concatenate((self.data_cur, self.data_memory))
@@ -117,7 +115,7 @@ class IncrementalDataset:
         }
 
         self._current_task += 1
-        return task_info, train_loader, val_loader, test_loader, x_train, y_train
+        return task_info, train_loader, val_loader, test_loader
 
     def _update_memory_for_new_task(self, labels):
         # delete the memory data with parent labels that have been replaced by finer labels
@@ -133,7 +131,7 @@ class IncrementalDataset:
         for i in self.memory_dict:
             data_memory += [self.memory_dict[i]]
             target_memory += [i] * self.memory_dict[i].shape[0]
-        self.data_memory = np.array(data_memory)
+        self.data_memory = np.concatenate(data_memory)
         self.targets_memory = np.array(target_memory)
 
     def _get_cur_data_for_all_children(self):
@@ -164,14 +162,17 @@ class IncrementalDataset:
                 # position 1: leaf node depth; position 2: parent node depth
                 # if coarse node, select by a fraction; if leaf node, select all remaining
                 data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2])
-                if data_frac > 0:
-                    # sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
-                    # sel_ind = random.sample(list(idx_available), 1)
-                    sel_ind = random.sample(list(idx_available), 2)
+
+                if str(self._device) == 'cuda:0':
+                    if data_frac > 0:
+                        sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                    else:
+                        sel_ind = idx_available
                 else:
-                    # sel_ind = idx_available
-                    # sel_ind = random.sample(list(idx_available), 1)
-                    sel_ind = random.sample(list(idx_available), 2)
+                    if data_frac > 0:
+                        sel_ind = random.sample(list(idx_available), 2)
+                    else:
+                        sel_ind = random.sample(list(idx_available), 2)
 
                 x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
                 y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
@@ -180,12 +181,12 @@ class IncrementalDataset:
             for lf in label_map:
                 lfx_all = data_dict[lf]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
-                # x_selected = np.concatenate((x_selected, lfx_all))
-                # y_selected = np.concatenate((y_selected, lfy_all))
-                # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
-                # x_selected = np.concatenate((x_selected, np.array(lfx_all[0,:]).reshape((1, 32, 32, 3))))
-                x_selected = np.concatenate((x_selected, np.array(lfx_all[0:2]).reshape((2, 32, 32, 3))))
-                y_selected = np.concatenate((y_selected, np.array(lfy_all[0:2])))
+                if str(self._device) == 'cuda:0':
+                    x_selected = np.concatenate((x_selected, lfx_all))
+                    y_selected = np.concatenate((y_selected, lfy_all))
+                else:
+                    x_selected = np.concatenate((x_selected, np.array(lfx_all[0:2]).reshape((2, 32, 32, 3))))
+                    y_selected = np.concatenate((y_selected, np.array(lfy_all[0:2])))
         return x_selected, y_selected
 
     @staticmethod
