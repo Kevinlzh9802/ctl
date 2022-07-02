@@ -50,6 +50,7 @@ epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
+acc_detail_path: 'results/acc_detail_path/'
 
 postprocessor:
   enable: False

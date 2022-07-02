@@ -135,24 +135,27 @@ class IncrementalDataset:
         self.targets_memory = np.array(target_memory)
 
     def _get_cur_data_for_all_children(self):
-        name_coarse = self.curriculum[self._current_task]
-        name_map_fine = []
+        label_map_train = self._gen_label_map(self.curriculum[self._current_task])
+        label_map_test = self._gen_label_map(list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten()))
+        x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, train=True)
+        x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, train=False)
+        return x_train, y_train, x_test, y_test
+
+    def _gen_label_map(self, name_coarse):
         label_map = {}
         for nc in name_coarse:
             lc = self.taxonomy_tree.nodes.get(nc).label_index
             name_map_single = self.taxonomy_tree.get_finest(nc)
-            name_map_fine += name_map_single
+            # name_map_fine += name_map_single
             for nf in name_map_single:
                 lf = self.taxonomy_tree.nodes.get(nf).label_index
                 # position 0: coarse label; position 1: leaf node depth; position 2: parent node depth
                 label_map[lf] = [lc, self.taxonomy_tree.nodes.get(nf).depth, self.taxonomy_tree.nodes.get(nc).depth]
-        x_train, y_train = self._select_from_idx(self.dict_train, label_map, train=True)
-        x_test, y_test = self._select_from_idx(self.dict_test, label_map, train=False)
-        return x_train, y_train, x_test, y_test
+        return label_map
 
     def _select_from_idx(self, data_dict, label_map, train=True):
-        x_selected = np.empty([0, 32, 32, 3], dtype=np.int8)
-        y_selected = np.empty([0], dtype=np.int8)
+        x_selected = np.empty([0, 32, 32, 3], dtype=np.uint8)
+        y_selected = np.empty([0], dtype=np.uint8)
         if train:
             for lf in label_map:
                 lfx_all = data_dict[lf]
@@ -179,14 +182,17 @@ class IncrementalDataset:
                 self.dict_train_used[lf][sel_ind] = 1
         else:
             for lf in label_map:
-                lfx_all = data_dict[lf]
+                if lf == label_map[lf][0]:
+                    lfx_all = data_dict[lf][:50]
+                else:
+                    lfx_all = data_dict[lf][:10]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
                 if str(self._device) == 'cuda:0':
                     x_selected = np.concatenate((x_selected, lfx_all))
                     y_selected = np.concatenate((y_selected, lfy_all))
                 else:
-                    x_selected = np.concatenate((x_selected, np.array(lfx_all[0:2]).reshape((2, 32, 32, 3))))
-                    y_selected = np.concatenate((y_selected, np.array(lfy_all[0:2])))
+                    x_selected = np.concatenate((x_selected, lfx_all))
+                    y_selected = np.concatenate((y_selected, lfy_all))
         return x_selected, y_selected
 
     @staticmethod
