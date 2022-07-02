@@ -60,6 +60,8 @@ def compute_examplar_mean(feat_norm, feat_flip, herding_mat, nb_max):
 
 
 def select_examplars(features, nb_max):
+    if len(features.shape) == 3:
+        features = features[0, :, :]
     EPSILON = 1e-8
     D = features.T
     D = D / (np.linalg.norm(D, axis=0) + EPSILON)
