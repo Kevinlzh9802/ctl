@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_test_gpu.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/results/acc_detail_path/task_0.csv" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/results/acc_detail_path/task_0.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/datasets/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
-    </list>
+    <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -128,7 +121,7 @@
       <workItem from="1656520584144" duration="20748000" />
       <workItem from="1656607069322" duration="21186000" />
       <workItem from="1656693743052" duration="23185000" />
-      <workItem from="1657037319934" duration="7071000" />
+      <workItem from="1657037319934" duration="7450000" />
     </task>
     <servers />
   </component>
