@@ -107,7 +107,7 @@ memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
-device: -1 #GPU index to use, for cpu use -1
+device: 0 #GPU index to use, for cpu use -1
 # device: 'cpu' #GPU index to use, for cpu use -1
 seed: 1993
 

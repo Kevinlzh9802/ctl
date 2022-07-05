@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes" />
+    <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
+      <change beforePath="$PROJECT_DIR$/codes/base/scripts/run.sh" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/scripts/run.sh" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -121,7 +123,7 @@
       <workItem from="1656520584144" duration="20748000" />
       <workItem from="1656607069322" duration="21186000" />
       <workItem from="1656693743052" duration="23185000" />
-      <workItem from="1657037319934" duration="7450000" />
+      <workItem from="1657037319934" duration="7711000" />
     </task>
     <servers />
   </component>
