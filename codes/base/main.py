@@ -89,19 +89,7 @@ def _train(cfg, _run, ex, tensorboard):
         model.train_task()
         model.after_task()
 
-        # ex.logger.info("Eval on {}->{}.".format(0, task_info["max_class"]))
         ypred, ytrue = model.eval_task(model._test_loader)
-        acc_stats = utils.compute_accuracy(ypred, ytrue, increments=model._increments, n_classes=model._n_classes)
-        # Logging
-        model._tensorboard.add_scalar(f"taskaccu/trial{trial_i}", acc_stats["top1"]["total"], task_i)
-
-        _run.log_scalar(f"trial{trial_i}_taskaccu", acc_stats["top1"]["total"], task_i)
-        _run.log_scalar(f"trial{trial_i}_task_top5_accu", acc_stats["top5"]["total"], task_i)
-
-        ex.logger.info(f"top1:{acc_stats['top1']}")
-        ex.logger.info(f"top5:{acc_stats['top5']}")
-
-        results["results"].append(acc_stats)
         model.save_acc_detail_info()
 
     top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])
