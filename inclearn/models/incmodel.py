@@ -22,7 +22,7 @@ EPSILON = 1e-8
 
 
 class IncModel(IncrementalLearner):
-    def __init__(self, cfg, trial_i, _run, ex, tensorboard, inc_dataset):
+    def __init__(self, cfg, _run, ex, tensorboard, inc_dataset):
         super().__init__()
         self._cfg = cfg
         self._device = cfg['device']
@@ -33,7 +33,7 @@ class IncModel(IncrementalLearner):
         # Data
         self._inc_dataset = inc_dataset
         self._n_classes = 0
-        self._trial_i = trial_i  # which class order is used
+        self._trial_i = cfg['trial']  # which class order is used
 
         # Optimizer paras
         self._opt_name = cfg["optimizer"]
@@ -100,7 +100,7 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list = None
         self.acc_detail_path = cfg["acc_detail_path"]
         if not os.path.exists(self.acc_detail_path):
-            os.mkdir(self.acc_detail_path)
+            os.makedirs(self.acc_detail_path)
 
     def eval(self):
         self._parallel_network.eval()

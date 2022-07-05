@@ -61,15 +61,19 @@ def train(_run, _rnd, _seed):
 
 
 def _train(cfg, _run, ex, tensorboard):
-    device = factory.set_device(cfg)
+    if cfg["device_auto_detect"]:
+        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+    else:
+        factory.set_device(cfg)
+    factory.set_acc_detail_path(cfg, 'train')
     trial_i = cfg['trial']
 
-    inc_dataset = factory.get_data(cfg, trial_i)
+    inc_dataset = factory.get_data(cfg)
     inc_dataset.train = True
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
 
-    model = factory.get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
+    model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
 
     if _run.meta_info["options"]["--file_storage"] is not None:
         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
@@ -81,16 +85,6 @@ def _train(cfg, _run, ex, tensorboard):
     for ti in range(inc_dataset.n_tasks):
         model.before_task()
         task_i = model._task
-
-        # Pretraining at step0 if needed
-        # if task_i == 0 and cfg["start_class"] > 0:
-        #     do_pretrain(cfg, ex, model, device, train_loader, test_loader)
-        #     inc_dataset.shared_data_inc = train_loader.dataset.share_memory
-        # elif task_i < cfg['start_task']:
-        #     state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
-        #     model._parallel_network.load_state_dict(state_dict)
-        #     inc_dataset.shared_data_inc = train_loader.dataset.share_memory
-        # else:
         print(f'task {task_i}')
         model.train_task()
         model.after_task()
@@ -154,32 +148,21 @@ def do_pretrain(cfg, ex, model, device, train_loader, test_loader):
 
 @ex.command
 def test(_run, _rnd, _seed):
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "test", _run._id)
-    cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
-
+    if cfg["device_auto_detect"]:
+        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+    else:
+        factory.set_device(cfg)
+    factory.set_acc_detail_path(cfg, 'test')
+    cfg.data_folder = osp.join(base_dir, "data")
     ex.logger.info(cfg)
 
-    trial_i = cfg['trial']
-    cfg.data_folder = osp.join(base_dir, "data")
-    inc_dataset = factory.get_data(cfg, trial_i)
+    inc_dataset = factory.get_data(cfg)
     inc_dataset.test = True
-    # train_loader = inc_dataset._get_loader(inc_dataset.data_cur, inc_dataset.targets_cur)
-    model = factory.get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
-    # model._network.task_size = cfg.increment
+    model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
 
     test_results = results_utils.get_template_results(cfg)
     for task_i in range(inc_dataset.n_tasks):
-        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task()
-        #
-        # model.set_task_info(
-        #     task=task_info["task"],
-        #     task_size=task_info["task_size"],
-        #     tax_tree=task_info["partial_tree"],
-        #     n_train_data=task_info["n_train_data"],
-        #     n_test_data=task_info["n_test_data"],
-        #     n_tasks=inc_dataset.n_tasks,
-        # )
         model.before_task()
         state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)

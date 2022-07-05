@@ -1,4 +1,4 @@
-python -m main test with "./configs/ctl1_test_gpu.yaml" \
+python -m main test with "./configs/ctl1_gpu.yaml" \
         exp.name="${name}" \
         exp.savedir="./logs/" \
         exp.ckptdir="./logs/" \

@@ -1,4 +1,4 @@
-python -m main train with "./configs/1.yaml" \
+python -m main train with "./configs/ctl1_gpu.yaml" \
         exp.name="${name}" \
         exp.savedir="./logs/" \
         exp.ckptdir="./logs/" \

@@ -29,26 +29,24 @@ def get_convnet(convnet_type, **kwargs):
         raise NotImplementedError("Unknwon convnet type {}.".format(convnet_type))
 
 
-def get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset):
+def get_model(cfg, _run, ex, tensorboard, inc_dataset):
     if cfg["model"] == "incmodel":
-        return models.IncModel(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
+        return models.IncModel(cfg, _run, ex, tensorboard, inc_dataset)
     if cfg["model"] == "weight_align":
-        return models.Weight_Align(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
+        return models.Weight_Align(cfg, _run, ex, tensorboard, inc_dataset)
     if cfg["model"] == "bic":
-        return models.BiC(cfg, trial_i, _run, ex, tensorboard, inc_dataset)
+        return models.BiC(cfg, _run, ex, tensorboard, inc_dataset)
     else:
         raise NotImplementedError(cfg["model"])
 
 
-def get_data(cfg, trial_i):
-    tax_tree = dataset.get_dataset(cfg["dataset"]).taxonomy_tree
+def get_data(cfg):
     return data.IncrementalDataset(
-        trial_i=trial_i,
+        trial_i=cfg['trial'],
         dataset_name=cfg["dataset"],
         random_order=cfg["random_classes"],
         shuffle=True,
         batch_size=cfg["batch_size"],
-        # workers=cfg["workers"],
         workers=0,
         device=cfg["device"],
         validation_split=cfg["validation"],
@@ -60,11 +58,12 @@ def get_data(cfg, trial_i):
 
 def set_device(cfg):
     device_type = cfg["device"]
-
     if device_type == -1:
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:{}".format(device_type))
-
     cfg["device"] = device
-    return device
+
+
+def set_acc_detail_path(cfg, mode):
+    cfg["acc_detail_path"] += (cfg["exp"]["name"] + '/' + mode)

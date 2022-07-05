@@ -1,6 +1,7 @@
 exp:
   name: "der_deep_rtc"
   savedir: "./logs"
+  ckptdir: "./ckpts"
   tensorboard_dir: "./tensorboard"
   debug: False
 
@@ -9,7 +10,7 @@ model: "incmodel"
 model_cls: "hiernet"
 model_pivot:
   arch: pivot
-  dropout_rate: 0.0
+  dropout_rate: 0.1
 convnet: 'resnet18' #modified_resnet32, resnet18
 taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
@@ -31,8 +32,9 @@ save_ckpt: True
 save_mem: True
 load_mem: False
 
-#Optimization;Training related
-task_max: 2
+
+# Optimization;Training related
+task_max: 10
 lr_min: 0.00005
 lr: 0.1
 weight_decay: 0.0005
@@ -43,12 +45,11 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 17
+epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
-sample_rate: 0.3
-acc_detail_path: 'results/acc_detail_path/'
+acc_detail_path: 'results/acc_detail/'
 
 postprocessor:
   enable: False
@@ -65,7 +66,7 @@ postprocessor:
 
 decouple:
   enable: False
-  epochs: 50
+  epochs: 2
   fullset: False
   lr: 0.05
   scheduling:
@@ -91,7 +92,6 @@ dataset: "cifar100" #'imagenet100', 'cifar100'
 trial: 5
 increment: 10
 batch_size: 128
-
 workers: 8
 validation: 0 # Validation split (0. <= x <= 1.)
 random_classes: False #Randomize classes order of increment
@@ -99,14 +99,14 @@ start_class: 0 # number of tasks for the first step, start from 0.
 start_task: 0
 max_task: # Cap the number of task
 
-#Memory
+# Memory
 coreset_strategy: "iCaRL"  # iCaRL, random
 mem_size_mode: "uniform_fixed_total_mem" #uniform_fixed_per_cls, uniform_fixed_total_mem
 memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
-device: 0 #GPU index to use, for cpu use -1
-# device: 'cpu' #GPU index to use, for cpu use -1
+device_auto_detect: True  # If True, use GPU whenever possible
+device: -1 # GPU index to use, for cpu use -1
 seed: 1993
 

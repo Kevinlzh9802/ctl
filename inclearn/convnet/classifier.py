@@ -1,5 +1,4 @@
 import math
-
 import torch
 from torch.nn.parameter import Parameter
 from torch.nn import functional as F
@@ -24,8 +23,8 @@ class CosineClassifier(Module):
         if self.sigma is not None:
             self.sigma.data.fill_(1)  # for initializaiton of sigma
 
-    def forward(self, input):
-        out = F.linear(F.normalize(input, p=2, dim=1), F.normalize(self.weight, p=2, dim=1))
+    def forward(self, x):
+        out = F.linear(F.normalize(x, p=2, dim=1), F.normalize(self.weight, p=2, dim=1))
         if self.sigma is not None:
             out = self.sigma * out
         return out

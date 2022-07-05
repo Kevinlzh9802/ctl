@@ -102,7 +102,7 @@ class IncrementalDataset:
                     # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
             else:
                 self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
-                train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
+            train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
 
         self.data_test_inc, self.targets_test_inc = x_test, y_test
         # train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
@@ -192,12 +192,8 @@ class IncrementalDataset:
                 else:
                     lfx_all = data_dict[lf][:10]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
-                if str(self._device) == 'cuda:0':
-                    x_selected = np.concatenate((x_selected, lfx_all))
-                    y_selected = np.concatenate((y_selected, lfy_all))
-                else:
-                    x_selected = np.concatenate((x_selected, lfx_all))
-                    y_selected = np.concatenate((y_selected, lfy_all))
+                x_selected = np.concatenate((x_selected, lfx_all))
+                y_selected = np.concatenate((y_selected, lfy_all))
         return x_selected, y_selected
 
     @staticmethod
