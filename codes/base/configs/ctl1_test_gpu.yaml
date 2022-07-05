@@ -1,13 +1,17 @@
 exp:
-  name: "CIFAR100B0S10_DER_wo_mask"
+  name: "der_deep_rtc"
   savedir: "./logs"
   tensorboard_dir: "./tensorboard"
   debug: False
 
-
 #Model Cfg
 model: "incmodel"
+model_cls: "hiernet"
+model_pivot:
+  arch: pivot
+  dropout_rate: 0.0
 convnet: 'resnet18' #modified_resnet32, resnet18
+taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
@@ -15,7 +19,7 @@ use_bias: False
 last_relu: False
 
 der: True
-use_aux_cls: True
+use_aux_cls: False
 aux_n+1: True
 distillation: "none"
 temperature: 2
@@ -29,7 +33,7 @@ load_mem: False
 
 
 #Optimization;Training related
-task_max: 10
+task_max: 2
 lr_min: 0.00005
 lr: 0.1
 weight_decay: 0.0005
@@ -40,10 +44,12 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 20
 resampling: False
-warmup: True
+warmup: False
 warmup_epochs: 10
+sample_rate: 0.3
+acc_detail_path: 'results/acc_detail_test'
 
 postprocessor:
   enable: False
@@ -59,7 +65,7 @@ postprocessor:
   weight_decay: 0.0005
 
 decouple:
-  enable: True 
+  enable: False
   epochs: 50
   fullset: False
   lr: 0.05
@@ -83,9 +89,10 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100" #'imagenet100', 'cifar100'
-trial: 2
+trial: 5
 increment: 10
 batch_size: 128
+
 workers: 8
 validation: 0 # Validation split (0. <= x <= 1.)
 random_classes: False #Randomize classes order of increment
@@ -100,6 +107,7 @@ memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
-device: 0 #GPU index to use, for cpu use -1
+device: -1 #GPU index to use, for cpu use -1
+# device: 'cpu' #GPU index to use, for cpu use -1
 seed: 1993
 

@@ -3,8 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/configs/2.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/2.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_test_gpu.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/results/acc_detail_path/task_0.csv" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/results/acc_detail_path/task_0.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inclearn/datasets/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,7 +41,7 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.simplified">
+  <component name="RunManager" selected="Python.test">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python">
       <module name="ctl" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -83,9 +86,32 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python">
+      <module name="ctl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Users\srip22-ctl\Desktop\srip22\ctl\venv\Scripts\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/codes/base" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/codes/base/main.py" />
+      <option name="PARAMETERS" value="test with &quot;./configs/2.yaml&quot; --name=&quot;cifar100_trial5_debug&quot; --force" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.main" />
       <item itemvalue="Python.simplified" />
+      <item itemvalue="Python.test" />
     </list>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -101,7 +127,8 @@
       <workItem from="1656434734241" duration="21948000" />
       <workItem from="1656520584144" duration="20748000" />
       <workItem from="1656607069322" duration="21186000" />
-      <workItem from="1656693743052" duration="22593000" />
+      <workItem from="1656693743052" duration="23185000" />
+      <workItem from="1657037319934" duration="7071000" />
     </task>
     <servers />
   </component>
@@ -128,14 +155,20 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/inclearn/datasets/data.py</url>
-          <line>141</line>
-          <option name="timeStamp" value="76" />
+          <line>138</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
+          <line>128</line>
+          <option name="timeStamp" value="82" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ctl$main.coverage" NAME="main Coverage Results" MODIFIED="1656362070511" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
+    <SUITE FILE_PATH="coverage/ctl$test.coverage" NAME="test Coverage Results" MODIFIED="1657044601254" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
     <SUITE FILE_PATH="coverage/ctl$simplified.coverage" NAME="simplified Coverage Results" MODIFIED="1656723471109" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
   </component>
 </project>

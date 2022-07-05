@@ -75,6 +75,9 @@ class IncrementalDataset:
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
 
+        # Train and test settings
+        self.train, self.test = False, False
+
     @property
     def n_tasks(self):
         return len(self.curriculum)
@@ -85,22 +88,24 @@ class IncrementalDataset:
 
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
-
+        train_loader, val_loader, test_loader = None, None, None
         # update memory
-        if self._current_task > 0:
-            self._update_memory_for_new_task(self.curriculum[self._current_task])
-        if self.data_memory is not None:
-            print("Set memory of size: {}.".format(len(self.data_memory)))
-            if len(self.data_memory) != 0:
-                self.data_inc = np.concatenate((self.data_cur, self.data_memory))
-                self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
-                # y_train: finest label [58 58  8  8 13 13 48 48 90 90]
-                # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
-        else:
-            self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
-        self.data_test_inc, self.targets_test_inc = x_test, y_test
+        if self.train:
+            if self._current_task > 0:
+                self._update_memory_for_new_task(self.curriculum[self._current_task])
+            if self.data_memory is not None:
+                print("Set memory of size: {}.".format(len(self.data_memory)))
+                if len(self.data_memory) != 0:
+                    self.data_inc = np.concatenate((self.data_cur, self.data_memory))
+                    self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
+                    # y_train: finest label [58 58  8  8 13 13 48 48 90 90]
+                    # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
+            else:
+                self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
+                train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
 
-        train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
+        self.data_test_inc, self.targets_test_inc = x_test, y_test
+        # train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
         val_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
 

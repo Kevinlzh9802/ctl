@@ -429,6 +429,7 @@ class IncModel(IncrementalLearner):
         return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader):
+        acc = averageMeter()
         preds, targets = [], []
         self._parallel_network.eval()
         with torch.no_grad():
@@ -443,8 +444,30 @@ class IncModel(IncrementalLearner):
                     _preds = self._network.postprocessor.post_process(_preds, self._task_size)
                 preds.append(_preds.detach().cpu().numpy())
                 targets.append(lbls.long().cpu().numpy())
-        preds = np.concatenate(preds, axis=0)
-        targets = np.concatenate(targets, axis=0)
+
+        preds = torch.tensor(np.concatenate(preds, axis=0))
+        targets = torch.tensor(np.concatenate(targets, axis=0))
+
+        leaf_id_keys = self._network.leaf_id.keys()
+        leaf_id_index_list = []
+        for target_i in list(np.array(targets.cpu())):
+            if target_i in leaf_id_keys:
+                leaf_id_index_list.append(self._network.leaf_id[target_i])
+
+        if str(self._device) == 'cuda:0':
+            preds = preds.cuda()
+            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
+        else:
+            leaf_id_indexes = torch.tensor(leaf_id_index_list)
+
+        iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+
+        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
+                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+
+        acc.update_detail(acc_update_info)
+        self.curr_acc_list = [acc]
+
         return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
