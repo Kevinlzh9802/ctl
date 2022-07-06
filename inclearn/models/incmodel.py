@@ -16,6 +16,7 @@ from inclearn.tools.memory import MemorySize
 from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
+from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss, leaf_id_indices
 
 # Constants
 EPSILON = 1e-8
@@ -73,6 +74,7 @@ class IncModel(IncrementalLearner):
         self._distillation = cfg["distillation"]
 
         # Memory
+        self._memory_enable = cfg["memory_enable"]
         self._memory_size = MemorySize(cfg["mem_size_mode"], inc_dataset, cfg["memory_size"],
                                        cfg["fixed_memory_per_cls"])
         self._herding_matrix = []
@@ -125,7 +127,7 @@ class IncModel(IncrementalLearner):
 
     def _before_task(self):
         # Update Task info
-        task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
+        task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task(self._memory_enable)
         self.set_task_info(task_info)
         self._train_loader = train_loader
         self._val_loader = val_loader
@@ -256,7 +258,6 @@ class IncModel(IncrementalLearner):
         # self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
     def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc):
-        criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
@@ -265,38 +266,25 @@ class IncModel(IncrementalLearner):
         output = outputs['output']
         nout = outputs['nout']
         sfmx_base = outputs['sfmx_base']
-        nloss = []
 
-        leaf_id_keys = self._network.leaf_id.keys()
-
-        for idx in range(inputs.size(0)):
-            index = targets.cpu().numpy()[idx]
-            if index in leaf_id_keys:
-                index = self._network.leaf_id[index]
-            for n_id, n_l in self._network.node_labels[index]:
-                if str(self._device) == 'cuda:0':
-                    res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
-                else:
-                    res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
-                nloss.append(res)
-
-        nloss = torch.mean(torch.stack(nloss))
+        nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
+        # for idx in range(targets.size(0)):
+        #     index = targets.cpu().numpy()[idx]
+        #     if index in leaf_id_keys:
+        #         index = self._network.leaf_id[index]
+        #     for n_id, n_l in self._network.node_labels[index]:
+        #         if str(self._device) == 'cuda:0':
+        #             res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
+        #         else:
+        #             res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
+        #         nloss.append(res)
+        #
+        # nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
         # compute stochastic tree sampling loss
-        leaf_id_index_list = []
-        for target_i in list(np.array(targets.cpu())):
-            if target_i in leaf_id_keys:
-                leaf_id_index_list.append(self._network.leaf_id[target_i])
-            # else:
-            #     leaf_id_index_list.append(target_i)
-        if str(self._device) == 'cuda:0':
-            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
-        else:
-            leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
+        leaf_id_indexes = leaf_id_indices(targets, self._network.leaf_id, self._device)
         gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
-
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
         stslosses.update(stsloss.item(), inputs.size(0))
 
@@ -306,7 +294,6 @@ class IncModel(IncrementalLearner):
         # measure accuracy
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-
         iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
         acc.update(torch.mean(iscorrect).item(), inputs.size(0))
 
@@ -375,6 +362,7 @@ class IncModel(IncrementalLearner):
                                 self._parallel_network,
                                 train_loader,
                                 self._n_classes,
+                                device=self._device,
                                 nepoch=self._decouple["epochs"],
                                 lr=self._decouple["lr"],
                                 scheduling=self._decouple["scheduling"],
@@ -394,7 +382,7 @@ class IncModel(IncrementalLearner):
             self._ex.logger.info("compute prototype")
             self.update_prototype()
 
-        if self._memory_size.memsize != 0:
+        if self._memory_enable and self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
             self.build_exemplars(inc_dataset, self._coreset_strategy)
 

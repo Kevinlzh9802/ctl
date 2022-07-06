@@ -5,7 +5,7 @@ exp:
   tensorboard_dir: "./tensorboard"
   debug: False
 
-#Model Cfg
+# Model Cfg
 model: "incmodel"
 model_cls: "hiernet"
 model_pivot:
@@ -29,7 +29,7 @@ reuse_oldfc: False
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
 save_ckpt: True
-save_mem: True
+save_mem: False
 load_mem: False
 
 
@@ -53,7 +53,7 @@ acc_detail_path: 'results/acc_detail/'
 
 postprocessor:
   enable: False
-  type: 'bic' #'bic', 'wa'
+  type: 'bic' # 'bic', 'wa'
   epochs: 1
   batch_size: 128
   lr: 0.1
@@ -67,7 +67,7 @@ postprocessor:
 decouple:
   enable: True
   epochs: 2
-  fullset: True
+  fullset: False
   lr: 0.05
   scheduling:
     - 15
@@ -100,8 +100,9 @@ start_task: 0
 max_task: # Cap the number of task
 
 # Memory
+memory_enable: True
 coreset_strategy: "iCaRL"  # iCaRL, random
-mem_size_mode: "uniform_fixed_total_mem" #uniform_fixed_per_cls, uniform_fixed_total_mem
+mem_size_mode: "uniform_fixed_total_mem" # uniform_fixed_per_cls, uniform_fixed_total_mem
 memory_size: 2000 # Max number of storable examplars
 fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 

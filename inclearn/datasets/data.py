@@ -64,7 +64,7 @@ class IncrementalDataset:
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
         # Memory Mt
-        self.data_memory, self.targets_memory = None, None
+        self.data_memory, self.targets_memory = [], []
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
@@ -81,7 +81,7 @@ class IncrementalDataset:
     def n_tasks(self):
         return len(self.curriculum)
 
-    def new_task(self):
+    def new_task(self, mem_enable=True):
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
 
@@ -90,21 +90,18 @@ class IncrementalDataset:
         train_loader, val_loader, test_loader = None, None, None
         # update memory
         if self.train:
-            if self._current_task > 0:
+            if mem_enable and self._current_task > 0:
                 self._update_memory_for_new_task(self.curriculum[self._current_task])
-            if self.data_memory is not None:
                 print("Set memory of size: {}.".format(len(self.data_memory)))
-                if len(self.data_memory) != 0:
-                    self.data_inc = np.concatenate((self.data_cur, self.data_memory))
-                    self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
-                    # y_train: finest label [58 58  8  8 13 13 48 48 90 90]
-                    # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
+            if mem_enable and len(self.data_memory) > 0:
+                self.data_inc = np.concatenate((self.data_cur, self.data_memory))
+                self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
             else:
                 self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
             train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
 
         self.data_test_inc, self.targets_test_inc = x_test, y_test
-        # train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
+
         val_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
 

@@ -33,9 +33,9 @@ class MemorySize:
 
     @property
     def memsize(self):
-        if self.mode == "fixed_total_mem":
+        if "fixed_total_mem" in self.mode:
             return self.total_memory
-        elif self.mode == "fixed_per_cls":
+        elif "fixed_per_cls" in self.mode:
             return self.fixed_memory_per_cls * self._n_classes
 
 
