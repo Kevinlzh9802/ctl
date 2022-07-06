@@ -345,7 +345,7 @@ class IncModel(IncrementalLearner):
                                                        mode="balanced_train")
 
             # finetuning
-            print(self._parallel_network.module.classifier.num_nodes)
+            # print(self._parallel_network.module.classifier.num_nodes)
             self._parallel_network.module.classifier.module.reset_parameters()
             finetune_last_layer(self._ex.logger,
                                 self._parallel_network,
