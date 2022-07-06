@@ -88,8 +88,6 @@ class HierNet(nn.Module):
             return self.output, nout
 
     def reset_parameters(self):
-        print('num_nodes:')
-        print(self.num_nodes)
         for i in range(self.num_nodes):
             fc_layers = getattr(self, 'fc{}'.format(i))
             stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))
