@@ -4,13 +4,13 @@ exp:
   tensorboard_dir: "./tensorboard"
   debug: False
 
-#Model Cfg
+# Model Cfg
 model: "incmodel"
 model_cls: "hiernet"
 model_pivot:
   arch: pivot
   dropout_rate: 0.0
-convnet: 'resnet18' #modified_resnet32, resnet18
+convnet: 'resnet18' # modified_resnet32, resnet18
 taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
@@ -43,7 +43,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 80
+epochs: 40
 resampling: False
 warmup: False
 warmup_epochs: 10
@@ -65,8 +65,8 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 50
-  fullset: True
+  epochs: 30
+  fullset: False
   lr: 0.05
   scheduling:
     - 15
@@ -87,19 +87,20 @@ pretrain:
 
 
 # Dataset Cfg
-dataset: "cifar100" #'imagenet100', 'cifar100'
+dataset: "cifar100"  #'imagenet100', 'cifar100'
 trial: 5
 increment: 10
 batch_size: 128
 
 workers: 8
-validation: 0 # Validation split (0. <= x <= 1.)
-random_classes: False #Randomize classes order of increment
-start_class: 0 # number of tasks for the first step, start from 0.
+validation: 0  # Validation split (0. <= x <= 1.)
+random_classes: False  # Randomize classes order of increment
+start_class: 0  # number of tasks for the first step, start from 0.
 start_task: 0
-max_task: # Cap the number of task
+max_task:  # Cap the number of task
 
-#Memory
+# Memory
+memory_enable: True
 coreset_strategy: "iCaRL"  # iCaRL, random
 mem_size_mode: "uniform_fixed_total_mem" #uniform_fixed_per_cls, uniform_fixed_total_mem
 memory_size: 2000 # Max number of storable examplars
@@ -107,7 +108,7 @@ fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 
 # Misc
 device_auto_detect: True  # If True, use GPU whenever possible
-device: 0 #GPU index to use, for cpu use -1
+device: 0 # GPU index to use, for cpu use -1
 # device: 'cpu' #GPU index to use, for cpu use -1
 seed: 1993
 

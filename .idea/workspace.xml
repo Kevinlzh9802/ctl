@@ -2,14 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
-      <change afterPath="$PROJECT_DIR$/inclearn/deeprtc/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_cpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_cpu.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/convnet/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/convnet/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/datasets/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/deeprtc/hierNet.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/deeprtc/hierNet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/tools/memory.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/tools/memory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,7 +131,7 @@
       <workItem from="1656607069322" duration="21186000" />
       <workItem from="1656693743052" duration="23185000" />
       <workItem from="1657037319934" duration="22333000" />
-      <workItem from="1657123997097" duration="15687000" />
+      <workItem from="1657123997097" duration="16119000" />
     </task>
     <servers />
   </component>
