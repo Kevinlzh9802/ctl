@@ -268,18 +268,6 @@ class IncModel(IncrementalLearner):
         sfmx_base = outputs['sfmx_base']
 
         nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
-        # for idx in range(targets.size(0)):
-        #     index = targets.cpu().numpy()[idx]
-        #     if index in leaf_id_keys:
-        #         index = self._network.leaf_id[index]
-        #     for n_id, n_l in self._network.node_labels[index]:
-        #         if str(self._device) == 'cuda:0':
-        #             res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
-        #         else:
-        #             res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
-        #         nloss.append(res)
-        #
-        # nloss = torch.mean(torch.stack(nloss))
         nlosses.update(nloss.item(), inputs.size(0))
 
         # compute stochastic tree sampling loss
