@@ -31,7 +31,7 @@ save_ckpt: True
 save_mem: True
 load_mem: False
 
-#Optimization;Training related
+# Optimization; Training related
 task_max: 2
 lr_min: 0.00005
 lr: 0.1
@@ -43,7 +43,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 150
 resampling: False
 warmup: False
 warmup_epochs: 10
