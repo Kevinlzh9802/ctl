@@ -366,8 +366,7 @@ class IncModel(IncrementalLearner):
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:
-                train_loader = inc_dataset._get_loader(inc_dataset.data_inc,
-                                                       inc_dataset.targets_inc,
+                train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc,
                                                        mode="balanced_train")
 
             # finetuning

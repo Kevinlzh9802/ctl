@@ -44,7 +44,7 @@ class averageMeter(object):
 
     def merge_info(self, ori_dict, new_dict):
         res_dict = {}
-        res_dict['sum'] = ori_dict['sum']+new_dict['sum']
+        res_dict['sum'] = ori_dict['sum'] + new_dict['sum']
         res_dict['count'] = ori_dict['count'] + new_dict['count']
         res_dict['multi_num'] = ori_dict['multi_num'] + new_dict['multi_num']
         res_dict['avg'] = round(res_dict['sum']/res_dict['count'], 3)

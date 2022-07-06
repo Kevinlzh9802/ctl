@@ -18,7 +18,6 @@ class HierNet(nn.Module):
             self.add_module('fc{}'.format(i), nn.Linear(input_size, len(nodes[i].children)))
 
     def forward(self, x, gate=None, pred=False, thres=0):
-
         if pred is False:
             # for training
             nout = []
@@ -87,6 +86,9 @@ class HierNet(nn.Module):
             self.output = torch.sum(torch.stack(outs), 0)
 
             return self.output, nout
+
+    def reset_parameters(self):
+        pass
 
 
 def hiernet(**kwargs):

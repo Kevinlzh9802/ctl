@@ -64,9 +64,9 @@ postprocessor:
   weight_decay: 0.0005
 
 decouple:
-  enable: False
+  enable: True
   epochs: 50
-  fullset: False
+  fullset: True
   lr: 0.05
   scheduling:
     - 15

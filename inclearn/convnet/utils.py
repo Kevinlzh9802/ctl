@@ -6,20 +6,10 @@ import torch.nn.functional as F
 from inclearn.tools.metrics import ClassErrorMeter, AverageValueMeter
 
 
-def finetune_last_layer(
-    logger,
-    network,
-    loader,
-    n_class,
-    nepoch=30,
-    lr=0.1,
-    scheduling=[15, 35],
-    lr_decay=0.1,
-    weight_decay=5e-4,
-    loss_type="ce",
-    temperature=5.0,
-    test_loader=None,
-):
+def finetune_last_layer(logger, network, loader, n_class, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
+                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, ):
+    if scheduling is None:
+        scheduling = [15, 35]
     network.eval()
     #if hasattr(network.module, "convnets"):
     #    for net in network.module.convnets:

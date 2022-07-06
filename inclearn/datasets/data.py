@@ -2,14 +2,13 @@ import random
 import cv2
 import numpy as np
 import os.path as osp
-from copy import deepcopy
 from PIL import Image
 import multiprocessing as mp
 import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
+from torchvision import transforms
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
