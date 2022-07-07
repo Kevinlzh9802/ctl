@@ -305,7 +305,7 @@ class IncModel(IncrementalLearner):
             preds_aux = torch.eq(aux_output, max_z_aux.view(-1, 1))
 
             # TODO: monitor this cuda()
-            iscorrect_aux = torch.gather(preds_aux.cuda(), 1, aux_targets.view(-1, 1)).flatten().float()
+            iscorrect_aux = torch.gather(preds_aux, 1, aux_targets.view(-1, 1)).flatten().float()
 
             acc_update_info_aux = self.update_acc_detail(list(np.array(aux_targets.cpu())),
                                                          list(np.array(iscorrect_aux.cpu())),
@@ -346,9 +346,8 @@ class IncModel(IncrementalLearner):
 
             aux_targets = aux_targets.type(torch.LongTensor)
             if self._device.type == 'cuda':
-                aux_loss = F.cross_entropy(aux_output, aux_targets.cuda())
-            else:
-                aux_loss = F.cross_entropy(aux_output, aux_targets)
+                aux_targets = aux_targets.cuda()
+            aux_loss = F.cross_entropy(aux_output, aux_targets)
 
         else:
             if self._device.type == 'cuda':
