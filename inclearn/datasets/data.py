@@ -2,14 +2,13 @@ import random
 import cv2
 import numpy as np
 import os.path as osp
-from copy import deepcopy
 from PIL import Image
 import multiprocessing as mp
 import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
+from torchvision import transforms
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
@@ -65,7 +64,7 @@ class IncrementalDataset:
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
         # Memory Mt
-        self.data_memory, self.targets_memory = None, None
+        self.data_memory, self.targets_memory = [], []
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
@@ -75,32 +74,34 @@ class IncrementalDataset:
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
 
+        # Train and test settings
+        self.train, self.test = False, False
+
     @property
     def n_tasks(self):
         return len(self.curriculum)
 
-    def new_task(self):
+    def new_task(self, mem_enable=True):
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
 
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
-
+        train_loader, val_loader, test_loader = None, None, None
         # update memory
-        if self._current_task > 0:
-            self._update_memory_for_new_task(self.curriculum[self._current_task])
-        if self.data_memory is not None:
-            print("Set memory of size: {}.".format(len(self.data_memory)))
-            if len(self.data_memory) != 0:
+        if self.train:
+            if mem_enable and self._current_task > 0:
+                self._update_memory_for_new_task(self.curriculum[self._current_task])
+                print("Set memory of size: {}.".format(len(self.data_memory)))
+            if mem_enable and len(self.data_memory) > 0:
                 self.data_inc = np.concatenate((self.data_cur, self.data_memory))
                 self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
-                # y_train: finest label [58 58  8  8 13 13 48 48 90 90]
-                # self.targets_memory: [0, 0, 1, 1, ..., 18, 18] should be [-20, -20, ..., -1]
-        else:
-            self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
+            else:
+                self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
+            train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
+
         self.data_test_inc, self.targets_test_inc = x_test, y_test
 
-        train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
         val_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
 
@@ -187,12 +188,8 @@ class IncrementalDataset:
                 else:
                     lfx_all = data_dict[lf][:10]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
-                if str(self._device) == 'cuda:0':
-                    x_selected = np.concatenate((x_selected, lfx_all))
-                    y_selected = np.concatenate((y_selected, lfy_all))
-                else:
-                    x_selected = np.concatenate((x_selected, lfx_all))
-                    y_selected = np.concatenate((y_selected, lfy_all))
+                x_selected = np.concatenate((x_selected, lfx_all))
+                y_selected = np.concatenate((y_selected, lfy_all))
         return x_selected, y_selected
 
     @staticmethod
@@ -212,7 +209,6 @@ class IncrementalDataset:
     #           Data Setup
     # --------------------------------
     def _setup_data(self, dataset):
-        # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []

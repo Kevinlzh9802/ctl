@@ -16,13 +16,14 @@ from inclearn.tools.memory import MemorySize
 from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
+from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss, leaf_id_indices
 
 # Constants
 EPSILON = 1e-8
 
 
 class IncModel(IncrementalLearner):
-    def __init__(self, cfg, trial_i, _run, ex, tensorboard, inc_dataset):
+    def __init__(self, cfg, _run, ex, tensorboard, inc_dataset):
         super().__init__()
         self._cfg = cfg
         self._device = cfg['device']
@@ -33,7 +34,7 @@ class IncModel(IncrementalLearner):
         # Data
         self._inc_dataset = inc_dataset
         self._n_classes = 0
-        self._trial_i = trial_i  # which class order is used
+        self._trial_i = cfg['trial']  # which class order is used
 
         # Optimizer paras
         self._opt_name = cfg["optimizer"]
@@ -73,6 +74,7 @@ class IncModel(IncrementalLearner):
         self._distillation = cfg["distillation"]
 
         # Memory
+        self._memory_enable = cfg["memory_enable"]
         self._memory_size = MemorySize(cfg["mem_size_mode"], inc_dataset, cfg["memory_size"],
                                        cfg["fixed_memory_per_cls"])
         self._herding_matrix = []
@@ -97,10 +99,11 @@ class IncModel(IncrementalLearner):
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
                 if not os.path.exists(save_path):
                     os.mkdir(save_path)
-        self.curr_acc_list = None
+        self.curr_acc_list = []
+        self.curr_acc_list_aux = []
         self.acc_detail_path = cfg["acc_detail_path"]
         if not os.path.exists(self.acc_detail_path):
-            os.mkdir(self.acc_detail_path)
+            os.makedirs(self.acc_detail_path)
 
     def eval(self):
         self._parallel_network.eval()
@@ -125,7 +128,7 @@ class IncModel(IncrementalLearner):
 
     def _before_task(self):
         # Update Task info
-        task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
+        task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task(self._memory_enable)
         self.set_task_info(task_info)
         self._train_loader = train_loader
         self._val_loader = val_loader
@@ -189,15 +192,16 @@ class IncModel(IncrementalLearner):
         self._optimizer.zero_grad()
         self._optimizer.step()
 
-        acc_list = []
+        acc_list, acc_list_aux = [], []
 
         for epoch in range(self._n_epochs):
-            _loss, _loss_aux = 0.0, 0.0
+            _loss_ce, _loss_aux, _loss_total = 0.0, 0.0, 0.0
 
             nlosses = averageMeter()
             stslosses = averageMeter()
             losses = averageMeter()
             acc = averageMeter()
+            acc_aux = averageMeter()
 
             if self._warmup:
                 self._warmup_scheduler.step()
@@ -209,18 +213,16 @@ class IncModel(IncrementalLearner):
                 inputs, targets = data
                 self.train()
                 self._optimizer.zero_grad()
-                nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc)
+                nloss, stsloss, loss_ce, loss_aux, acc, acc_aux = \
+                    self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
+                # nloss, stsloss, loss, acc = self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc)
 
-                # if self._cfg["use_aux_cls"] and self._task > 0:
-                #     loss = loss_ce + loss_aux
-                # else:
-                #     loss = loss_ce
+                if self._cfg["use_aux_cls"] and self._task > 0:
+                    loss_total = loss_aux + loss_ce
+                else:
+                    loss_total = loss_ce
 
-                if not utils.check_loss(loss):
-                    import pdb
-                    pdb.set_trace()
-
-                loss.backward()
+                loss_total.backward()
                 self._optimizer.step()
 
                 if self._cfg["postprocessor"]["enable"]:
@@ -228,35 +230,41 @@ class IncModel(IncrementalLearner):
                         for p in self._network.classifier.parameters():
                             p.data.clamp_(0.0)
 
-                # _loss += loss_ce
-                # _loss_aux += loss_aux
-                _loss += loss
-            _loss = _loss.item()
-            # _loss_aux = _loss_aux.item()
-            _loss_aux = 0
+                _loss_aux += loss_aux
+                _loss_ce += loss_ce
+                _loss_total += loss_total
+            _loss_aux = _loss_aux.item()
+            _loss_ce = _loss_ce.item()
+            _loss_total = _loss_total.item()
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
-                "Task {}/{}, Epoch {}/{} => Clf Avg Loss: {}, Avg Acc: {}".format(
+                "Task {}/{}, Epoch {}/{} => Clf Avg Total Loss: {}, Clf Avg CE Loss: {}, Avg Aux Loss: {}, "
+                "Avg Acc: {}, Avg Aux Acc: {}".
+                format(
                     self._task + 1,
                     self._n_tasks,
                     epoch + 1,
                     self._n_epochs,
-                    round(_loss / i, 3),
+                    round(_loss_total / i, 3),
+                    round(_loss_ce / i, 3),
+                    round(_loss_aux / i, 3),
                     round(acc.avg, 3),
+                    round(acc_aux.avg, 3)
                 ))
 
             if self._val_per_n_epoch > 0 and epoch % self._val_per_n_epoch == 0:
                 self.validate(self._val_loader)
             acc_list.append(acc)
+            acc_list_aux.append(acc_aux)
 
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = self._train_loader.dataset.share_memory
         self.curr_acc_list = acc_list
+        self.curr_acc_list_aux = acc_list_aux
         # self._run.info[f"trial{self._trial_i}"][f"task{self._task}_train_accu"] = round(accu.value()[0], 3)
 
-    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc):
-        criterion = torch.nn.CrossEntropyLoss(reduction='none')
+    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
@@ -265,38 +273,14 @@ class IncModel(IncrementalLearner):
         output = outputs['output']
         nout = outputs['nout']
         sfmx_base = outputs['sfmx_base']
-        nloss = []
+        aux_output = outputs['aux_logit']
 
-        leaf_id_keys = self._network.leaf_id.keys()
-
-        for idx in range(inputs.size(0)):
-            index = targets.cpu().numpy()[idx]
-            if index in leaf_id_keys:
-                index = self._network.leaf_id[index]
-            for n_id, n_l in self._network.node_labels[index]:
-                if str(self._device) == 'cuda:0':
-                    res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
-                else:
-                    res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
-                nloss.append(res)
-
-        nloss = torch.mean(torch.stack(nloss))
+        nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
         nlosses.update(nloss.item(), inputs.size(0))
 
         # compute stochastic tree sampling loss
-        leaf_id_index_list = []
-        for target_i in list(np.array(targets.cpu())):
-            if target_i in leaf_id_keys:
-                leaf_id_index_list.append(self._network.leaf_id[target_i])
-            # else:
-            #     leaf_id_index_list.append(target_i)
-        if str(self._device) == 'cuda:0':
-            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
-        else:
-            leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
+        leaf_id_indexes = leaf_id_indices(targets, self._network.leaf_id, self._device)
         gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
-
         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
         stslosses.update(stsloss.item(), inputs.size(0))
 
@@ -306,16 +290,28 @@ class IncModel(IncrementalLearner):
         # measure accuracy
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-
         iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
-        acc.update(torch.mean(iscorrect).item(), inputs.size(0))
+
+        aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
 
         acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
                                                  list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
 
         acc.update(torch.mean(iscorrect).item(), inputs.size(0))
         acc.update_detail(acc_update_info)
-        return nloss, stsloss, loss, acc
+
+        if aux_output is not None:
+            max_z_aux = torch.max(aux_output, dim=1)[0]
+            preds_aux = torch.eq(aux_output, max_z_aux.view(-1, 1))
+
+            iscorrect_aux = torch.gather(preds_aux, 1, aux_targets.view(-1, 1)).flatten().float()
+
+            acc_update_info_aux = self.update_acc_detail(list(np.array(aux_targets.cpu())),
+                                                         list(np.array(iscorrect_aux.cpu())),
+                                                         list((np.sum(np.array(preds_aux.cpu()), 1) > 1) * 1))
+            acc_aux.update(torch.mean(iscorrect_aux).item(), inputs.size(0))
+            acc_aux.update_detail(acc_update_info_aux)
+        return nloss, stsloss, loss, aux_loss, acc, acc_aux
 
     def update_acc_detail(self, targets, pred, multi_pred_list):
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in targets}
@@ -336,22 +332,27 @@ class IncModel(IncrementalLearner):
 
         return res_dict
 
-    def _compute_loss(self, inputs, targets, outputs, old_classes, new_classes):
-        loss = F.cross_entropy(outputs['logit'], targets)
-
-        if outputs['aux_logit'] is not None:
+    def _compute_aux_loss(self, targets, aux_output):
+        aux_targets = targets
+        targets_unique_sorted = sorted(list(set(self._inc_dataset.targets_cur)))
+        if aux_output is not None:
             aux_targets = targets.clone()
             if self._cfg["aux_n+1"]:
-                aux_targets[old_classes] = 0
-                aux_targets[new_classes] -= sum(self._inc_dataset.increments[:self._task]) - 1
-            aux_loss = F.cross_entropy(outputs['aux_logit'], aux_targets)
+                for curr_class_i in self._inc_dataset.targets_memory:
+                    aux_targets[aux_targets == curr_class_i] = 0
+                for index_i in range(len(targets_unique_sorted)):
+                    aux_targets[aux_targets == targets_unique_sorted[index_i]] = index_i+1
+
+            aux_targets = aux_targets.type(torch.LongTensor)
+            aux_loss = F.cross_entropy(aux_output, aux_targets)
+
         else:
             if str(self._device) == 'cuda:0':
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
 
-        return loss, aux_loss
+        return aux_loss, aux_targets
 
     def _after_task(self):
         inc_dataset = self._inc_dataset
@@ -366,16 +367,19 @@ class IncModel(IncrementalLearner):
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:
-                train_loader = inc_dataset._get_loader(inc_dataset.data_inc,
-                                                       inc_dataset.targets_inc,
+                train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc,
                                                        mode="balanced_train")
 
             # finetuning
-            self._parallel_network.module.classifier.reset_parameters()
+            if self._device.type == 'cuda':
+                self._parallel_network.module.classifier.module.reset_parameters()
+            else:
+                self._parallel_network.module.classifier.reset_parameters()
             finetune_last_layer(self._ex.logger,
                                 self._parallel_network,
                                 train_loader,
                                 self._n_classes,
+                                device=self._device,
                                 nepoch=self._decouple["epochs"],
                                 lr=self._decouple["lr"],
                                 scheduling=self._decouple["scheduling"],
@@ -395,7 +399,7 @@ class IncModel(IncrementalLearner):
             self._ex.logger.info("compute prototype")
             self.update_prototype()
 
-        if self._memory_size.memsize != 0:
+        if self._memory_enable and self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
             self.build_exemplars(inc_dataset, self._coreset_strategy)
 
@@ -429,13 +433,20 @@ class IncModel(IncrementalLearner):
         return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader):
+        acc = averageMeter()
+        acc_aux = averageMeter()
         preds, targets = [], []
+        preds_aux, targets_aux = [], []
+
         self._parallel_network.eval()
         with torch.no_grad():
             for i, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-                # _preds = self._parallel_network(inputs)['logit']
-                _output = self._parallel_network(inputs)['output']
+
+                outputs = self._parallel_network(inputs)
+                _output = outputs['output']
+                _output_aux = outputs['aux_logit']
+
                 max_z = torch.max(_output, dim=1)[0]
                 _preds = torch.eq(_output, max_z.view(-1, 1))
 
@@ -443,8 +454,57 @@ class IncModel(IncrementalLearner):
                     _preds = self._network.postprocessor.post_process(_preds, self._task_size)
                 preds.append(_preds.detach().cpu().numpy())
                 targets.append(lbls.long().cpu().numpy())
-        preds = np.concatenate(preds, axis=0)
-        targets = np.concatenate(targets, axis=0)
+
+                if _output_aux is not None:
+                    max_z_aux = torch.max(_output_aux, dim=1)[0]
+                    _preds_aux = torch.eq(_output_aux, max_z_aux.view(-1, 1))
+
+                    aux_targets = lbls.clone()
+                    targets_memory = list(set(data_loader.dataset.y))
+                    # TODO: fix this bug!
+                    for i in self._inc_dataset.targets_cur:
+                        targets_memory.remove(i)
+                    for curr_class_i in targets_memory:
+                        aux_targets[aux_targets == curr_class_i] = 0
+                    for index_i in range(len(self._inc_dataset.targets_cur)):
+                        aux_targets[aux_targets == self._inc_dataset.targets_cur[index_i]] = index_i+1
+
+                    preds_aux.append(_preds_aux.detach().cpu().numpy())
+                    targets_aux.append(aux_targets.long().cpu().numpy())
+
+        preds = torch.tensor(np.concatenate(preds, axis=0))
+        targets = torch.tensor(np.concatenate(targets, axis=0))
+
+        if preds_aux:
+            preds_aux = torch.tensor(np.concatenate(preds_aux, axis=0))
+            targets_aux = torch.tensor(np.concatenate(targets_aux, axis=0))
+            iscorrect_aux = torch.gather(preds_aux, 1, targets_aux.view(-1, 1)).flatten().float()
+            acc_update_info_aux = self.update_acc_detail(list(np.array(targets.cpu())),
+                                                         list(np.array(iscorrect_aux.cpu())),
+                                                         list((np.sum(np.array(preds_aux.cpu()), 1) > 1) * 1))
+
+            acc_aux.update_detail(acc_update_info_aux)
+            self.curr_acc_list_aux = [acc_aux]
+
+        leaf_id_keys = self._network.leaf_id.keys()
+        leaf_id_index_list = []
+        for target_i in list(np.array(targets.cpu())):
+            if target_i in leaf_id_keys:
+                leaf_id_index_list.append(self._network.leaf_id[target_i])
+
+        if str(self._device) == 'cuda:0':
+            preds = preds.cuda()
+            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
+        else:
+            leaf_id_indexes = torch.tensor(leaf_id_index_list)
+
+        iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
+                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+
+        acc.update_detail(acc_update_info)
+        self.curr_acc_list = [acc]
+
         return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
@@ -541,13 +601,20 @@ class IncModel(IncrementalLearner):
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=self._increments, n_classes=self._n_classes)
         self._ex.logger.info(f"test top1acc:{test_acc_stats['top1']}")
 
-    def save_acc_detail_info(self):
+    def save_acc_detail_info(self, save_name):
         class_index = []
         sum_list = []
         count_list = []
         multi_num_list = []
         avg_acc_list = []
         multi_rate_list = []
+
+        class_index_aux = []
+        sum_list_aux = []
+        count_list_aux = []
+        multi_num_list_aux = []
+        avg_acc_list_aux = []
+        multi_rate_list_aux = []
 
         for epoch_i in range(len(self.curr_acc_list)):
             class_index.append(f'epoch_{epoch_i}')
@@ -567,6 +634,31 @@ class IncModel(IncrementalLearner):
                 avg_acc_list.append(acc_epoch_i_info[i]['avg'])
                 multi_rate_list.append(acc_epoch_i_info[i]['multi_rate'])
 
+        for epoch_i in range(len(self.curr_acc_list_aux)):
+            class_index_aux.append(f'epoch_{epoch_i}')
+            sum_list_aux.append('')
+            count_list_aux.append('')
+            multi_num_list_aux.append('')
+            avg_acc_list_aux.append('')
+            multi_rate_list_aux.append('')
+
+            acc_epoch_i_info_aux = self.curr_acc_list_aux[epoch_i].info_detail
+
+            for i in sorted(acc_epoch_i_info_aux.keys()):
+                class_index_aux.append(i)
+                count_list_aux.append(acc_epoch_i_info_aux[i]['count'])
+                sum_list_aux.append(acc_epoch_i_info_aux[i]['sum'])
+                multi_num_list_aux.append(acc_epoch_i_info_aux[i]['multi_num'])
+                avg_acc_list_aux.append(acc_epoch_i_info_aux[i]['avg'])
+                multi_rate_list_aux.append(acc_epoch_i_info_aux[i]['multi_rate'])
+
         df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
                            'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list})
-        df.to_csv(f'{self.acc_detail_path}/task_{self._task}.csv')
+        df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
+
+        df_aux = pd.DataFrame({'class_index_aux': class_index_aux, 'avg_acc_aux': avg_acc_list_aux,
+                               'multi_rate_aux': multi_rate_list_aux, 'count_aux': count_list_aux,
+                               'acc_sum_aux': sum_list_aux, 'multi_num_aux': multi_num_list_aux})
+        df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
+
+        print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')

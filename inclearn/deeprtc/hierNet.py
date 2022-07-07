@@ -1,15 +1,15 @@
-
+import math
 import numpy as np
 import torch
 from torch import nn
 
 
 class HierNet(nn.Module):
-    """Module of hierarchical classifier
+    """ Module of hierarchical classifier
     """
     def __init__(self, input_size, nodes):
         super(HierNet, self).__init__()
-
+        self.classifier_type = ''
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
@@ -18,7 +18,6 @@ class HierNet(nn.Module):
             self.add_module('fc{}'.format(i), nn.Linear(input_size, len(nodes[i].children)))
 
     def forward(self, x, gate=None, pred=False, thres=0):
-
         if pred is False:
             # for training
             nout = []
@@ -88,8 +87,16 @@ class HierNet(nn.Module):
 
             return self.output, nout
 
+    def reset_parameters(self):
+        for i in range(self.num_nodes):
+            fc_layers = getattr(self, 'fc{}'.format(i))
+            stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))
+            fc_layers.weight.data.uniform_(-stdv, stdv)
+            stdv = 1. / math.sqrt(fc_layers.bias.size(0))
+            fc_layers.bias.data.uniform_(-stdv, stdv)
+        return
+
 
 def hiernet(**kwargs):
     model = HierNet(**kwargs)
     return model
-

@@ -4,29 +4,22 @@ from torch import nn
 from torch.optim import SGD
 import torch.nn.functional as F
 from inclearn.tools.metrics import ClassErrorMeter, AverageValueMeter
+from inclearn.tools.utils import to_onehot
+from inclearn.deeprtc.utils import deep_rtc_nloss, leaf_id_indices
 
 
-def finetune_last_layer(
-    logger,
-    network,
-    loader,
-    n_class,
-    nepoch=30,
-    lr=0.1,
-    scheduling=[15, 35],
-    lr_decay=0.1,
-    weight_decay=5e-4,
-    loss_type="ce",
-    temperature=5.0,
-    test_loader=None,
-):
+def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
+                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None):
+    if scheduling is None:
+        scheduling = [15, 35]
     network.eval()
-    #if hasattr(network.module, "convnets"):
+    n_module = network.module
+    # if hasattr(network.module, "convnets"):
     #    for net in network.module.convnets:
     #        net.eval()
-    #else:
+    # else:
     #    network.module.convnet.eval()
-    optim = SGD(network.module.classifier.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
+    optim = SGD(n_module.classifier.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optim, scheduling, gamma=lr_decay)
 
     if loss_type == "ce":
@@ -42,18 +35,35 @@ def finetune_last_layer(
         total_count = 0
         # print(f"dataset loader length {len(loader.dataset)}")
         for inputs, targets in loader:
-            inputs, targets = inputs.cuda(), targets.cuda()
+            if device.type == 'cuda':
+                inputs, targets = inputs.cuda(), targets.cuda()
             if loss_type == "bce":
                 targets = to_onehot(targets, n_class)
-            outputs = network(inputs)['logit']
-            _, preds = outputs.max(1)
-            optim.zero_grad()
-            loss = criterion(outputs / temperature, targets)
-            loss.backward()
-            optim.step()
-            total_loss += loss * inputs.size(0)
-            total_correct += (preds == targets).sum()
-            total_count += inputs.size(0)
+            if n_module.taxonomy == 'rtc':
+                outputs = network(inputs)
+                nout = outputs['nout']
+                loss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
+
+                max_z = torch.max(outputs["output"], dim=1)[0]
+                preds = torch.eq(outputs["output"], max_z.view(-1, 1))
+                leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
+                iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+
+                loss.backward()
+                optim.step()
+                total_loss += loss
+                total_correct += iscorrect.sum()
+                total_count += inputs.size(0)
+            else:
+                outputs = network(inputs)['logit']
+                _, preds = outputs.max(1)
+                optim.zero_grad()
+                loss = criterion(outputs / temperature, targets)
+                loss.backward()
+                optim.step()
+                total_loss += loss * inputs.size(0)
+                total_correct += (preds == targets).sum()
+                total_count += inputs.size(0)
 
         if test_loader is not None:
             test_correct = 0.0
@@ -81,7 +91,6 @@ def extract_features(model, loader):
     model.eval()
     with torch.no_grad():
         for _inputs, _targets in loader:
-
             # _inputs = _inputs.cuda()
             _inputs = _inputs
             _targets = _targets.numpy()
