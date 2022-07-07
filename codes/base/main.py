@@ -160,7 +160,7 @@ def test(_run, _rnd, _seed):
         # Build exemplars
         ypred, ytrue = model.eval_task(model._test_loader)
         # TODO: fix the name
-        model.save_acc_detail_info('test')
+        model.save_acc_detail_info('test1')
 
 
 if __name__ == "__main__":
