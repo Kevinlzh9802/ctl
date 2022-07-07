@@ -31,7 +31,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.current_task = current_task
 
         if self.der:
-            print("Enable dynamical reprensetation expansion!")
+            print("Enable dynamical representation expansion!")
             self.convnets = nn.ModuleList()
             self.convnets.append(
                 factory.get_convnet(convnet_type,
