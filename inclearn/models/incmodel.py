@@ -304,7 +304,8 @@ class IncModel(IncrementalLearner):
             max_z_aux = torch.max(aux_output, dim=1)[0]
             preds_aux = torch.eq(aux_output, max_z_aux.view(-1, 1))
 
-            iscorrect_aux = torch.gather(preds_aux, 1, aux_targets.view(-1, 1)).flatten().float()
+            # TODO: monitor this cuda()
+            iscorrect_aux = torch.gather(preds_aux.cuda(), 1, aux_targets.view(-1, 1)).flatten().float()
 
             acc_update_info_aux = self.update_acc_detail(list(np.array(aux_targets.cpu())),
                                                          list(np.array(iscorrect_aux.cpu())),
