@@ -20,7 +20,7 @@ use_bias: False
 last_relu: False
 
 der: True
-use_aux_cls: False
+use_aux_cls: True
 aux_n+1: True
 distillation: "none"
 temperature: 2

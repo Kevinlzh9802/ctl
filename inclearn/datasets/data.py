@@ -209,7 +209,6 @@ class IncrementalDataset:
     #           Data Setup
     # --------------------------------
     def _setup_data(self, dataset):
-        # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []

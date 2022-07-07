@@ -82,9 +82,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         output, nout, sfmx_base = self.classifier(x=features, gate=gate)
 
         # logits = self.classifier(features)
-        # aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
-        # return {'feature': features, 'logit': logits, 'aux_logit': aux_logits}
-        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base}
+        aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
+        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits}
 
     @property
     def features_dim(self):
@@ -133,7 +132,12 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.classifier = fc
 
         if self.aux_nplus1:
-            aux_fc = self._gen_classifier(self.out_dim, n_classes + 1)
+            # aux_fc = self._gen_classifier(self.out_dim, n_classes + 1)
+            aux_fc = nn.Linear(self.out_dim, n_classes + 1, bias=self.use_bias).to(self.device)
+            if self.init == "kaiming":
+                nn.init.kaiming_normal_(aux_fc.weight, nonlinearity="linear")
+            if self.use_bias:
+                nn.init.constant_(aux_fc.bias, 0.0)
         else:
             aux_fc = self._gen_classifier(self.out_dim, self.n_classes + n_classes)
         del self.aux_classifier
