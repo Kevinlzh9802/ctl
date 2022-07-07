@@ -344,10 +344,13 @@ class IncModel(IncrementalLearner):
                     aux_targets[aux_targets == targets_unique_sorted[index_i]] = index_i+1
 
             aux_targets = aux_targets.type(torch.LongTensor)
-            aux_loss = F.cross_entropy(aux_output, aux_targets)
+            if self._device.type == 'cuda':
+                aux_loss = F.cross_entropy(aux_output, aux_targets.cuda())
+            else:
+                aux_loss = F.cross_entropy(aux_output, aux_targets)
 
         else:
-            if str(self._device) == 'cuda:0':
+            if self._device.type == 'cuda':
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
