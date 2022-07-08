@@ -304,6 +304,7 @@ class IncModel(IncrementalLearner):
             max_z_aux = torch.max(aux_output, dim=1)[0]
             preds_aux = torch.eq(aux_output, max_z_aux.view(-1, 1))
 
+            # TODO: monitor this cuda()
             iscorrect_aux = torch.gather(preds_aux, 1, aux_targets.view(-1, 1)).flatten().float()
 
             acc_update_info_aux = self.update_acc_detail(list(np.array(aux_targets.cpu())),
@@ -344,10 +345,12 @@ class IncModel(IncrementalLearner):
                     aux_targets[aux_targets == targets_unique_sorted[index_i]] = index_i+1
 
             aux_targets = aux_targets.type(torch.LongTensor)
+            if self._device.type == 'cuda':
+                aux_targets = aux_targets.cuda()
             aux_loss = F.cross_entropy(aux_output, aux_targets)
 
         else:
-            if str(self._device) == 'cuda:0':
+            if self._device.type == 'cuda':
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
@@ -437,10 +440,9 @@ class IncModel(IncrementalLearner):
         acc_aux = averageMeter()
         preds, targets = [], []
         preds_aux, targets_aux = [], []
-
         self._parallel_network.eval()
         with torch.no_grad():
-            for i, (inputs, lbls) in enumerate(data_loader):
+            for _, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
 
                 outputs = self._parallel_network(inputs)
@@ -461,13 +463,13 @@ class IncModel(IncrementalLearner):
 
                     aux_targets = lbls.clone()
                     targets_memory = list(set(data_loader.dataset.y))
-                    # TODO: fix this bug!
-                    for i in self._inc_dataset.targets_cur:
+                    targets_unique_sorted = sorted(list(set(self._inc_dataset.targets_cur)))
+                    for i in targets_unique_sorted:
                         targets_memory.remove(i)
                     for curr_class_i in targets_memory:
                         aux_targets[aux_targets == curr_class_i] = 0
-                    for index_i in range(len(self._inc_dataset.targets_cur)):
-                        aux_targets[aux_targets == self._inc_dataset.targets_cur[index_i]] = index_i+1
+                    for index_i in range(len(targets_unique_sorted)):
+                        aux_targets[aux_targets == targets_unique_sorted[index_i]] = index_i + 1
 
                     preds_aux.append(_preds_aux.detach().cpu().numpy())
                     targets_aux.append(aux_targets.long().cpu().numpy())

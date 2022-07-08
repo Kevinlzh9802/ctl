@@ -84,14 +84,11 @@ def _train(cfg, _run, ex, tensorboard):
 
     for ti in range(inc_dataset.n_tasks):
         model.before_task()
-        print(f'task {model._task}')
         model.train_task()
         model.after_task()
-        # TODO: fix the name
-        model.save_acc_detail_info('tbd')
+        model.save_acc_detail_info('train_acc')
         ypred, ytrue = model.eval_task(model._test_loader)
-        # TODO: fix the name
-        model.save_acc_detail_info('tbd2')
+        model.save_acc_detail_info('test_acc')
 
     top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])
 
@@ -159,8 +156,7 @@ def test(_run, _rnd, _seed):
 
         # Build exemplars
         ypred, ytrue = model.eval_task(model._test_loader)
-        # TODO: fix the name
-        model.save_acc_detail_info('test')
+        model.save_acc_detail_info('test1')
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ use_bias: False
 last_relu: False
 
 der: True
-use_aux_cls: False
+use_aux_cls: True
 aux_n+1: True
 distillation: "none"
 temperature: 2
@@ -43,7 +43,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 150
+epochs: 170
 resampling: False
 warmup: False
 warmup_epochs: 10
@@ -64,8 +64,8 @@ postprocessor:
   weight_decay: 0.0005
 
 decouple:
-  enable: True
-  epochs: 30
+  enable: False
+  epochs: 5
   fullset: True
   lr: 0.05
   scheduling:
@@ -87,7 +87,7 @@ pretrain:
 
 
 # Dataset Cfg
-dataset: "cifar100"  #'imagenet100', 'cifar100'
+dataset: "cifar100"  # 'imagenet100', 'cifar100'
 trial: 5
 increment: 10
 batch_size: 128
@@ -109,6 +109,6 @@ fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
 # Misc
 device_auto_detect: True  # If True, use GPU whenever possible
 device: 0 # GPU index to use, for cpu use -1
-# device: 'cpu' #GPU index to use, for cpu use -1
+# device: 'cpu' # GPU index to use, for cpu use -1
 seed: 1993
 
