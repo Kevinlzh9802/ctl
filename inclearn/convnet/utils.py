@@ -49,8 +49,8 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
                 iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
 
-                np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(preds), fmt='%2.2f')
-                np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(preds), fmt='%2.2f')
+                np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(preds.cpu()), fmt='%2.2f')
+                np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(iscorrect.cpu()), fmt='%2.2f')
                 loss.backward()
                 optim.step()
                 total_loss += loss
