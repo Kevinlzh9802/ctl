@@ -89,11 +89,12 @@ class HierNet(nn.Module):
 
     def reset_parameters(self):
         for i in range(self.num_nodes):
-            fc_layers = getattr(self, 'fc{}'.format(i))
-            stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))
-            fc_layers.weight.data.uniform_(-stdv, stdv)
-            stdv = 1. / math.sqrt(fc_layers.bias.size(0))
-            fc_layers.bias.data.uniform_(-stdv, stdv)
+            # fc_layers = getattr(self, 'fc{}'.format(i))
+            self.add_module('fc{}'.format(i), nn.Linear(input_size, len(nodes[i].children)))
+            # stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))
+            # fc_layers.weight.data.uniform_(-stdv, stdv)
+            # stdv = 1. / math.sqrt(fc_layers.bias.size(0))
+            # fc_layers.bias.data.uniform_(-stdv, stdv)
         return
 
 
