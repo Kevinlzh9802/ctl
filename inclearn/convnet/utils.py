@@ -34,6 +34,10 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         total_correct = 0.0
         total_count = 0
         # print(f"dataset loader length {len(loader.dataset)}")
+        all_preds = None
+        all_is_correct = np.array([])
+        b=np.empty([0, 24], dtype=np.uint8)
+        y_selected = np.empty([0], dtype=np.uint8)
         for inputs, targets in loader:
             if device.type == 'cuda':
                 inputs, targets = inputs.cuda(), targets.cuda()
@@ -49,9 +53,11 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
                 iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
 
-                print(len(targets))
-                np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(preds.cpu()), fmt='%2.2f')
-                np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(iscorrect.cpu()), fmt='%2.2f')
+                if all_preds is None:
+                    all_preds = np.empty([0, preds.shape[1]])
+                all_preds = np.concatenate((all_preds, preds))
+                all_is_correct = np.concatenate((all_is_correct, iscorrect))
+                print(loss)
                 loss.backward()
                 optim.step()
                 total_loss += loss
@@ -86,6 +92,8 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         else:
             logger.info("Epoch %d finetuning loss %.3f acc %.3f" %
                         (i, total_loss.item() / total_count, total_correct.item() / total_count))
+        np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(all_preds), fmt='%2.2f')
+        np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(all_is_correct), fmt='%2.2f')
     return network
 
 
