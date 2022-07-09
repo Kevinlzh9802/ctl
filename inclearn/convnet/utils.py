@@ -10,6 +10,7 @@ from inclearn.deeprtc.utils import deep_rtc_nloss, leaf_id_indices
 
 def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
                         weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path=''):
+    print(lr)
     if scheduling is None:
         scheduling = [15, 35]
     network.eval()
