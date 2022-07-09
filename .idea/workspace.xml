@@ -8,9 +8,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/ctl.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ctl.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/convnet/network.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/convnet/network.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/convnet/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/convnet/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -82,9 +80,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="C:\Users\Zonghuan Li\Desktop\srip\venv\Scripts\python.exe" />
+      <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/codes/base" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
@@ -141,7 +139,7 @@
       <workItem from="1656693743052" duration="23185000" />
       <workItem from="1657037319934" duration="22333000" />
       <workItem from="1657123997097" duration="26629000" />
-      <workItem from="1657316010153" duration="300000" />
+      <workItem from="1657316010153" duration="9052000" />
     </task>
     <servers />
   </component>
@@ -163,9 +161,20 @@
     <MESSAGE value="0629 changes" />
     <option name="LAST_COMMIT_MESSAGE" value="0629 changes" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/inclearn/convnet/utils.py</url>
+          <line>51</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ctl$main.coverage" NAME="main Coverage Results" MODIFIED="1656362070511" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
     <SUITE FILE_PATH="coverage/ctl$test.coverage" NAME="test Coverage Results" MODIFIED="1657055105518" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
-    <SUITE FILE_PATH="coverage/ctl$simplified.coverage" NAME="simplified Coverage Results" MODIFIED="1657153257174" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
+    <SUITE FILE_PATH="coverage/ctl$simplified.coverage" NAME="simplified Coverage Results" MODIFIED="1657325305292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/codes/base" />
   </component>
 </project>

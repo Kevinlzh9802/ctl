@@ -9,7 +9,7 @@ from inclearn.deeprtc.utils import deep_rtc_nloss, leaf_id_indices
 
 
 def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
-                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None):
+                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path=''):
     if scheduling is None:
         scheduling = [15, 35]
     network.eval()
@@ -49,6 +49,8 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
                 iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
 
+                np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(preds), fmt='%2.2f')
+                np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(preds), fmt='%2.2f')
                 loss.backward()
                 optim.step()
                 total_loss += loss

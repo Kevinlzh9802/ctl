@@ -389,7 +389,8 @@ class IncModel(IncrementalLearner):
                                 lr_decay=self._decouple["lr_decay"],
                                 weight_decay=self._decouple["weight_decay"],
                                 loss_type="ce",
-                                temperature=self._decouple["temperature"])
+                                temperature=self._decouple["temperature"],
+                                save_path=f'{self.acc_detail_path}/task_{self._task}_decouple')
             network = deepcopy(self._parallel_network)
             if self._cfg["save_ckpt"]:
                 save_path = os.path.join(os.getcwd(), "ckpts")
