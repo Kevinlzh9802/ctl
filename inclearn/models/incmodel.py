@@ -374,10 +374,10 @@ class IncModel(IncrementalLearner):
                                                        mode="balanced_train")
 
             # finetuning
-            if self._device.type == 'cuda':
-                self._parallel_network.module.classifier.module.reset_parameters()
-            else:
-                self._parallel_network.module.classifier.reset_parameters()
+            # if self._device.type == 'cuda':
+            #     self._parallel_network.module.classifier.module.reset_parameters()
+            # else:
+            #     self._parallel_network.module.classifier.reset_parameters()
             finetune_last_layer(self._ex.logger,
                                 self._parallel_network,
                                 train_loader,
