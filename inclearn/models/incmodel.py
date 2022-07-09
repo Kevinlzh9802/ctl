@@ -391,11 +391,11 @@ class IncModel(IncrementalLearner):
             print(output_1)
             print(output_2)
 
-            # finetuning
-            if self._device.type == 'cuda':
-                self._parallel_network.module.classifier.module.reset_parameters()
-            else:
-                self._parallel_network.module.classifier.reset_parameters()
+            # # finetuning
+            # if self._device.type == 'cuda':
+            #     self._parallel_network.module.classifier.module.reset_parameters()
+            # else:
+            #     self._parallel_network.module.classifier.reset_parameters()
 
             # test_part
             test_input = None
