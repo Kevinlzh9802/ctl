@@ -366,7 +366,8 @@ class IncModel(IncrementalLearner):
             save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(save_path, self._task))
 
-        if self._cfg["decouple"]['enable'] and self._task > 0:
+        # if self._cfg["decouple"]['enable'] and self._task > 0:
+        if self._cfg["decouple"]['enable']:
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:
