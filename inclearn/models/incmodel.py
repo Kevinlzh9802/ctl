@@ -375,44 +375,44 @@ class IncModel(IncrementalLearner):
                                                        mode="balanced_train")
 
             # test_part
-            test_input = None
-            test_target = None
-            for i, (inputs, targets) in enumerate(train_loader):
-                test_input = inputs
-                test_target = targets
+            # test_input = None
+            # test_target = None
+            # for i, (inputs, targets) in enumerate(train_loader):
+            #     test_input = inputs
+            #     test_target = targets
+            #
+            # test_input_image_1 = test_input[0:1, :, :, :]
+            # test_input_image_2 = test_input[1:2, :, :, :]
+            # output_1 = self._parallel_network(test_input_image_1)['output']
+            # output_2 = self._parallel_network(test_input_image_2)['output']
+            # print('ck_pt_1')
+            # print(test_target[0])
+            # print(test_target[1])
+            # print(output_1)
+            # print(output_2)
 
-            test_input_image_1 = test_input[0:1, :, :, :]
-            test_input_image_2 = test_input[1:2, :, :, :]
-            output_1 = self._parallel_network(test_input_image_1)['output']
-            output_2 = self._parallel_network(test_input_image_2)['output']
-            print('ck_pt_1')
-            print(test_target[0])
-            print(test_target[1])
-            print(output_1)
-            print(output_2)
-
-            # # finetuning
-            # if self._device.type == 'cuda':
-            #     self._parallel_network.module.classifier.module.reset_parameters()
-            # else:
-            #     self._parallel_network.module.classifier.reset_parameters()
+            # finetuning
+            if self._device.type == 'cuda':
+                self._parallel_network.module.classifier.module.reset_parameters()
+            else:
+                self._parallel_network.module.classifier.reset_parameters()
 
             # test_part
-            test_input = None
-            test_target = None
-            for i, (inputs, targets) in enumerate(train_loader):
-                test_input = inputs
-                test_target = targets
-
-            test_input_image_1 = test_input[0:1, :, :, :]
-            test_input_image_2 = test_input[1:2, :, :, :]
-            output_1 = self._parallel_network(test_input_image_1)['output']
-            output_2 = self._parallel_network(test_input_image_2)['output']
-            print('ck_pt_1')
-            print(test_target[0])
-            print(test_target[1])
-            print(output_1)
-            print(output_2)
+            # test_input = None
+            # test_target = None
+            # for i, (inputs, targets) in enumerate(train_loader):
+            #     test_input = inputs
+            #     test_target = targets
+            #
+            # test_input_image_1 = test_input[0:1, :, :, :]
+            # test_input_image_2 = test_input[1:2, :, :, :]
+            # output_1 = self._parallel_network(test_input_image_1)['output']
+            # output_2 = self._parallel_network(test_input_image_2)['output']
+            # print('ck_pt_1')
+            # print(test_target[0])
+            # print(test_target[1])
+            # print(output_1)
+            # print(output_2)
 
             finetune_last_layer(self._ex.logger,
                                 self._parallel_network,
