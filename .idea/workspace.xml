@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/convnet/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/convnet/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/deeprtc/hierNet.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/deeprtc/hierNet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
