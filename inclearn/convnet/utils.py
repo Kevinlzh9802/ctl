@@ -29,7 +29,9 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         criterion = nn.BCEWithLogitsLoss()
 
     logger.info("Begin finetuning last layer")
-
+    print('loader info')
+    print(np.unique(np.array(loader.dataset.y), return_counts=True)[0])
+    print(np.unique(np.array(loader.dataset.y), return_counts=True)[1])
     for i in range(nepoch):
         total_loss = 0.0
         total_correct = 0.0
