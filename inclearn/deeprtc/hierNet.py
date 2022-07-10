@@ -28,13 +28,14 @@ class HierNet(nn.Module):
             outs = []
             out_masks = []
             # root node (no dependency to other nodes)
-            cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
+            # cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
 
             # outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
 
             # other internal nodes
             # usually the hierNet is constructed by used_nodes, which only contains internal nodes
-            for i in range(1, self.num_nodes):
+            for i in range(self.num_nodes):
+                # TODO: modify the i-1!
                 cw = torch.from_numpy(self.nodes[i].codeword).float().to(nout[i].device)
                 cond = self.nodes[i].cond
                 cond_gate = torch.ones([x.size(0), 1]).to(nout[i].device)
@@ -88,7 +89,7 @@ class HierNet(nn.Module):
             return self.output, nout
 
     def reset_parameters(self):
-        for i in range(self.num_nodes):
+        for i in range(1, self.num_nodes):
             # fc_layers = getattr(self, 'fc{}'.format(i))
             self.add_module('fc{}'.format(i), nn.Linear(self.input_size, len(self.nodes[i].children)))
             # stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))

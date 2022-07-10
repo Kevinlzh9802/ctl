@@ -56,8 +56,12 @@ class Tree:
         self.label_dict_hier = label_dict_hier
         self.label_dict_index = label_dict_index
         """For the root node, attach a child node with name of the dataset. root.depth=0, dataset.depth=1."""
-        self._setup_root_nodes()
-        self._buildTree(self.data_root, label_dict_hier, label_dict_index)
+        # self._setup_root_nodes()
+        self.root = TreeNode('root', self.dataset_name, 0, 0)
+        # self.root.add_child('data_root')
+        # self.data_root = TreeNode('data_root', self.dataset_name, 1, 1, child_idx=1, parent='root')
+        self.nodes = {'root': self.root}
+        self._buildTree(self.root, label_dict_hier, label_dict_index)
         self.max_depth = max(n.depth for n in self.nodes.values())  # including root(0) and datasets(1)
         self.dict_depth = self.max_depth - 1
 
@@ -79,12 +83,12 @@ class Tree:
             used_nodes[n_id] = self.nodes.get(name).copy()
             used_nodes[n_id].codeword = self.get_codeword(name)
             # generate mask for internal nodes other than root node
-            if n_id > 0:
-                n_cw = self.nodes.get(name).codeword
-                idx = n_cw.tolist().index(1)
-                used_nodes[n_id].mask = 1 - n_cw
-                assert used_nodes[n_id].mask[idx] == 0
-                used_nodes[n_id].mask[idx] = 1
+            # if n_id > 0:
+            n_cw = self.nodes.get(name).codeword
+            idx = n_cw.tolist().index(1)
+            used_nodes[n_id].mask = 1 - n_cw
+            assert used_nodes[n_id].mask[idx] == 0
+            used_nodes[n_id].mask[idx] = 1
         # print('number of used nodes: {}'.format(len(used_nodes)))
 
         # save leaf nodes
@@ -223,7 +227,7 @@ class Tree:
         node = self.nodes.get(node_name)
         if not node:
             raise ValueError('{} is not in the tree'.format(node_name))
-        if node.depth == 0 or node.depth == 1:
+        if node.depth == 0:
             finest_nodes_name = list(self.leaf_nodes.values())
         elif len(node.children) == 0:
             finest_nodes_name = [node.name]

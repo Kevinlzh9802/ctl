@@ -29,9 +29,9 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         criterion = nn.BCEWithLogitsLoss()
 
     logger.info("Begin finetuning last layer")
-    print('loader info')
-    print(np.unique(np.array(loader.dataset.y), return_counts=True)[0])
-    print(np.unique(np.array(loader.dataset.y), return_counts=True)[1])
+    # print('loader info')
+    # print(np.unique(np.array(loader.dataset.y), return_counts=True)[0])
+    # print(np.unique(np.array(loader.dataset.y), return_counts=True)[1])
     for i in range(nepoch):
         total_loss = 0.0
         total_correct = 0.0
@@ -51,7 +51,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 nout = outputs['nout']
                 loss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
 
-                print(outputs["output"])
+                # print(outputs["output"])
                 max_z = torch.max(outputs["output"], dim=1)[0]
                 preds = torch.eq(outputs["output"], max_z.view(-1, 1))
                 leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
