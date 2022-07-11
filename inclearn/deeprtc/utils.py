@@ -14,7 +14,7 @@ def deep_rtc_nloss(nout, targets, leaf_id, node_labels, device):
                 res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
             else:
                 res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
-            if res <= 0.001:
+            if res == 0:
                 print(nout[n_id][idx, :])
                 print(n_l)
             nloss.append(res)
