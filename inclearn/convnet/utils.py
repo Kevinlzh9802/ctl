@@ -39,8 +39,8 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         # print(f"dataset loader length {len(loader.dataset)}")
         all_preds = None
         all_is_correct = np.array([])
-        b=np.empty([0, 24], dtype=np.uint8)
-        y_selected = np.empty([0], dtype=np.uint8)
+        # b=np.empty([0, 24], dtype=np.uint8)
+        # y_selected = np.empty([0], dtype=np.uint8)
         for inputs, targets in loader:
             if device.type == 'cuda':
                 network = network.cuda()

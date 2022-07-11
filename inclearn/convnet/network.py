@@ -78,7 +78,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             features = self.convnet(x)
 
         gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
-        gate[:, 0] = 1
+        # gate[:, 0] = 1
         output, nout, sfmx_base = self.classifier(x=features, gate=gate)
 
         # logits = self.classifier(features)

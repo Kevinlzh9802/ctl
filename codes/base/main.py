@@ -84,7 +84,14 @@ def _train(cfg, _run, ex, tensorboard):
 
     for ti in range(inc_dataset.n_tasks):
         model.before_task()
-        model.train_task()
+        if ti == 0:
+            if hasattr(model._network, "module"):
+                model._parallel_network.module.load_state_dict(torch.load('ckpts/step0.ckpt'))
+            else:
+                model._parallel_network.load_state_dict(torch.load('ckpts/step0.ckpt'))
+        else:
+            model.train_task()
+
         model.after_task()
         model.save_acc_detail_info('train_acc')
         ypred, ytrue = model.eval_task(model._test_loader)
