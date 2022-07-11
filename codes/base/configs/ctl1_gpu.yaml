@@ -30,7 +30,7 @@ val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
 save_ckpt: True
 save_mem: True
 load_mem: False
-new_train_from: 2
+new_train_from: 0
 
 # Optimization; Training related
 task_max: 2
