@@ -84,11 +84,11 @@ def _train(cfg, _run, ex, tensorboard):
 
     for ti in range(inc_dataset.n_tasks):
         model.before_task()
-        if ti == 0:
+        if ti < cfg["new_train_from"]:
             if hasattr(model._network, "module"):
-                model._parallel_network.module.load_state_dict(torch.load('ckpts/step0.ckpt'))
+                model._parallel_network.module.load_state_dict(torch.load(f'ckpts/step{ti}.ckpt'))
             else:
-                model._parallel_network.load_state_dict(torch.load('ckpts/step0.ckpt'))
+                model._parallel_network.load_state_dict(torch.load(f'ckpts/step{ti}.ckpt'))
         else:
             model.train_task()
 

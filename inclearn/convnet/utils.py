@@ -61,9 +61,10 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 if all_preds is None:
                     all_preds = np.empty([0, preds.shape[1]])
                 all_preds = np.concatenate((all_preds, preds.cpu()))
-                preds_np = np.array(preds)
+                preds_np = np.array(preds.cpu())
                 problematic = preds_np.sum(1) > 1
-                print(nout[0][problematic])
+                if np.any(problematic):
+                    print(nout[0][problematic])
                 all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
                 # print(loss)
                 loss.backward()
