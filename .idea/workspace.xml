@@ -158,15 +158,4 @@
     <MESSAGE value="0629 changes" />
     <option name="LAST_COMMIT_MESSAGE" value="0629 changes" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/inclearn/convnet/utils.py</url>
-          <line>62</line>
-          <option name="timeStamp" value="36" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-  </component>
 </project>
