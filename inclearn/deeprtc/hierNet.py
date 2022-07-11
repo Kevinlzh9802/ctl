@@ -47,7 +47,8 @@ class HierNet(nn.Module):
                 mask = torch.clamp(torch.from_numpy(self.nodes[i].mask).float().to(nout[i].device), 1e-17, 1)
                 out_masks.append(torch.log(mask) * (1 - gate[:, i].view(-1, 1)))
 
-            self.output = torch.clamp(torch.sum(torch.stack(outs), 0), -1e17, 10)
+            # self.output = torch.clamp(torch.sum(torch.stack(outs), 0), -1e17, 10)
+            self.output = torch.sum(torch.stack(outs), 0)
             out_mask = torch.eq(torch.sum(torch.stack(out_masks), 0), 0).float()
             self.sfmx_base = torch.sum(torch.exp(self.output) * out_mask, 1)
 
