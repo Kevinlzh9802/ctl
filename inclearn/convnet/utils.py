@@ -43,6 +43,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         y_selected = np.empty([0], dtype=np.uint8)
         for inputs, targets in loader:
             if device.type == 'cuda':
+                network = network.cuda()
                 inputs, targets = inputs.cuda(), targets.cuda()
             if loss_type == "bce":
                 targets = to_onehot(targets, n_class)
