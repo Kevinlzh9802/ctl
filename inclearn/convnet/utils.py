@@ -62,7 +62,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                     all_preds = np.empty([0, preds.shape[1]])
                 all_preds = np.concatenate((all_preds, preds.cpu()))
                 all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
-                print(loss)
+                # print(loss)
                 loss.backward()
                 optim.step()
                 total_loss += loss
