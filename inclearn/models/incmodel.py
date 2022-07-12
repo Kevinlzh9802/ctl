@@ -91,23 +91,21 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list_aux = []
         self.acc_detail_path = ''
 
+        # Task info
+        self._task = 0
+        self._task_size = 0
+        self._current_tax_tree = None
+        self._n_train_data = 0
+        self._n_test_data = 0
+        self._n_tasks = 0
+
     def eval(self):
         self._parallel_network.eval()
-
-    # def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, tax_tree):
-    #     self._task = task
-    #     self._task_size = increment
-    #     self._increments.append(self._task_size)
-    #     self._total_n_classes = total_n_classes
-    #     self._n_train_data = n_train_data
-    #     self._n_test_data = n_test_data
-    #     self._n_tasks = n_tasks
-    #     self._current_tax_tree = tax_tree
 
     def set_task_info(self, task, task_size, tax_tree, n_train_data, n_test_data, n_tasks, acc_detail_path):
         self._task = task
         self._task_size = task_size
-        self._increments.append(self._task_size)
+        # self._increments.append(self._task_size)
         self._current_tax_tree = tax_tree
         self._n_train_data = n_train_data
         self._n_test_data = n_test_data
@@ -385,8 +383,8 @@ class IncModel(IncrementalLearner):
             if self._cfg["aux_n+1"]:
                 for curr_class_i in self._inc_dataset.targets_memory:
                     aux_targets[aux_targets == curr_class_i] = 0
-                for index_i in range(len(self._inc_dataset.targets_cur)):
-                    aux_targets[aux_targets == self._inc_dataset.targets_cur[index_i]] = index_i + 1
+                for index_i in range(len(self._inc_dataset.targets_cur_unique)):
+                    aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
 
             aux_targets = aux_targets.type(torch.LongTensor)
             if self._device.type == 'cuda':
@@ -519,12 +517,12 @@ class IncModel(IncrementalLearner):
 
                     aux_targets = lbls.clone()
                     targets_memory = list(set(data_loader.dataset.y))
-                    for i in self._inc_dataset.targets_cur:
+                    for i in self._inc_dataset.targets_cur_unique:
                         targets_memory.remove(i)
                     for curr_class_i in targets_memory:
                         aux_targets[aux_targets == curr_class_i] = 0
-                    for index_i in range(len(self._inc_dataset.targets_cur)):
-                        aux_targets[aux_targets == self._inc_dataset.targets_cur[index_i]] = index_i + 1
+                    for index_i in range(len(self._inc_dataset.targets_cur_unique)):
+                        aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
 
                     preds_aux.append(_preds_aux.detach().cpu().numpy())
                     targets_aux.append(aux_targets.long().cpu().numpy())
@@ -639,17 +637,16 @@ class IncModel(IncrementalLearner):
             from inclearn.tools.memory import herding
             data_inc = self._inc_dataset.shared_data_inc if self._inc_dataset.shared_data_inc is not None \
                 else self._inc_dataset.data_inc
-            self._inc_dataset.tmp_memory_dict, self._inc_dataset.data_memory, self._inc_dataset.targets_memory = herding(
+            self._inc_dataset.memory_dict = herding(
                 self._n_classes,
                 self._parallel_network,
                 inc_dataset,
-                x_train,
-                y_train,
                 data_inc,
                 self._memory_per_class,
                 self._ex.logger,
                 self._device
             )
+            self._inc_dataset.update_memory_array()
         else:
             raise ValueError()
 

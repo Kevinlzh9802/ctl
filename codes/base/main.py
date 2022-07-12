@@ -108,7 +108,7 @@ def _train(cfg, _run, ex, tensorboard):
             n_train_data=task_info["n_train_data"],
             n_test_data=task_info["n_test_data"],
             n_tasks=inc_dataset.n_tasks,
-            acc_detail_path = cfg.acc_detail_path
+            acc_detail_path=cfg.acc_detail_path
         )
         model.before_task(task_i, inc_dataset)
         # TODO: Move to incmodel.py

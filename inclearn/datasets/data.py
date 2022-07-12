@@ -67,12 +67,13 @@ class IncrementalDataset:
         # memory Mt
         self.data_memory = None
         self.targets_memory = []
-        self.tmp_memory_dict = {}
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
+        self.targets_cur_unique = []
         # Available data \tilde{D}_t = D_t \cup M_t
         self.data_inc, self.targets_inc = None, None  # Cur task data + memory
+        self.data_test_inc, self.targets_test_inc = [], []
         # self.targets_ori = None
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
@@ -85,10 +86,12 @@ class IncrementalDataset:
 
     def new_task(self, sample_rate):
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children(sample_rate)
-        self.targets_cur = sorted(list(set(y_train)))
+        self.data_cur, self.targets_cur = x_train, y_train
+        self.targets_cur_unique = sorted(list(set(self.targets_cur )))
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
-
+        if self._current_task > 0:
+            self._update_memory_for_new_task(self.curriculum[self._current_task])
         if self.data_memory is not None:
             print("Set memory of size: {}.".format(len(self.data_memory)))
             if len(self.data_memory) != 0:
@@ -168,10 +171,10 @@ class IncrementalDataset:
                     if data_frac > 0:
                         sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
                     else:
-                        if len(self.tmp_memory_dict) == 0:
+                        if len(self.memory_dict) == 0:
                             sel_ind = idx_available
                         else:
-                            memory_size = self.tmp_memory_dict[list(self.tmp_memory_dict.keys())[0]].shape[0]
+                            memory_size = self.memory_dict[list(self.memory_dict.keys())[0]].shape[0]
                             sel_ind = idx_available[:memory_size]
                 else:
                     if data_frac > 0:
