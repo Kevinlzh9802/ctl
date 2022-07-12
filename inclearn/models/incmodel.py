@@ -89,7 +89,11 @@ class IncModel(IncrementalLearner):
                     os.mkdir(save_path)
         self.curr_acc_list = []
         self.curr_acc_list_aux = []
-        self.acc_detail_path = ''
+        self.acc_detail_path = cfg.acc_detail_path
+        if not os.path.exists('results'):
+            os.mkdir('results')
+        if not os.path.exists(self.acc_detail_path):
+            os.mkdir(self.acc_detail_path)
 
         # Task info
         self._task = 0
@@ -97,25 +101,23 @@ class IncModel(IncrementalLearner):
         self._current_tax_tree = None
         self._n_train_data = 0
         self._n_test_data = 0
-        self._n_tasks = 0
+        self._n_tasks = self._inc_dataset.n_tasks
+
+        # Loaders
+        self._cur_train_loader = None
+        self._cur_test_loader = None
+        self._cur_val_loader = None
 
     def eval(self):
         self._parallel_network.eval()
 
-    def set_task_info(self, task, task_size, tax_tree, n_train_data, n_test_data, n_tasks, acc_detail_path):
-        self._task = task
-        self._task_size = task_size
+    def set_task_info(self, task_info):
+        self._task = task_info["task"]
+        self._task_size = task_info["task_size"]
         # self._increments.append(self._task_size)
-        self._current_tax_tree = tax_tree
-        self._n_train_data = n_train_data
-        self._n_test_data = n_test_data
-        self._n_tasks = n_tasks
-        self.acc_detail_path = acc_detail_path
-
-        if not os.path.exists('results'):
-            os.mkdir('results')
-        if not os.path.exists(acc_detail_path):
-            os.mkdir(acc_detail_path)
+        self._current_tax_tree = task_info["partial_tree"]
+        self._n_train_data = task_info["n_train_data"]
+        self._n_test_data = task_info["n_test_data"]
 
     def train(self):
         if self._der:
@@ -127,11 +129,19 @@ class IncModel(IncrementalLearner):
         else:
             self._parallel_network.train()
 
-    def _before_task(self, taski, inc_dataset):
-        self._ex.logger.info(f"Begin step {taski}")
+    def _new_task(self):
+        task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
+        self.set_task_info(task_info)
+        self._cur_train_loader = train_loader
+        self._cur_val_loader = val_loader
+        self._cur_test_loader = test_loader
+
+    def _before_task(self, inc_dataset):
+        self._ex.logger.info(f"Begin step {self._task}")
 
         # Update Task info
-        self._task = taski
+        # self._task = taski
+        # self.set_task_info()
         self._n_classes = len(self._current_tax_tree.leaf_nodes)
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
@@ -181,7 +191,9 @@ class IncModel(IncrementalLearner):
                                                             total_epoch=self._cfg['warmup_epochs'],
                                                             after_scheduler=self._scheduler)
 
-    def _train_task(self, train_loader, val_loader):
+    def _train_task(self):
+        train_loader = self._cur_train_loader
+        val_loader = self._cur_val_loader
         self._ex.logger.info(f"nb {len(train_loader.dataset)}")
 
         self._optimizer.zero_grad()
@@ -213,12 +225,8 @@ class IncModel(IncrementalLearner):
 
                 self.train()
                 self._optimizer.zero_grad()
-                old_classes = 0
-                new_classes = 0
-                nloss, stsloss, ce_loss, loss_aux, acc, acc_aux = self._forward_loss(inputs, targets, old_classes,
-                                                                                     new_classes,
-                                                                                     nlosses, stslosses, losses, acc,
-                                                                                     acc_aux)
+                nloss, stsloss, ce_loss, loss_aux, acc, acc_aux = \
+                    self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
 
                 if self._cfg["use_aux_cls"] and self._task > 0:
                     total_loss = loss_aux + ce_loss
@@ -247,8 +255,8 @@ class IncModel(IncrementalLearner):
             if not self._warmup:
                 self._scheduler.step()
             self._ex.logger.info(
-                "Task {}/{}, Epoch {}/{} => Clf Avg Total Loss: {}, Clf Avg CE Loss: {}, Avg Aux Loss: {}, Avg Acc: {}, Avg Aux Acc: {}".
-                    format(
+                "Task {}/{}, Epoch {}/{} => Clf Avg Total Loss: {}, Clf Avg CE Loss: {}, Avg Aux Loss: {}, "
+                "Avg Acc: {}, Avg Aux Acc: {}".format(
                     self._task + 1,
                     self._n_tasks,
                     epoch + 1,
@@ -271,9 +279,7 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list = acc_list
         self.curr_acc_list_aux = acc_list_aux
 
-    def _forward_loss(self, inputs, targets, old_classes, new_classes, nlosses, stslosses, losses, acc, acc_aux,
-                      accu=None,
-                      new_accu=None, old_accu=None):
+    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
         criterion = torch.nn.CrossEntropyLoss(reduction='none')
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
 
@@ -399,7 +405,8 @@ class IncModel(IncrementalLearner):
 
         return aux_loss, aux_targets
 
-    def _after_task(self, taski, inc_dataset, x_train, y_train):
+    def _after_task(self, inc_dataset):
+        taski = self._task
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
@@ -453,7 +460,7 @@ class IncModel(IncrementalLearner):
         if self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
 
-            self.build_exemplars(inc_dataset, self._coreset_strategy, x_train, y_train)
+            self.build_exemplars(inc_dataset, self._coreset_strategy)
 
             if self._cfg["save_mem"]:
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
@@ -612,7 +619,7 @@ class IncModel(IncrementalLearner):
                                                 share_memory=self._inc_dataset.shared_data_inc,
                                                 metric='None')
 
-    def build_exemplars(self, inc_dataset, coreset_strategy, x_train, y_train):
+    def build_exemplars(self, inc_dataset, coreset_strategy):
         save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)

@@ -47,6 +47,7 @@ def get_data(cfg):
         random_order=cfg["random_classes"],
         shuffle=True,
         batch_size=cfg["batch_size"],
+        sample_rate=cfg["sample_rate"],
         workers=0,
         device=cfg["device"],
         validation_split=cfg["validation"],

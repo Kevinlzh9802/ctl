@@ -23,32 +23,30 @@ class IncrementalLearner(abc.ABC):
         self._increments = []
         self._seen_classes = []
 
-    def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, acc_detail_path):
-        self._task = task
-        self._task_size = increment
-        self._increments.append(self._task_size)
-        self._total_n_classes = total_n_classes
-        self._n_train_data = n_train_data
-        self._n_test_data = n_test_data
-        self._n_tasks = n_tasks
+    def set_task_info(self, task_info):
+        pass
 
-    def before_task(self, taski, inc_dataset):
+    def new_task(self):
+        LOGGER.info("new task")
+        self._new_task()
+
+    def before_task(self, inc_dataset):
         LOGGER.info("Before task")
         self.eval()
-        self._before_task(taski, inc_dataset)
+        self._before_task(inc_dataset)
 
-    def train_task(self, train_loader, val_loader):
+    def train_task(self):
         LOGGER.info("train task")
         self.train()
-        train_dataset = self._train_task(train_loader, val_loader)
+        train_dataset = self._train_task()
 
         return train_dataset
 
-    def after_task(self, taski, inc_dataset, x_train, y_train_parent_level):
+    def after_task(self, inc_dataset):
 
         LOGGER.info("after task")
         self.eval()
-        self._after_task(taski, inc_dataset, x_train, y_train_parent_level)
+        self._after_task(inc_dataset)
 
     def eval_task(self, data_loader):
         LOGGER.info("eval task")
@@ -64,10 +62,13 @@ class IncrementalLearner(abc.ABC):
     def train(self):
         raise NotImplementedError
 
+    def _new_task(self):
+        pass
+
     def _before_task(self, data_loader):
         pass
 
-    def _train_task(self, train_loader, val_loader):
+    def _train_task(self):
         raise NotImplementedError
 
     def _after_task(self, data_loader):

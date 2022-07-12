@@ -23,8 +23,8 @@ def get_data_folder(data_folder, dataset_name):
 
 class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, device=None,
-                 batch_size=128, seed=1, increment=10, validation_split=0.0, resampling=False, data_folder="./data",
-                 start_class=0):
+                 batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0, resampling=False,
+                 data_folder="./data", start_class=0):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -47,6 +47,7 @@ class IncrementalDataset:
         self._setup_data(dataset_class)
 
         self._seed = seed
+        self._s_rate = sample_rate
         self._workers = workers
         self._device = device
         self._shuffle = shuffle
@@ -84,10 +85,10 @@ class IncrementalDataset:
     def n_tasks(self):
         return len(self.curriculum)
 
-    def new_task(self, sample_rate):
-        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children(sample_rate)
+    def new_task(self):
+        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
-        self.targets_cur_unique = sorted(list(set(self.targets_cur )))
+        self.targets_cur_unique = sorted(list(set(self.targets_cur)))
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
         if self._current_task > 0:
@@ -116,7 +117,7 @@ class IncrementalDataset:
         }
 
         self._current_task += 1
-        return task_info, train_loader, val_loader, test_loader, x_train, y_train
+        return task_info, train_loader, val_loader, test_loader
 
     def _update_memory_for_new_task(self, labels):
         # delete the memory data with parent labels that have been replaced by finer labels
@@ -135,11 +136,11 @@ class IncrementalDataset:
         self.data_memory = np.concatenate(data_memory)
         self.targets_memory = np.array(target_memory)
 
-    def _get_cur_data_for_all_children(self, sample_rate):
+    def _get_cur_data_for_all_children(self):
         label_map_train = self._gen_label_map(self.curriculum[self._current_task])
         label_map_test = self._gen_label_map(list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten()))
-        x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, sample_rate, train=True)
-        x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, sample_rate, train=False)
+        x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, train=True)
+        x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, train=False)
         return x_train, y_train, x_test, y_test
 
     def _gen_label_map(self, name_coarse):
@@ -154,7 +155,7 @@ class IncrementalDataset:
                 label_map[lf] = [lc, self.taxonomy_tree.nodes.get(nf).depth, self.taxonomy_tree.nodes.get(nc).depth]
         return label_map
 
-    def _select_from_idx(self, data_dict, label_map, sample_rate, train=True):
+    def _select_from_idx(self, data_dict, label_map, train=True):
         x_selected = np.empty([0, 32, 32, 3], dtype=np.uint8)
         y_selected = np.empty([0], dtype=np.uint8)
         if train:
@@ -165,7 +166,7 @@ class IncrementalDataset:
                 idx_available = np.where(lfx_used_idx == 0)[0]
                 # position 1: leaf node depth; position 2: parent node depth
                 # if coarse node, select by a fraction; if leaf node, select all remaining
-                data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2], sample_rate)
+                data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2])
 
                 if self._device.type == 'cuda':
                     if data_frac > 0:
@@ -196,10 +197,9 @@ class IncrementalDataset:
                 y_selected = np.concatenate((y_selected, lfy_all))
         return x_selected, y_selected
 
-    @staticmethod
-    def _sample_rate(leaf_depth, parent_depth, sample_rate):
+    def _sample_rate(self, leaf_depth, parent_depth):
         assert leaf_depth >= parent_depth
-        return -1 if leaf_depth == parent_depth else sample_rate
+        return -1 if leaf_depth == parent_depth else self._s_rate
 
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])

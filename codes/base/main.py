@@ -99,24 +99,25 @@ def _train(cfg, _run, ex, tensorboard):
     results = results_utils.get_template_results(cfg)
 
     for task_i in range(inc_dataset.n_tasks):
-        task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task(cfg['sample_rate'])
+        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task()
 
-        model.set_task_info(
-            task=task_info["task"],
-            task_size=task_info["task_size"],
-            tax_tree=task_info["partial_tree"],
-            n_train_data=task_info["n_train_data"],
-            n_test_data=task_info["n_test_data"],
-            n_tasks=inc_dataset.n_tasks,
-            acc_detail_path=cfg.acc_detail_path
-        )
-        model.before_task(task_i, inc_dataset)
+        # model.set_task_info(task_info
+            # task=task_info["task"],
+            # task_size=task_info["task_size"],
+            # tax_tree=task_info["partial_tree"],
+            # n_train_data=task_info["n_train_data"],
+            # n_test_data=task_info["n_test_data"],
+            # n_tasks=inc_dataset.n_tasks,
+            # acc_detail_path=cfg.acc_detail_path
+        # )
+        model.new_task()
+        model.before_task(inc_dataset)
         # TODO: Move to incmodel.py
-        if 'min_class' in task_info:
-            ex.logger.info("Train on {}->{}.".format(task_info["min_class"], task_info["max_class"]))
+        # if 'min_class' in task_info:
+        #     ex.logger.info("Train on {}->{}.".format(task_info["min_class"], task_info["max_class"]))
 
         if cfg['retrain_from_task0']:
-            model.train_task(train_loader, val_loader)
+            model.train_task()
         else:
             # state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
             state_dict = torch.load(f"{cfg['pre_train_model_path']}/step{task_i}.ckpt")
@@ -125,8 +126,8 @@ def _train(cfg, _run, ex, tensorboard):
         # model.after_task(task_i, inc_dataset)
         model.save_acc_detail_info('train_with_step')
 
-        ypred, ytrue = model.eval_task(test_loader)
-        model.after_task(task_i, inc_dataset, x_train, y_train)
+        ypred, ytrue = model.eval_task(model._cur_test_loader)
+        model.after_task(inc_dataset)
         model.save_acc_detail_info('after_train')
 
     top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])

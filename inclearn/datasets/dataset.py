@@ -173,31 +173,63 @@ class iCIFAR100(iCIFAR10):
             ]
         elif trial_i == 5:
             label_list = [['medium_mammals', 'fish', 'aquatic_mammals', 'non-insect_invertebrates',
-                         'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores',
-                         'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes',
-                         'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers',
-                         'large_man-made_outdoor_things', 'trees', 'vehicles_1'],
-                        ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
-                        ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
-                        ['bridge', 'road', 'skyscraper', 'house', 'castle'],
-                        ['can', 'cup', 'plate', 'bowl', 'bottle'],
-                        ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],
-                        ['cattle', 'camel', 'chimpanzee', 'kangaroo', 'elephant'],
-                        ['rose', 'tulip', 'poppy', 'orchid', 'sunflower'],
-                        ['forest', 'plain', 'cloud', 'mountain', 'sea'],
-                        ['turtle', 'crocodile', 'dinosaur', 'lizard', 'snake'],
-                        ['wardrobe', 'bed', 'couch', 'chair', 'table'],
-                        ['apple', 'pear', 'mushroom', 'sweet_pepper', 'orange'],
-                        ['bear', 'leopard', 'tiger', 'wolf', 'lion'],
-                        ['streetcar', 'tractor', 'tank', 'lawn_mower', 'rocket'],
-                        ['man', 'boy', 'girl', 'baby', 'woman'],
-                        ['butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach'],
-                        ['lamp', 'television', 'telephone', 'keyboard', 'clock'],
-                        ['crab', 'snail', 'lobster', 'worm', 'spider'],
-                        ['dolphin', 'whale', 'otter', 'seal', 'beaver'],
-                        ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],
-                        ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']]
-            # return cls.label_to_target(label_list)
+                           'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores',
+                           'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes',
+                           'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers',
+                           'large_man-made_outdoor_things', 'trees', 'vehicles_1'],
+                          ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
+                          ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
+                          ['bridge', 'road', 'skyscraper', 'house', 'castle'],
+                          ['can', 'cup', 'plate', 'bowl', 'bottle'],
+                          ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],  #
+                          ['cattle', 'camel', 'chimpanzee', 'kangaroo', 'elephant'],
+                          ['rose', 'tulip', 'poppy', 'orchid', 'sunflower'],
+                          ['forest', 'plain', 'cloud', 'mountain', 'sea'],
+                          ['turtle', 'crocodile', 'dinosaur', 'lizard', 'snake'],
+                          ['wardrobe', 'bed', 'couch', 'chair', 'table'],
+                          ['apple', 'pear', 'mushroom', 'sweet_pepper', 'orange'],
+                          ['bear', 'leopard', 'tiger', 'wolf', 'lion'],
+                          ['streetcar', 'tractor', 'tank', 'lawn_mower', 'rocket'],
+                          ['man', 'boy', 'girl', 'baby', 'woman'],  #
+                          ['butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach'],
+                          ['lamp', 'television', 'telephone', 'keyboard', 'clock'],
+                          ['crab', 'snail', 'lobster', 'worm', 'spider'],  #
+                          ['dolphin', 'whale', 'otter', 'seal', 'beaver'],  #
+                          ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],  #
+                          ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']]
+            return label_list
+
+        elif trial_i == 6:
+            label_list = [['medium_mammals', 'fish', 'aquatic_mammals', 'non-insect_invertebrates',
+                           'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores',
+                           'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes',
+                           'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers',
+                           'large_man-made_outdoor_things', 'trees', 'vehicles_1'],
+                          ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel'],  #
+                          ['man', 'boy', 'girl', 'baby', 'woman'],  #
+                          ['crab', 'snail', 'lobster', 'worm', 'spider'],  #
+                          ['dolphin', 'whale', 'otter', 'seal', 'beaver'],  #
+                          ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],  #
+                          
+                          ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
+                          ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
+                          ['bridge', 'road', 'skyscraper', 'house', 'castle'],
+                          ['can', 'cup', 'plate', 'bowl', 'bottle'],
+
+                          ['cattle', 'camel', 'chimpanzee', 'kangaroo', 'elephant'],
+                          ['rose', 'tulip', 'poppy', 'orchid', 'sunflower'],
+                          ['forest', 'plain', 'cloud', 'mountain', 'sea'],
+                          ['turtle', 'crocodile', 'dinosaur', 'lizard', 'snake'],
+                          ['wardrobe', 'bed', 'couch', 'chair', 'table'],
+                          ['apple', 'pear', 'mushroom', 'sweet_pepper', 'orange'],
+                          ['bear', 'leopard', 'tiger', 'wolf', 'lion'],
+                          ['streetcar', 'tractor', 'tank', 'lawn_mower', 'rocket'],
+
+                          ['butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach'],
+                          ['lamp', 'television', 'telephone', 'keyboard', 'clock'],
+
+                          ['raccoon', 'fox', 'porcupine', 'skunk', 'possum']]
+
             return label_list
 
     @classmethod
