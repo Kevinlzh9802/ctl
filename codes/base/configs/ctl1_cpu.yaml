@@ -50,7 +50,10 @@ epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
-acc_detail_path: 'results/acc_detail/'
+sample_rate: 0.3
+acc_detail_path: 'results/acc_detail_train'
+retrain_from_task0: True
+pre_train_model_path: './ckpts_aux_ep170'
 
 postprocessor:
   enable: False

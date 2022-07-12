@@ -8,7 +8,8 @@ import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
-from torchvision import transforms
+from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
+from torchvision import datasets, transforms
 
 from .dataset import get_dataset
 from inclearn.tools.data_utils import construct_balanced_subset
@@ -63,47 +64,43 @@ class IncrementalDataset:
         self._current_task = 0
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
-        # Memory Mt
-        self.data_memory, self.targets_memory = [], []
+        # memory Mt
+        self.data_memory = None
+        self.targets_memory = []
+        self.tmp_memory_dict = {}
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
         # Available data \tilde{D}_t = D_t \cup M_t
         self.data_inc, self.targets_inc = None, None  # Cur task data + memory
-        self.data_test_inc, self.targets_test_inc = None, None
+        # self.targets_ori = None
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
 
-        # Train and test settings
-        self.train, self.test = False, False
+        self.y_range = []
 
     @property
     def n_tasks(self):
         return len(self.curriculum)
 
-    def new_task(self, mem_enable=True):
+    def new_task(self, sample_rate):
+        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children(sample_rate)
+        self.targets_cur = sorted(list(set(y_train)))
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
 
-        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
-        self.data_cur, self.targets_cur = x_train, y_train
-        train_loader, val_loader, test_loader = None, None, None
-        # update memory
-        if self.train:
-            if mem_enable and self._current_task > 0:
-                self._update_memory_for_new_task(self.curriculum[self._current_task])
-                print("Set memory of size: {}.".format(len(self.data_memory)))
-            if mem_enable and len(self.data_memory) > 0:
-                self.data_inc = np.concatenate((self.data_cur, self.data_memory))
-                self.targets_inc = np.concatenate((self.targets_cur, self.targets_memory))
-            else:
-                self.data_inc, self.targets_inc = self.data_cur, self.targets_cur
-            train_loader = self._get_loader(self.data_inc, self.targets_inc, mode="train")
+        if self.data_memory is not None:
+            print("Set memory of size: {}.".format(len(self.data_memory)))
+            if len(self.data_memory) != 0:
+                x_train = np.concatenate((x_train, self.data_memory))
+                y_train = np.concatenate((y_train, self.targets_memory))
 
+        self.data_inc, self.targets_inc = x_train, y_train
         self.data_test_inc, self.targets_test_inc = x_test, y_test
 
-        val_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
-        test_loader = self._get_loader(x_test, y_test, shuffle=True, mode="test")
+        train_loader = self._get_loader(x_train, y_train, mode="train")
+        val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
+        test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
         task_info = {
@@ -116,7 +113,7 @@ class IncrementalDataset:
         }
 
         self._current_task += 1
-        return task_info, train_loader, val_loader, test_loader
+        return task_info, train_loader, val_loader, test_loader, x_train, y_train
 
     def _update_memory_for_new_task(self, labels):
         # delete the memory data with parent labels that have been replaced by finer labels
@@ -135,11 +132,11 @@ class IncrementalDataset:
         self.data_memory = np.concatenate(data_memory)
         self.targets_memory = np.array(target_memory)
 
-    def _get_cur_data_for_all_children(self):
+    def _get_cur_data_for_all_children(self, sample_rate):
         label_map_train = self._gen_label_map(self.curriculum[self._current_task])
         label_map_test = self._gen_label_map(list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten()))
-        x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, train=True)
-        x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, train=False)
+        x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, sample_rate, train=True)
+        x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, sample_rate, train=False)
         return x_train, y_train, x_test, y_test
 
     def _gen_label_map(self, name_coarse):
@@ -154,7 +151,7 @@ class IncrementalDataset:
                 label_map[lf] = [lc, self.taxonomy_tree.nodes.get(nf).depth, self.taxonomy_tree.nodes.get(nc).depth]
         return label_map
 
-    def _select_from_idx(self, data_dict, label_map, train=True):
+    def _select_from_idx(self, data_dict, label_map, sample_rate, train=True):
         x_selected = np.empty([0, 32, 32, 3], dtype=np.uint8)
         y_selected = np.empty([0], dtype=np.uint8)
         if train:
@@ -165,13 +162,17 @@ class IncrementalDataset:
                 idx_available = np.where(lfx_used_idx == 0)[0]
                 # position 1: leaf node depth; position 2: parent node depth
                 # if coarse node, select by a fraction; if leaf node, select all remaining
-                data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2])
+                data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2], sample_rate)
 
-                if str(self._device) == 'cuda:0':
+                if self._device.type == 'cuda':
                     if data_frac > 0:
                         sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
                     else:
-                        sel_ind = idx_available
+                        if len(self.tmp_memory_dict) == 0:
+                            sel_ind = idx_available
+                        else:
+                            memory_size = self.tmp_memory_dict[list(self.tmp_memory_dict.keys())[0]].shape[0]
+                            sel_ind = idx_available[:memory_size]
                 else:
                     if data_frac > 0:
                         sel_ind = random.sample(list(idx_available), 2)
@@ -193,9 +194,9 @@ class IncrementalDataset:
         return x_selected, y_selected
 
     @staticmethod
-    def _sample_rate(leaf_depth, parent_depth):
+    def _sample_rate(leaf_depth, parent_depth, sample_rate):
         assert leaf_depth >= parent_depth
-        return -1 if leaf_depth == parent_depth else 0.3
+        return -1 if leaf_depth == parent_depth else sample_rate
 
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])
@@ -209,6 +210,7 @@ class IncrementalDataset:
     #           Data Setup
     # --------------------------------
     def _setup_data(self, dataset):
+        # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []
@@ -324,7 +326,7 @@ class IncrementalDataset:
         data = np.concatenate(data)
         targets = np.concatenate(targets)
 
-        return data, targets, self._get_loader(data, targets, shuffle=True, mode=mode)
+        return data, targets, self._get_loader(data, targets, shuffle=False, mode=mode)
 
     def _get_loader(self, x, y, share_memory=None, shuffle=True, mode="train", batch_size=None, resample=None):
         if "balanced" in mode:
@@ -395,7 +397,7 @@ class IncrementalDataset:
         data = np.concatenate(data)
         targets = np.concatenate(targets)
 
-        return data, targets, self._get_loader(data, targets, shuffle=True, mode=mode)
+        return data, targets, self._get_loader(data, targets, shuffle=False, mode=mode)
 
 
 class DummyDataset(torch.utils.data.Dataset):

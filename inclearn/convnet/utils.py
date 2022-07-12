@@ -10,7 +10,6 @@ from inclearn.deeprtc.utils import deep_rtc_nloss, leaf_id_indices
 
 def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
                         weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path=''):
-    print(lr)
     if scheduling is None:
         scheduling = [15, 35]
     network.eval()
@@ -29,9 +28,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         criterion = nn.BCEWithLogitsLoss()
 
     logger.info("Begin finetuning last layer")
-    # print('loader info')
-    # print(np.unique(np.array(loader.dataset.y), return_counts=True)[0])
-    # print(np.unique(np.array(loader.dataset.y), return_counts=True)[1])
     for i in range(nepoch):
         total_loss = 0.0
         total_correct = 0.0
@@ -39,12 +35,10 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         # print(f"dataset loader length {len(loader.dataset)}")
         all_preds = None
         all_is_correct = np.array([])
-        # b=np.empty([0, 24], dtype=np.uint8)
-        # y_selected = np.empty([0], dtype=np.uint8)
         for inputs, targets in loader:
             if device.type == 'cuda':
-                network = network.cuda()
                 inputs, targets = inputs.cuda(), targets.cuda()
+                network = network.cuda()
             if loss_type == "bce":
                 targets = to_onehot(targets, n_class)
             if n_module.taxonomy == 'rtc':
@@ -52,7 +46,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 nout = outputs['nout']
                 loss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
 
-                # print(outputs["output"])
                 max_z = torch.max(outputs["output"], dim=1)[0]
                 preds = torch.eq(outputs["output"], max_z.view(-1, 1))
                 leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
@@ -61,10 +54,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 if all_preds is None:
                     all_preds = np.empty([0, preds.shape[1]])
                 all_preds = np.concatenate((all_preds, preds.cpu()))
-                preds_np = np.array(preds.cpu())
-                problematic = preds_np.sum(1) > 1
-                if np.any(problematic):
-                    print(nout[0][problematic])
                 all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
                 # print(loss)
                 loss.backward()
@@ -101,18 +90,21 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         else:
             logger.info("Epoch %d finetuning loss %.3f acc %.3f" %
                         (i, total_loss.item() / total_count, total_correct.item() / total_count))
-        np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(all_preds), fmt='%2.2f')
-        np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(all_is_correct), fmt='%2.2f')
+        if i == nepoch - 1:
+            np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(all_preds), fmt='%2.2f')
+            np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(all_is_correct), fmt='%2.2f')
     return network
 
 
-def extract_features(model, loader):
+def extract_features(model, loader, device):
     targets, features = [], []
     model.eval()
     with torch.no_grad():
         for _inputs, _targets in loader:
-            # _inputs = _inputs.cuda()
-            _inputs = _inputs
+            if device == 'cuda':
+                _inputs = _inputs.cuda()
+            else:
+                _inputs = _inputs
             _targets = _targets.numpy()
             _features = model(_inputs)['feature'].detach().cpu().numpy()
             features.append(_features)
@@ -154,3 +146,4 @@ def update_classes_mean(network, inc_dataset, n_classes, task_size, share_memory
             if metric == "cosine" or metric == "weight":
                 class_means[i] /= (np.linalg.norm(class_means) + EPSILON)
     return class_means
+

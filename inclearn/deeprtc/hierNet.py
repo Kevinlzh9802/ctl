@@ -1,15 +1,12 @@
-import math
 import numpy as np
 import torch
 from torch import nn
 
 
 class HierNet(nn.Module):
-    """ Module of hierarchical classifier
-    """
+    """Module of hierarchical classifier"""
     def __init__(self, input_size, nodes):
         super(HierNet, self).__init__()
-        self.classifier_type = ''
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
@@ -23,19 +20,15 @@ class HierNet(nn.Module):
             nout = []
             for i in range(self.num_nodes):
                 fc_layers = getattr(self, 'fc{}'.format(i))
-                nout.append(fc_layers(x))
+                nout.append(fc_layers(x)/5)
 
             outs = []
             out_masks = []
             # root node (no dependency to other nodes)
-            # cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
-
-            # outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
-
+            cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
+            outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
             # other internal nodes
-            # usually the hierNet is constructed by used_nodes, which only contains internal nodes
-            for i in range(self.num_nodes):
-                # TODO: modify the i-1!
+            for i in range(1, self.num_nodes):
                 cw = torch.from_numpy(self.nodes[i].codeword).float().to(nout[i].device)
                 cond = self.nodes[i].cond
                 cond_gate = torch.ones([x.size(0), 1]).to(nout[i].device)
@@ -47,8 +40,7 @@ class HierNet(nn.Module):
                 mask = torch.clamp(torch.from_numpy(self.nodes[i].mask).float().to(nout[i].device), 1e-17, 1)
                 out_masks.append(torch.log(mask) * (1 - gate[:, i].view(-1, 1)))
 
-            # self.output = torch.clamp(torch.sum(torch.stack(outs), 0), -1e17, 10)
-            self.output = torch.sum(torch.stack(outs), 0)
+            self.output = torch.sum(torch.stack(outs[1:]), 0)
             out_mask = torch.eq(torch.sum(torch.stack(out_masks), 0), 0).float()
             self.sfmx_base = torch.sum(torch.exp(self.output) * out_mask, 1)
 
@@ -90,7 +82,7 @@ class HierNet(nn.Module):
             return self.output, nout
 
     def reset_parameters(self):
-        for i in range(1, self.num_nodes):
+        for i in range(self.num_nodes):
             # fc_layers = getattr(self, 'fc{}'.format(i))
             self.add_module('fc{}'.format(i), nn.Linear(self.input_size, len(self.nodes[i].children)))
             # stdv = 1. / math.sqrt(fc_layers.weight.size(0) * fc_layers.weight.size(1))

@@ -23,25 +23,32 @@ class IncrementalLearner(abc.ABC):
         self._increments = []
         self._seen_classes = []
 
-    def set_task_info(self, task_info):
-        pass
+    def set_task_info(self, task, total_n_classes, increment, n_train_data, n_test_data, n_tasks, acc_detail_path):
+        self._task = task
+        self._task_size = increment
+        self._increments.append(self._task_size)
+        self._total_n_classes = total_n_classes
+        self._n_train_data = n_train_data
+        self._n_test_data = n_test_data
+        self._n_tasks = n_tasks
 
-    def before_task(self):
+    def before_task(self, taski, inc_dataset):
         LOGGER.info("Before task")
         self.eval()
-        self._before_task()
+        self._before_task(taski, inc_dataset)
 
-    def train_task(self):
+    def train_task(self, train_loader, val_loader):
         LOGGER.info("train task")
         self.train()
-        train_dataset = self._train_task()
+        train_dataset = self._train_task(train_loader, val_loader)
 
         return train_dataset
 
-    def after_task(self):
+    def after_task(self, taski, inc_dataset, x_train, y_train_parent_level):
+
         LOGGER.info("after task")
         self.eval()
-        self._after_task()
+        self._after_task(taski, inc_dataset, x_train, y_train_parent_level)
 
     def eval_task(self, data_loader):
         LOGGER.info("eval task")
@@ -57,13 +64,13 @@ class IncrementalLearner(abc.ABC):
     def train(self):
         raise NotImplementedError
 
-    def _before_task(self):
+    def _before_task(self, data_loader):
         pass
 
-    def _train_task(self):
+    def _train_task(self, train_loader, val_loader):
         raise NotImplementedError
 
-    def _after_task(self):
+    def _after_task(self, data_loader):
         pass
 
     def _eval_task(self, data_loader):
