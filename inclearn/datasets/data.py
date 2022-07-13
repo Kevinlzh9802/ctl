@@ -28,6 +28,7 @@ class IncrementalDataset:
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
+        self.mode_train = True
         # the number of classes for each step in incremental stage
         self.task_size = increment
         self.increments = []

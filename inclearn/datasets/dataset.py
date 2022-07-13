@@ -210,7 +210,7 @@ class iCIFAR100(iCIFAR10):
                           ['crab', 'snail', 'lobster', 'worm', 'spider'],  #
                           ['dolphin', 'whale', 'otter', 'seal', 'beaver'],  #
                           ['aquarium_fish', 'flatfish', 'ray', 'trout', 'shark'],  #
-                          
+
                           ['motorcycle', 'bus', 'train', 'bicycle', 'pickup_truck'],
                           ['palm_tree', 'willow_tree', 'maple_tree', 'oak_tree', 'pine_tree'],
                           ['bridge', 'road', 'skyscraper', 'house', 'castle'],

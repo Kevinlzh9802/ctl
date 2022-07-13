@@ -16,6 +16,7 @@ from inclearn.tools.memory import MemorySize
 from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
+from inclearn.tools.utils import plot_cls_detail
 
 import pandas as pd
 
@@ -26,6 +27,7 @@ EPSILON = 1e-8
 class IncModel(IncrementalLearner):
     def __init__(self, cfg, _run, ex, tensorboard, inc_dataset):
         super().__init__()
+        self.mode_train = True
         self._cfg = cfg
         self._device = cfg['device']
         self._ex = ex
@@ -108,16 +110,21 @@ class IncModel(IncrementalLearner):
         self._cur_test_loader = None
         self._cur_val_loader = None
 
+        # Save paths
+        self._acc_path = None
+        self._model_path = None
+        self._classification_path = None
+
     def eval(self):
         self._parallel_network.eval()
 
     def set_task_info(self, task_info):
         self._task = task_info["task"]
         self._task_size = task_info["task_size"]
-        # self._increments.append(self._task_size)
         self._current_tax_tree = task_info["partial_tree"]
         self._n_train_data = task_info["n_train_data"]
         self._n_test_data = task_info["n_test_data"]
+        self._n_classes = len(self._current_tax_tree.leaf_nodes)
 
     def train(self):
         if self._der:
@@ -139,13 +146,8 @@ class IncModel(IncrementalLearner):
     def _before_task(self, inc_dataset):
         self._ex.logger.info(f"Begin step {self._task}")
 
-        # Update Task info
-        # self._task = taski
-        # self.set_task_info()
-        self._n_classes = len(self._current_tax_tree.leaf_nodes)
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
-
         self._memory_size.update_memory_per_cls(self._network, self._n_classes - 1, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
@@ -360,7 +362,6 @@ class IncModel(IncrementalLearner):
         # return nloss, stsloss, loss, acc
 
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
-
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in leaf_id_index_list}
 
         for i in range(len(leaf_id_index_list)):
@@ -483,7 +484,7 @@ class IncModel(IncrementalLearner):
 
     def _eval_task(self, data_loader):
         if self._infer_head == "softmax":
-            ypred, ytrue = self._compute_accuracy_by_netout(data_loader)
+            ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
 
         elif self._infer_head == "NCM":
             ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
@@ -493,26 +494,26 @@ class IncModel(IncrementalLearner):
         return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader):
-
         acc = averageMeter()
         acc_aux = averageMeter()
 
         preds, targets = [], []
         preds_aux, targets_aux = [], []
+
         self._parallel_network.eval()
 
         with torch.no_grad():
             for _, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-
                 outputs = self._parallel_network(inputs)
 
                 _output = outputs['output']
                 _output_aux = outputs['aux_logit']
 
                 max_z = torch.max(_output, dim=1)[0]
-                _preds = torch.eq(_output, max_z.view(-1, 1))
-
+                _preds_onehot = torch.eq(_output, max_z.view(-1, 1))
+                #
+                _preds = _output.argmax(1)
                 if self._cfg["postprocessor"]["enable"] and self._task > 0:
                     _preds = self._network.postprocessor.post_process(_preds, self._task_size)
                 preds.append(_preds.detach().cpu().numpy())
@@ -520,7 +521,8 @@ class IncModel(IncrementalLearner):
 
                 if _output_aux is not None:
                     max_z_aux = torch.max(_output_aux, dim=1)[0]
-                    _preds_aux = torch.eq(_output_aux, max_z_aux.view(-1, 1))
+                    _preds_aux_onehot = torch.eq(_output_aux, max_z_aux.view(-1, 1))
+                    _preds_aux = _output_aux.argmax(1)
 
                     aux_targets = lbls.clone()
                     targets_memory = list(set(data_loader.dataset.y))
@@ -560,18 +562,23 @@ class IncModel(IncrementalLearner):
         else:
             leaf_id_indexes = torch.tensor(leaf_id_index_list)
 
-        iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+        # iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+        iscorrect = (preds == leaf_id_indexes)
+        cls_detail = np.zeros([len(leaf_id_keys), len(leaf_id_keys)])
+        for k in range(len(leaf_id_indexes)):
+            cls_detail[leaf_id_indexes[k]][preds[k]] += 1
 
+        plot_cls_detail(cls_detail)
         acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
                                                  list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
 
         acc.update_detail(acc_update_info)
         self.curr_acc_list = [acc]
 
-        return preds, targets
+        return preds, targets, cls_detail
 
     def _compute_accuracy_by_ncm(self, loader):
-        features, targets_ = extract_features(self._parallel_network, loader)
+        features, targets_ = extract_features(self._parallel_network, loader, self._device)
         targets = np.zeros((targets_.shape[0], self._n_classes), np.float32)
         targets[range(len(targets_)), targets_.astype("int32")] = 1.0
 
@@ -728,3 +735,7 @@ class IncModel(IncrementalLearner):
 
         print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')
 
+    def set_save_paths(self, exp_name):
+        self._acc_path = exp_name + ''
+        self._model_path = 'ckpts/' + exp_name + ''
+        self._classification_path = exp_name + ''

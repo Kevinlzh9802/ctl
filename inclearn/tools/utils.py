@@ -2,7 +2,7 @@ import random
 from copy import deepcopy
 import numpy as np
 import datetime
-
+import matplotlib.pyplot as plt
 import torch
 
 from inclearn.tools.metrics import ClassErrorMeter
@@ -198,3 +198,9 @@ def make_logger(log_name, savedir='.logs/'):
     logger = logging.getLogger()
 
     return logger
+
+
+def plot_cls_detail(cls_detail):
+    cls_num = cls_detail.shape[0]
+    for k in range(cls_num):
+        plt.bar(np.arange(0, cls_num), cls_detail[0, :])

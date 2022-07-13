@@ -1,16 +1,13 @@
-'''
+"""
 @Author : Yan Shipeng, Xie Jiangwei
 @Contact: yanshp@shanghaitech.edu.cn, xiejw@shanghaitech.edu.cn
-'''
+"""
 
 import sys
 import os
 import os.path as osp
 import copy
 import time
-import shutil
-import cProfile
-import logging
 from pathlib import Path
 import numpy as np
 import random
@@ -25,15 +22,6 @@ sys.path.append(base_dir)
 from sacred import Experiment
 ex = Experiment(base_dir=base_dir, save_git_info=False)
 
-# Save which files
-# ex.add_source_file(osp.join(base_dir, "inclearn/models/icarl.py"))
-# ex.add_source_file(osp.join(base_dir, "inclearn/lib/data.py"))
-# ex.add_source_file(osp.join(base_dir, "inclearn/lib/network.py"))
-# ex.add_source_file(osp.join(base_dir, "inclearn/convnet/resnet.py"))
-# ex.add_source_file(osp.join(os.getcwd(), "icarl.py"))
-# ex.add_source_file(osp.join(os.getcwd(), "network.py"))
-# ex.add_source_file(osp.join(os.getcwd(), "resnet.py"))
-
 # MongoDB Observer
 # ex.observers.append(MongoObserver.create(url='xx.xx.xx.xx:port', db_name='classil'))
 
@@ -42,6 +30,7 @@ import torch
 from inclearn.tools import factory, results_utils, utils
 from inclearn.learn.pretrain import pretrain
 from inclearn.tools.metrics import IncConfusionMeter
+
 
 def initialization(config, seed, mode, exp_id):
     # Add it if your input size is fixed
@@ -58,10 +47,6 @@ def initialization(config, seed, mode, exp_id):
     # Tensorboard
     exp_name = f'{exp_id}_{cfg["exp"]["name"]}' if exp_id is not None else f'../inbox/{cfg["exp"]["name"]}'
     tensorboard_dir = cfg["exp"]["tensorboard_dir"] + f"/{exp_name}"
-
-    # If not only save latest tensorboard log.
-    # if Path(tensorboard_dir).exists():
-    #     shutil.move(tensorboard_dir, cfg["exp"]["tensorboard_dir"] + f"/../inbox/{time.time()}_{exp_name}")
 
     tensorboard = SummaryWriter(tensorboard_dir)
     return cfg, logger, tensorboard
@@ -99,22 +84,8 @@ def _train(cfg, _run, ex, tensorboard):
     results = results_utils.get_template_results(cfg)
 
     for task_i in range(inc_dataset.n_tasks):
-        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task()
-
-        # model.set_task_info(task_info
-            # task=task_info["task"],
-            # task_size=task_info["task_size"],
-            # tax_tree=task_info["partial_tree"],
-            # n_train_data=task_info["n_train_data"],
-            # n_test_data=task_info["n_test_data"],
-            # n_tasks=inc_dataset.n_tasks,
-            # acc_detail_path=cfg.acc_detail_path
-        # )
         model.new_task()
         model.before_task(inc_dataset)
-        # TODO: Move to incmodel.py
-        # if 'min_class' in task_info:
-        #     ex.logger.info("Train on {}->{}.".format(task_info["min_class"], task_info["max_class"]))
 
         if cfg['retrain_from_task0']:
             model.train_task()
@@ -123,7 +94,6 @@ def _train(cfg, _run, ex, tensorboard):
             state_dict = torch.load(f"{cfg['pre_train_model_path']}/step{task_i}.ckpt")
             model._parallel_network.load_state_dict(state_dict)
 
-        # model.after_task(task_i, inc_dataset)
         model.save_acc_detail_info('train_with_step')
 
         ypred, ytrue = model.eval_task(model._cur_test_loader)
@@ -171,51 +141,54 @@ def do_pretrain(cfg, ex, model, device, train_loader, test_loader):
     else:
         pretrain(cfg, ex, model, device, train_loader, test_loader, model_path)
 
+
 @ex.command
 def test(_run, _rnd, _seed):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "test", _run._id)
+    if cfg["device_auto_detect"]:
+        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+    else:
+        factory.set_device(cfg)
     ex.logger.info(cfg)
 
-    trial_i = cfg['trial']
     cfg.data_folder = osp.join(base_dir, "data")
-    inc_dataset = factory.get_data(cfg, trial_i)
+    inc_dataset = factory.get_data(cfg)
     # inc_dataset._current_task = task_i
     # train_loader = inc_dataset._get_loader(inc_dataset.data_cur, inc_dataset.targets_cur)
-    model = factory.get_model(cfg, trial_i, _run, ex, tensorboard, inc_dataset, device)
-    model._network.task_size = cfg.increment
+    model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
+    # model._network.task_size = cfg.increment
 
     test_results = results_utils.get_template_results(cfg)
     for task_i in range(inc_dataset.n_tasks):
+        #
+        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task(cfg['sample_rate'],
+        #                                                                                           device)
+        #
+        # model.set_task_info(
+        #     task=task_info["task"],
+        #     # total_n_classes=task_info["max_class"],
+        #     # increment=task_info["increment"],
+        #     task_size=task_info["task_size"],
+        #     tax_tree=task_info["partial_tree"],
+        #     n_train_data=task_info["n_train_data"],
+        #     n_test_data=task_info["n_test_data"],
+        #     n_tasks=inc_dataset.n_tasks,
+        #     acc_detail_path=cfg.acc_detail_path
+        # )
 
-        task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task(cfg['sample_rate'],
-                                                                                                  device)
-
-        model.set_task_info(
-            task=task_info["task"],
-            # total_n_classes=task_info["max_class"],
-            # increment=task_info["increment"],
-            task_size=task_info["task_size"],
-            tax_tree=task_info["partial_tree"],
-            n_train_data=task_info["n_train_data"],
-            n_test_data=task_info["n_test_data"],
-            n_tasks=inc_dataset.n_tasks,
-            acc_detail_path=cfg.acc_detail_path
-        )
-
-
-        model.before_task(task_i, inc_dataset)
+        model.new_task()
+        model.before_task(inc_dataset)
         state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
         classifier_parameter = model._parallel_network.module.classifier.state_dict()
-        print(classifier_parameter.keys())
-        for i in classifier_parameter:
-            print(i)
-            print(classifier_parameter[i])
-            print(classifier_parameter[i].size())
+        # print(classifier_parameter.keys())
+        # for i in classifier_parameter:
+        #     print(i)
+        #     print(classifier_parameter[i])
+        #     print(classifier_parameter[i].size())
         model.eval()
 
-        ypred, ytrue = model.eval_task(test_loader)
+        ypred, ytrue, cls_detail = model.eval_task(model._cur_test_loader)
         model.save_acc_detail_info('test')
 
 
