@@ -1,5 +1,5 @@
 exp:
-  name: "der_deep_rtc"
+  name: "joint"
   savedir: "./logs"
   ckptdir: "./ckpts"
   tensorboard_dir: "./tensorboard"

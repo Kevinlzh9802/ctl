@@ -1,8 +1,10 @@
 exp:
   name: "der_deep_rtc_aux"
   savedir: "./logs"
+  ckptdir: "./ckpts"
   tensorboard_dir: "./tensorboard"
   debug: False
+  mode_train: True
 
 # Model Cfg
 model: "incmodel"
