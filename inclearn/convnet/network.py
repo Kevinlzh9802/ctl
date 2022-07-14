@@ -23,6 +23,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.remove_last_relu = True if self.weight_normalization else False
         self.use_bias = use_bias if not self.weight_normalization else False
         self.der = cfg['der']
+        self.use_aux_cls = cfg['use_aux_cls']
         self.aux_nplus1 = cfg['aux_n+1']
         self.reuse_oldfc = cfg['reuse_oldfc']
         self.module_cls = cfg['model_cls']
@@ -77,12 +78,19 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         else:
             features = self.convnet(x)
 
-        gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
-        # gate[:, 0] = 1
-        output, nout, sfmx_base = self.classifier(x=features, gate=gate)
+        if self.taxonomy is not None:
+            gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
+            # gate[:, 0] = 1
+            output, nout, sfmx_base = self.classifier(x=features, gate=gate)
 
-        # logits = self.classifier(features)
-        aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
+            # logits = self.classifier(features)
+            if self.use_aux_cls:
+                aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
+            else:
+                aux_logits = None
+        else:
+            output = self.classifier(features)
+            nout, sfmx_base, aux_logits = None, None, None
         return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits}
 
     @property

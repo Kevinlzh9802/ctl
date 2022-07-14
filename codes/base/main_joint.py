@@ -85,31 +85,17 @@ def _train(cfg, _run, ex, tensorboard):
 
     results = results_utils.get_template_results(cfg)
 
-    for task_i in range(inc_dataset.n_tasks):
-        model.new_task()
-        model.before_task(inc_dataset)
+    model.new_task()
+    model.before_task(inc_dataset)
+    model.train_task()
 
-        if cfg['retrain_from_task0']:
-            model.train_task()
-        else:
-            # state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
-            state_dict = torch.load(f"{cfg['pre_train_model_path']}/step{task_i}.ckpt")
-            model._parallel_network.load_state_dict(state_dict)
+    model.save_acc_detail_info('train_with_step')
 
-        model.save_acc_detail_info('train_with_step')
+    model.eval_task(model._cur_test_loader)
+    model.after_task(inc_dataset)
+    model.save_acc_detail_info('after_train')
 
-        model.eval_task(model._cur_test_loader)
-        model.after_task(inc_dataset)
-        model.save_acc_detail_info('after_train')
 
-    # top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])
-
-    # _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top1"] = top1_avg_acc
-    # _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top5"] = top5_avg_acc
-    # ex.logger.info("Average Incremental Accuracy Top 1: {} Top 5: {}.".format(
-    #     _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top1"],
-    #     _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top5"],
-    # ))
     if cfg["exp"]["name"]:
         results_utils.save_results(results, cfg["exp"]["name"])
 

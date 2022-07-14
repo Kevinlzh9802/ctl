@@ -225,7 +225,8 @@ class IncModel(IncrementalLearner):
 
                 self.train()
                 self._optimizer.zero_grad()
-                nloss, stsloss, ce_loss, loss_aux, acc, acc_aux = \
+
+                ce_loss, loss_aux, acc, acc_aux = \
                     self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
 
                 if self._cfg["use_aux_cls"] and self._task > 0:
@@ -278,36 +279,43 @@ class IncModel(IncrementalLearner):
     def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
         batch_size = inputs.size(0)
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
         # this is equivalent to self._network.forward(inputs)
 
-        output = outputs['output']
-        aux_output = outputs['aux_logit']
-        nout = outputs['nout']
-        sfmx_base = outputs['sfmx_base']
-        aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
+        if self._cfg["taxonomy"] is not None:
+            output = outputs['output']
+            aux_output = outputs['aux_logit']
+            nout = outputs['nout']
+            sfmx_base = outputs['sfmx_base']
+            targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+            aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
 
-        nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
-        nlosses.update(nloss.item(), batch_size)
+            nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
+            nlosses.update(nloss.item(), batch_size)
 
-        gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
-        stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
-        stslosses.update(stsloss.item(), batch_size)
+            gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
+            stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
+            stslosses.update(stsloss.item(), batch_size)
 
-        loss = nloss + stsloss * 1
-        losses.update(loss.item(), batch_size)
+            loss = nloss + stsloss * 1
+            losses.update(loss.item(), batch_size)
 
-        # measure accuracy
-        self.record_accuracy(output, targets_0, acc)
-        # self.record_details(output, targets, targets_0, acc)
+            # measure accuracy
+            self.record_accuracy(output, targets_0, acc)
+            # self.record_details(output, targets, targets_0, acc)
 
-        if aux_output is not None:
-            self.record_accuracy(aux_output, aux_targets, acc_aux)
-            # self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
+            if aux_output is not None:
+                self.record_accuracy(aux_output, aux_targets, acc_aux)
+                # self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
+        else:
+            output = outputs['output']
+            criterion = torch.nn.CrossEntropyLoss(reduction='none')
 
-        return nloss, stsloss, loss, aux_loss, acc, acc_aux
+            loss = criterion(output, targets.long())
+            aux_loss = None
+        return loss, aux_loss, acc, acc_aux
 
     @staticmethod
     def record_accuracy(output, targets, acc):
