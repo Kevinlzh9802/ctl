@@ -172,7 +172,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
-          <line>511</line>
+          <line>507</line>
           <option name="timeStamp" value="26" />
         </line-breakpoint>
       </breakpoints>

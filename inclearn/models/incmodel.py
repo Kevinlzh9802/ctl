@@ -458,12 +458,8 @@ class IncModel(IncrementalLearner):
         acc = averageMeter()
         acc_aux = averageMeter()
 
-        if self._device.type == 'cuda':
-            output, targets = torch.tensor([]).cuda(), torch.tensor([]).cuda()
-            output_aux, targets_aux = torch.tensor([]).cuda(), torch.tensor([]).cuda()
-        else:
-            output, targets = torch.tensor([]), torch.tensor([])
-            output_aux, targets_aux = torch.tensor([]), torch.tensor([])
+        output, targets = torch.tensor([]), torch.tensor([])
+        output_aux, targets_aux = torch.tensor([]), torch.tensor([])
         self._parallel_network.eval()
 
         with torch.no_grad():
@@ -473,7 +469,7 @@ class IncModel(IncrementalLearner):
                 _output = n_outputs['output']
                 _output_aux = n_outputs['aux_logit']
 
-                output = torch.cat((output, _output), 0)
+                output = torch.cat((output, _output.cpu()), 0)
                 targets = torch.cat((targets, lbls), 0)
 
                 if _output_aux is not None:
