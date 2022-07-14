@@ -52,7 +52,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-acc_detail_path: 'results/acc_detail_train'
+acc_detail_path: 'results/acc_detail'
 retrain_from_task0: True
 pre_train_model_path: './ckpts_aux_ep170'
 
