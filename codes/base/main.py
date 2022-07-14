@@ -99,7 +99,7 @@ def _train(cfg, _run, ex, tensorboard):
 
         model.save_acc_detail_info('train_with_step')
 
-        ypred, ytrue = model.eval_task(model._cur_test_loader)
+        model.eval_task(model._cur_test_loader)
         model.after_task(inc_dataset)
         model.save_acc_detail_info('after_train')
 
@@ -152,6 +152,7 @@ def test(_run, _rnd, _seed):
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     else:
         factory.set_device(cfg)
+    cfg["exp"]["mode_train"] = False
     ex.logger.info(cfg)
 
     cfg.data_folder = osp.join(base_dir, "data")
@@ -191,7 +192,7 @@ def test(_run, _rnd, _seed):
         #     print(classifier_parameter[i].size())
         model.eval()
 
-        ypred, ytrue, cls_detail = model.eval_task(model._cur_test_loader)
+        model.eval_task(model._cur_test_loader)
         model.save_acc_detail_info('test')
 
 

@@ -444,14 +444,15 @@ class IncModel(IncrementalLearner):
 
     def _eval_task(self, data_loader):
         if self._infer_head == "softmax":
-            ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
-
+            # ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
+            self._compute_accuracy_by_netout(data_loader)
         elif self._infer_head == "NCM":
-            ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
+            # ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
+            pass
         else:
             raise ValueError()
 
-        return ypred, ytrue
+        # return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader):
         acc = averageMeter()
@@ -490,16 +491,21 @@ class IncModel(IncrementalLearner):
 
         leaf_inv = {self._network.leaf_id[i]: i for i in self._network.leaf_id}
         # TODO: fix the output
-        preds_npy = np.array(preds.cpu())
+        # cls_num = len(leaf_inv)
+        # cls_details = np.zeros([cls_num, cls_num])
+        # for k in range(len(targets_0)):
+        #     cls_details[targets_0[k]][preds[k]] += 1
+        # plot_cls_detail(cls_details)
+        # preds_npy = np.array(preds.cpu())
         for i in range(targets.shape[0]):
-            pos = np.where(preds_npy == 1)
-            preds_class_i = pos[1][np.where(pos[0] == i)][0]
-            preds_list.append(leaf_inv[preds_class_i])
+            # pos = np.where(preds_npy == 1)
+            # preds_class_i = pos[1][np.where(pos[0] == i)][0]
+            preds_list.append(leaf_inv[int(preds[i])])
 
         preds = np.array(preds_list)
-        np.save('/Users/chenyuchao/Downloads/preds_res.npy', preds)
-        np.save('/Users/chenyuchao/Downloads/targets_res.npy', targets)
-        return preds, targets
+        np.save('results/plots/preds_res.npy', preds)
+        np.save('results/plots/targets_res.npy', targets)
+        # return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
         features, targets_ = extract_features(self._parallel_network, loader, self._device)
