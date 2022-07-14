@@ -474,10 +474,10 @@ class IncModel(IncrementalLearner):
 
                 if _output_aux is not None:
                     _targets_aux = self._get_aux_targets(lbls)
-                    output_aux = torch.cat((output_aux, _output_aux), 0)
+                    output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
                     targets_aux = torch.cat((targets_aux, _targets_aux), 0)
 
-        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+        # targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
         # self.record_details(output, targets, targets_0, acc)
         self.curr_acc_list = [acc]
 
