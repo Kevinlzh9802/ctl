@@ -313,8 +313,8 @@ class IncModel(IncrementalLearner):
             output = outputs['output']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
 
-            loss = criterion(output, targets.long())
-            aux_loss = None
+            loss = torch.mean(criterion(output, targets.long()))
+            aux_loss = torch.tensor(0)
         return loss, aux_loss, acc, acc_aux
 
     @staticmethod
@@ -425,7 +425,7 @@ class IncModel(IncrementalLearner):
             self._ex.logger.info("compute prototype")
             self.update_prototype()
 
-        if self._memory_size.memsize != 0:
+        if self._cfg['memory_enable'] and self._memory_size.memsize != 0:
             self._ex.logger.info("build memory")
 
             self.build_exemplars(inc_dataset, self._coreset_strategy)
@@ -497,20 +497,12 @@ class IncModel(IncrementalLearner):
         preds_list = []
         preds = output.argmax(1)
 
-        leaf_inv = {self._network.leaf_id[i]: i for i in self._network.leaf_id}
-        # TODO: fix the output
-        # cls_num = len(leaf_inv)
-        # cls_details = np.zeros([cls_num, cls_num])
-        # for k in range(len(targets_0)):
-        #     cls_details[targets_0[k]][preds[k]] += 1
-        # plot_cls_detail(cls_details)
-        # preds_npy = np.array(preds.cpu())
-        for i in range(targets.shape[0]):
-            # pos = np.where(preds_npy == 1)
-            # preds_class_i = pos[1][np.where(pos[0] == i)][0]
-            preds_list.append(leaf_inv[int(preds[i])])
+        if self._cfg['taxonomy']:
+            leaf_inv = {self._network.leaf_id[i]: i for i in self._network.leaf_id}
+            for i in range(targets.shape[0]):
+                preds_list.append(leaf_inv[int(preds[i])])
 
-        preds = np.array(preds_list)
+            preds = np.array(preds_list)
         np.save('results/plots/preds_res.npy', preds)
         np.save('results/plots/targets_res.npy', targets)
         # return preds, targets
