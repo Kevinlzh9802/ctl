@@ -199,10 +199,7 @@ class IncrementalDataset:
                 self.dict_train_used[lf][sel_ind] = 1
         else:
             for lf in label_map:
-                if lf == label_map[lf][0]:
-                    lfx_all = data_dict[lf][:50]
-                else:
-                    lfx_all = data_dict[lf][:10]
+                lfx_all = data_dict[lf]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
                 x_selected = np.concatenate((x_selected, lfx_all))
                 y_selected = np.concatenate((y_selected, lfy_all))

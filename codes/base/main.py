@@ -164,32 +164,11 @@ def test(_run, _rnd, _seed):
 
     test_results = results_utils.get_template_results(cfg)
     for task_i in range(inc_dataset.n_tasks):
-        #
-        # task_info, train_loader, val_loader, test_loader, x_train, y_train = inc_dataset.new_task(cfg['sample_rate'],
-        #                                                                                           device)
-        #
-        # model.set_task_info(
-        #     task=task_info["task"],
-        #     # total_n_classes=task_info["max_class"],
-        #     # increment=task_info["increment"],
-        #     task_size=task_info["task_size"],
-        #     tax_tree=task_info["partial_tree"],
-        #     n_train_data=task_info["n_train_data"],
-        #     n_test_data=task_info["n_test_data"],
-        #     n_tasks=inc_dataset.n_tasks,
-        #     acc_detail_path=cfg.acc_detail_path
-        # )
 
         model.new_task()
         model.before_task(inc_dataset)
         state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
-        classifier_parameter = model._parallel_network.module.classifier.state_dict()
-        # print(classifier_parameter.keys())
-        # for i in classifier_parameter:
-        #     print(i)
-        #     print(classifier_parameter[i])
-        #     print(classifier_parameter[i].size())
         model.eval()
         model.eval_task(model._cur_test_loader)
         # model.save_acc_detail_info('test')
