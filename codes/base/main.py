@@ -191,9 +191,8 @@ def test(_run, _rnd, _seed):
         #     print(classifier_parameter[i])
         #     print(classifier_parameter[i].size())
         model.eval()
-
         model.eval_task(model._cur_test_loader)
-        model.save_acc_detail_info('test')
+        # model.save_acc_detail_info('test')
 
 
 if __name__ == "__main__":

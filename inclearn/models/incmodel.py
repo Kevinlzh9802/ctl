@@ -301,11 +301,11 @@ class IncModel(IncrementalLearner):
 
         # measure accuracy
         self.record_accuracy(output, targets_0, acc)
-        self.record_details(output, targets, targets_0, acc)
+        # self.record_details(output, targets, targets_0, acc)
 
         if aux_output is not None:
             self.record_accuracy(aux_output, aux_targets, acc_aux)
-            self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
+            # self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
 
         return nloss, stsloss, loss, aux_loss, acc, acc_aux
 
@@ -478,11 +478,11 @@ class IncModel(IncrementalLearner):
                     targets_aux = torch.cat((targets_aux, _targets_aux), 0)
 
         targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
-        self.record_details(output, targets, targets_0, acc)
+        # self.record_details(output, targets, targets_0, acc)
         self.curr_acc_list = [acc]
 
         if _output_aux is not None:
-            self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
+            # self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
             self.curr_acc_list_aux = [acc_aux]
 
         # test
