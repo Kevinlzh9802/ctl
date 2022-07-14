@@ -24,11 +24,11 @@ def get_data_folder(data_folder, dataset_name):
 class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, device=None,
                  batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0, resampling=False,
-                 data_folder="./data", start_class=0):
+                 data_folder="./data", start_class=0, mode_train=True):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
-        self.mode_train = True
+        self.mode_train = mode_train
         # the number of classes for each step in incremental stage
         self.task_size = increment
         self.increments = []
@@ -67,8 +67,8 @@ class IncrementalDataset:
         self.taxonomy_tree = dataset_class.taxonomy_tree
 
         # memory Mt
-        self.data_memory = None
-        self.targets_memory = []
+        # self.data_memory = None
+        #         # self.targets_memory = []
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
@@ -92,13 +92,15 @@ class IncrementalDataset:
         self.targets_cur_unique = sorted(list(set(self.targets_cur)))
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
-        if self._current_task > 0:
-            self._update_memory_for_new_task(self.curriculum[self._current_task])
-        if self.data_memory is not None:
-            print("Set memory of size: {}.".format(len(self.data_memory)))
-            if len(self.data_memory) != 0:
-                x_train = np.concatenate((x_train, self.data_memory))
-                y_train = np.concatenate((y_train, self.targets_memory))
+        if self.mode_train:
+            if self._current_task > 0:
+                self._update_memory_for_new_task(self.curriculum[self._current_task])
+            # if self.data_memory is not None:
+                data_memory, targets_memory = self.gen_memory_array_from_dict()
+                print("Set memory of size: {}.".format(len(data_memory)))
+                if len(data_memory) != 0:
+                    x_train = np.concatenate((x_train, data_memory))
+                    y_train = np.concatenate((y_train, targets_memory))
 
         self.data_inc, self.targets_inc = x_train, y_train
         self.data_test_inc, self.targets_test_inc = x_test, y_test
@@ -126,16 +128,24 @@ class IncrementalDataset:
         parent_labels = set([self.taxonomy_tree.nodes[x].label_index for x in parent_names])
         for lb in parent_labels:
             self.memory_dict.pop(lb, -1)
-        self.update_memory_array()
+        # self.update_memory_array()
 
-    def update_memory_array(self):
+    # def update_memory_array(self):
+    #     data_memory = []
+    #     target_memory = []
+    #     for i in self.memory_dict:
+    #         data_memory += [self.memory_dict[i]]
+    #         target_memory += [i] * self.memory_dict[i].shape[0]
+    #     self.data_memory = np.concatenate(data_memory)
+    #     self.targets_memory = np.array(target_memory)
+
+    def gen_memory_array_from_dict(self):
         data_memory = []
         target_memory = []
         for i in self.memory_dict:
             data_memory += [self.memory_dict[i]]
             target_memory += [i] * self.memory_dict[i].shape[0]
-        self.data_memory = np.concatenate(data_memory)
-        self.targets_memory = np.array(target_memory)
+        return np.concatenate(data_memory), np.array(target_memory)
 
     def _get_cur_data_for_all_children(self):
         label_map_train = self._gen_label_map(self.curriculum[self._current_task])

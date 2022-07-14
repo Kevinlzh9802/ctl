@@ -56,7 +56,14 @@ def initialization(config, seed, mode, exp_id):
 def train(_run, _rnd, _seed):
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "train", _run._id)
     ex.logger.info(cfg)
+
+    # adjust config
     cfg.data_folder = osp.join(base_dir, "data")
+    if cfg["device_auto_detect"]:
+        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+    else:
+        factory.set_device(cfg)
+    cfg["exp"]["mode_train"] = True
 
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)
@@ -64,10 +71,6 @@ def train(_run, _rnd, _seed):
 
 
 def _train(cfg, _run, ex, tensorboard):
-    if cfg["device_auto_detect"]:
-        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
-    else:
-        factory.set_device(cfg)
     trial_i = cfg['trial']
 
     inc_dataset = factory.get_data(cfg)

@@ -6,12 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_test_gpu.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_cpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_cpu.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/codes/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/convnet/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/convnet/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inclearn/datasets/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/datasets/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/deeprtc/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/deeprtc/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inclearn/tools/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/tools/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/tools/factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/tools/factory.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +53,7 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.simplified">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python">
       <module name="ctl" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -168,18 +169,13 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/codes/base/main.py</url>
-          <line>191</line>
+          <line>194</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
-          <line>501</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
-          <line>571</line>
-          <option name="timeStamp" value="8" />
+          <line>574</line>
+          <option name="timeStamp" value="20" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

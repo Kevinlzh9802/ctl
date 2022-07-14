@@ -16,6 +16,7 @@ from inclearn.tools.memory import MemorySize
 from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
+from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss, targets_from_0
 from inclearn.tools.utils import plot_cls_detail
 
 import pandas as pd
@@ -206,9 +207,6 @@ class IncModel(IncrementalLearner):
 
         for epoch in range(self._n_epochs):
             _ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0
-            # accu.reset()
-            # train_new_accu.reset()
-            # train_old_accu.reset()
 
             nlosses = averageMeter()
             stslosses = averageMeter()
@@ -234,10 +232,6 @@ class IncModel(IncrementalLearner):
                     total_loss = loss_aux + ce_loss
                 else:
                     total_loss = ce_loss
-
-                if not utils.check_loss(total_loss):
-                    import pdb
-                    pdb.set_trace()
 
                 total_loss.backward()
                 self._optimizer.step()
@@ -282,9 +276,9 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list_aux = acc_list_aux
 
     def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
-        criterion = torch.nn.CrossEntropyLoss(reduction='none')
+        batch_size = inputs.size(0)
         inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-
+        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
         outputs = self._parallel_network(inputs)
         # since self._parallel_network = DataParallel(self._network)
         # this is equivalent to self._network.forward(inputs)
@@ -293,73 +287,42 @@ class IncModel(IncrementalLearner):
         aux_output = outputs['aux_logit']
         nout = outputs['nout']
         sfmx_base = outputs['sfmx_base']
-        nloss = []
-
-        leaf_id_keys = self._network.leaf_id.keys()
-
-        for idx in range(inputs.size(0)):
-
-            index = targets.cpu().numpy()[idx]
-            if index in leaf_id_keys:
-                index = self._network.leaf_id[index]
-            for n_id, n_l in self._network.node_labels[index]:
-                if str(self._device) == 'cuda:0':
-                    res = criterion(nout[n_id][idx, :].view(1, -1).cuda(), torch.tensor([n_l]).cuda())
-                else:
-                    res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
-                nloss.append(res)
-
-        nloss = torch.mean(torch.stack(nloss))
-        nlosses.update(nloss.item(), inputs.size(0))
-
-        # compute stochastic tree sampling loss
-        leaf_id_index_list = []
-
-        for target_i in list(np.array(targets.cpu())):
-            if target_i in leaf_id_keys:
-                leaf_id_index_list.append(self._network.leaf_id[target_i])
-            # else:
-            #     leaf_id_index_list.append(target_i)
-        if str(self._device) == 'cuda:0':
-            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
-        else:
-            leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
-        # gt_z = torch.gather(output, 1, targets.view(-1, 1))
-        gt_z = torch.gather(output, 1, leaf_id_indexes.view(-1, 1))
-        stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
-        stslosses.update(stsloss.item(), inputs.size(0))
-
-        loss = nloss + stsloss * 1
-        losses.update(loss.item(), inputs.size(0))
-
-        # measure accuracy
-        max_z = torch.max(output, dim=1)[0]
-        preds = torch.eq(output, max_z.view(-1, 1))
-        iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
-
         aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
 
-        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
-                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+        nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
+        nlosses.update(nloss.item(), batch_size)
 
-        acc.update(torch.mean(iscorrect).item(), inputs.size(0))
-        acc.update_detail(acc_update_info)
+        gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
+        stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
+        stslosses.update(stsloss.item(), batch_size)
+
+        loss = nloss + stsloss * 1
+        losses.update(loss.item(), batch_size)
+
+        # measure accuracy
+        self.record_accuracy(output, targets_0, acc)
+        self.record_details(output, targets, targets_0, acc)
 
         if aux_output is not None:
-            max_z_aux = torch.max(aux_output, dim=1)[0]
-            preds_aux = torch.eq(aux_output, max_z_aux.view(-1, 1))
-
-            iscorrect_aux = torch.gather(preds_aux, 1, aux_targets.view(-1, 1)).flatten().float()
-
-            acc_update_info_aux = self.update_acc_detail(list(np.array(aux_targets.cpu())),
-                                                         list(np.array(iscorrect_aux.cpu())),
-                                                         list((np.sum(np.array(preds_aux.cpu()), 1) > 1) * 1))
-            acc_aux.update(torch.mean(iscorrect_aux).item(), inputs.size(0))
-            acc_aux.update_detail(acc_update_info_aux)
+            self.record_accuracy(aux_output, aux_targets, acc_aux)
+            self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
 
         return nloss, stsloss, loss, aux_loss, acc, acc_aux
-        # return nloss, stsloss, loss, acc
+
+    @staticmethod
+    def record_accuracy(output, targets, acc):
+        iscorrect = (output.argmax(1) == targets)
+        acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
+
+    def record_details(self, output, targets, targets_0, acc):
+        # targets is the real label
+        # targets_0 is the re-indexed label that starts from 0, it still can be the same with targets
+        max_z = torch.max(output, dim=1)[0]
+        preds = torch.eq(output, max_z.view(-1, 1))
+        iscorrect = torch.gather(preds, 1, targets_0.view(-1, 1)).flatten().float()
+        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
+                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+        acc.update_detail(acc_update_info)
 
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in leaf_id_index_list}
@@ -380,30 +343,29 @@ class IncModel(IncrementalLearner):
 
         return res_dict
 
-    def _compute_aux_loss(self, targets, aux_output):
-        # if outputs['aux_logit'] is not None:
+    def _get_aux_targets(self, targets):
+        aux_targets = targets.clone()
+        if self._cfg["aux_n+1"]:
+            targets_memory = list(self._inc_dataset.memory_dict.keys())
+            aux_targets[np.isin(aux_targets, targets_memory)] = 0
+            for index_i in range(len(self._inc_dataset.targets_cur_unique)):
+                aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
+        aux_targets = aux_targets.type(torch.LongTensor)
 
+        if self._device.type == 'cuda':
+            aux_targets = aux_targets.cuda()
+        return aux_targets
+
+    def _compute_aux_loss(self, targets, aux_output):
         aux_targets = targets
         if aux_output is not None:
-            aux_targets = targets.clone()
-
-            if self._cfg["aux_n+1"]:
-                for curr_class_i in self._inc_dataset.targets_memory:
-                    aux_targets[aux_targets == curr_class_i] = 0
-                for index_i in range(len(self._inc_dataset.targets_cur_unique)):
-                    aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
-
-            aux_targets = aux_targets.type(torch.LongTensor)
-            if self._device.type == 'cuda':
-                aux_targets = aux_targets.cuda()
+            aux_targets = self._get_aux_targets(targets)
             aux_loss = F.cross_entropy(aux_output, aux_targets)
-
         else:
             if str(self._device) == 'cuda:0':
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
-
         return aux_loss, aux_targets
 
     def _after_task(self, inc_dataset):
@@ -415,7 +377,7 @@ class IncModel(IncrementalLearner):
             save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(save_path, self._task))
 
-        if (self._cfg["decouple"]['enable'] and taski > 0):
+        if self._cfg["decouple"]['enable'] and taski > 0:
             print('decouple')
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
@@ -423,9 +385,6 @@ class IncModel(IncrementalLearner):
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc,
                                                        inc_dataset.targets_inc,
                                                        mode="balanced_train")
-
-            #             # finetuning
-            #             self._parallel_network.module.classifier.reset_parameters()
 
             # finetuning
             if self._device.type == 'cuda':
@@ -465,9 +424,10 @@ class IncModel(IncrementalLearner):
 
             if self._cfg["save_mem"]:
                 save_path = os.path.join(os.getcwd(), "ckpts/mem")
+                data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
                 memory = {
-                    'x': inc_dataset.data_memory,
-                    'y': inc_dataset.targets_memory,
+                    'x': data_memory,
+                    'y': targets_memory,
                     'herding': self._herding_matrix
                 }
                 if not os.path.exists(save_path):
@@ -497,85 +457,49 @@ class IncModel(IncrementalLearner):
         acc = averageMeter()
         acc_aux = averageMeter()
 
-        preds, targets = [], []
-        preds_aux, targets_aux = [], []
-
+        output, targets = torch.tensor([]), torch.tensor([])
+        output_aux, targets_aux = torch.tensor([]), torch.tensor([])
         self._parallel_network.eval()
 
         with torch.no_grad():
             for _, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-                outputs = self._parallel_network(inputs)
+                n_outputs = self._parallel_network(inputs)
+                _output = n_outputs['output']
+                _output_aux = n_outputs['aux_logit']
 
-                _output = outputs['output']
-                _output_aux = outputs['aux_logit']
-
-                max_z = torch.max(_output, dim=1)[0]
-                _preds_onehot = torch.eq(_output, max_z.view(-1, 1))
-                #
-                _preds = _output.argmax(1)
-                if self._cfg["postprocessor"]["enable"] and self._task > 0:
-                    _preds = self._network.postprocessor.post_process(_preds, self._task_size)
-                preds.append(_preds.detach().cpu().numpy())
-                targets.append(lbls.long().cpu().numpy())
+                output = torch.cat((output, _output), 0)
+                targets = torch.cat((targets, lbls), 0)
 
                 if _output_aux is not None:
-                    max_z_aux = torch.max(_output_aux, dim=1)[0]
-                    _preds_aux_onehot = torch.eq(_output_aux, max_z_aux.view(-1, 1))
-                    _preds_aux = _output_aux.argmax(1)
+                    _targets_aux = self._get_aux_targets(lbls)
+                    output_aux = torch.cat((output_aux, _output_aux), 0)
+                    targets_aux = torch.cat((targets_aux, _targets_aux), 0)
 
-                    aux_targets = lbls.clone()
-                    targets_memory = list(set(data_loader.dataset.y))
-                    for i in self._inc_dataset.targets_cur_unique:
-                        targets_memory.remove(i)
-                    for curr_class_i in targets_memory:
-                        aux_targets[aux_targets == curr_class_i] = 0
-                    for index_i in range(len(self._inc_dataset.targets_cur_unique)):
-                        aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
-
-                    preds_aux.append(_preds_aux.detach().cpu().numpy())
-                    targets_aux.append(aux_targets.long().cpu().numpy())
-
-        preds = torch.tensor(np.concatenate(preds, axis=0))
-        targets = torch.tensor(np.concatenate(targets, axis=0))
-
-        if preds_aux:
-            preds_aux = torch.tensor(np.concatenate(preds_aux, axis=0))
-            targets_aux = torch.tensor(np.concatenate(targets_aux, axis=0))
-            iscorrect_aux = torch.gather(preds_aux, 1, targets_aux.view(-1, 1)).flatten().float()
-            acc_update_info_aux = self.update_acc_detail(list(np.array(targets.cpu())),
-                                                         list(np.array(iscorrect_aux.cpu())),
-                                                         list((np.sum(np.array(preds_aux.cpu()), 1) > 1) * 1))
-
-            acc_aux.update_detail(acc_update_info_aux)
-            self.curr_acc_list_aux = [acc_aux]
-
-        leaf_id_keys = self._network.leaf_id.keys()
-        leaf_id_index_list = []
-        for target_i in list(np.array(targets.cpu())):
-            if target_i in leaf_id_keys:
-                leaf_id_index_list.append(self._network.leaf_id[target_i])
-
-        if str(self._device) == 'cuda:0':
-            preds = preds.cuda()
-            leaf_id_indexes = torch.tensor(leaf_id_index_list).cuda()
-        else:
-            leaf_id_indexes = torch.tensor(leaf_id_index_list)
-
-        # iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
-        iscorrect = (preds == leaf_id_indexes)
-        cls_detail = np.zeros([len(leaf_id_keys), len(leaf_id_keys)])
-        for k in range(len(leaf_id_indexes)):
-            cls_detail[leaf_id_indexes[k]][preds[k]] += 1
-
-        plot_cls_detail(cls_detail)
-        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
-                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
-
-        acc.update_detail(acc_update_info)
+        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+        self.record_details(output, targets, targets_0, acc)
         self.curr_acc_list = [acc]
 
-        return preds, targets, cls_detail
+        if _output_aux is not None:
+            self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
+            self.curr_acc_list_aux = [acc_aux]
+
+        # test
+        preds_list = []
+        preds = output.argmax(1)
+
+        leaf_inv = {self._network.leaf_id[i]: i for i in self._network.leaf_id}
+        # TODO: fix the output
+        preds_npy = np.array(preds.cpu())
+        for i in range(targets.shape[0]):
+            pos = np.where(preds_npy == 1)
+            preds_class_i = pos[1][np.where(pos[0] == i)][0]
+            preds_list.append(leaf_inv[preds_class_i])
+
+        preds = np.array(preds_list)
+        np.save('/Users/chenyuchao/Downloads/preds_res.npy', preds)
+        np.save('/Users/chenyuchao/Downloads/targets_res.npy', targets)
+        return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
         features, targets_ = extract_features(self._parallel_network, loader, self._device)
@@ -660,7 +584,7 @@ class IncModel(IncrementalLearner):
                 self._ex.logger,
                 self._device
             )
-            self._inc_dataset.update_memory_array()
+            # self._inc_dataset.update_memory_array()
         else:
             raise ValueError()
 

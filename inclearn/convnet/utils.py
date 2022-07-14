@@ -5,7 +5,7 @@ from torch.optim import SGD
 import torch.nn.functional as F
 from inclearn.tools.metrics import ClassErrorMeter, AverageValueMeter
 from inclearn.tools.utils import to_onehot
-from inclearn.deeprtc.utils import deep_rtc_nloss, leaf_id_indices
+from inclearn.deeprtc.utils import deep_rtc_nloss, targets_from_0
 
 
 def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
@@ -48,7 +48,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
 
                 max_z = torch.max(outputs["output"], dim=1)[0]
                 preds = torch.eq(outputs["output"], max_z.view(-1, 1))
-                leaf_id_indexes = leaf_id_indices(targets, n_module.leaf_id, n_module.device)
+                leaf_id_indexes = targets_from_0(targets, n_module.leaf_id, n_module.device)
                 iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
 
                 if all_preds is None:
