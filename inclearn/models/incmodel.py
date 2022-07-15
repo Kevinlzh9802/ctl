@@ -495,7 +495,6 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list = [acc]
 
         if _output_aux is not None:
-
             self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
             self.curr_acc_list_aux = [acc_aux]
 

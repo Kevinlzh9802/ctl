@@ -168,8 +168,8 @@ def test(_run, _rnd, _seed):
 
         model.new_task()
         model.before_task(inc_dataset)
-        # state_dict = torch.load(f'./ckpts_2/step{task_i}.ckpt')
-        state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
+        state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
+        # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
         model.eval()
         model.eval_task(model._cur_test_loader)

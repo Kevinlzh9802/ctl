@@ -1,5 +1,5 @@
 exp:
-  name: "der_deep_rtc_4"
+  name: "der_deep_rtc_5"
 #  savedir: "./logs"
 #  ckptdir: "./ckpts"
 #  tensorboard_dir: "./tensorboard"
@@ -91,7 +91,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: 5
+trial: -1
 increment: 10
 batch_size: 128
 
