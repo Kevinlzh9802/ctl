@@ -83,7 +83,7 @@ def _train(cfg, _run, ex, tensorboard):
     if _run.meta_info["options"]["--file_storage"] is not None:
         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
     else:
-        _save_dir = cfg["exp"]["ckptdir"]
+        _save_dir = cfg['model_path']
 
     results = results_utils.get_template_results(cfg)
 

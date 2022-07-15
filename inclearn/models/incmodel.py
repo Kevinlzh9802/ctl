@@ -512,17 +512,14 @@ class IncModel(IncrementalLearner):
 
         self._ex.logger.info(f"After train acc: {acc.avg}, aux_acc: {acc_aux.avg}")
 
-        preds_aux_list = []
-        preds_aux_npy = np.array(preds_aux)
-        for i in range(targets_aux.shape[0]):
-            pos = np.where(preds_aux_npy == 1)
-            preds_aux_class_i = pos[1][np.where(pos[0] == i)][0]
-            if preds_aux_class_i != 0:
-                preds_aux_list.append(self._inc_dataset.targets_cur_unique[preds_aux_class_i - 1])
-            else:
-                preds_aux_list.append(0)
-
-        preds_aux = np.array(preds_aux_list)
+        if len(output_aux) > 0:
+            preds_aux_ori = output_aux.argmax(1)
+            new_idx_pos = (preds_aux_ori != 0)
+            new_idx = preds_aux_ori[new_idx_pos]
+            targets_ori = torch.tensor(self._inc_dataset.targets_cur_unique)
+            # map the non-zero targets into original ones and keep the zeros
+            preds_aux_ori[new_idx_pos] = targets_ori[new_idx - 1].long()
+            preds_aux = preds_aux_ori
 
         np.save(save_path + 'preds_aux_res.npy', preds_aux)
         np.save(save_path + 'targets_aux_res.npy', targets_aux)

@@ -1,8 +1,8 @@
 exp:
   name: "der_deep_rtc_1"
-  savedir: "./logs"
-  ckptdir: "./ckpts"
-  tensorboard_dir: "./tensorboard"
+#  savedir: "./logs"
+#  ckptdir: "./ckpts"
+#  tensorboard_dir: "./tensorboard"
   debug: False
   mode_train: True
 

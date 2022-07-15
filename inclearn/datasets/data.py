@@ -171,6 +171,7 @@ class IncrementalDataset:
         y_selected = np.empty([0], dtype=np.uint8)
         if train:
             for lf in label_map:
+                # TODO: reduce test loader numbers
                 lfx_all = data_dict[lf]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
                 lfx_used_idx = self.dict_train_used[lf]
