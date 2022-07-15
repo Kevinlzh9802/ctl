@@ -354,11 +354,10 @@ class IncModel(IncrementalLearner):
         aux_targets = targets.clone()
         if self._cfg["aux_n+1"]:
             targets_memory = list(self._inc_dataset.memory_dict.keys())
+            print(aux_targets)
+            print(targets_memory)
             aux_targets[np.isin(aux_targets, targets_memory)] = 0
             for index_i in range(len(self._inc_dataset.targets_cur_unique)):
-                print(index_i)
-                print(aux_targets)
-                print(self._inc_dataset.targets_cur_unique)
                 aux_targets[aux_targets == self._inc_dataset.targets_cur_unique[index_i]] = index_i + 1
         aux_targets = aux_targets.type(torch.LongTensor)
 
