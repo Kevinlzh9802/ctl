@@ -92,11 +92,6 @@ class IncModel(IncrementalLearner):
                     os.mkdir(save_path)
         self.curr_acc_list = []
         self.curr_acc_list_aux = []
-        self.acc_detail_path = cfg.acc_detail_path
-        if not os.path.exists('results'):
-            os.mkdir('results')
-        if not os.path.exists(self.acc_detail_path):
-            os.mkdir(self.acc_detail_path)
 
         # Task info
         self._task = 0
@@ -112,9 +107,11 @@ class IncModel(IncrementalLearner):
         self._cur_val_loader = None
 
         # Save paths
-        self._acc_path = None
-        self._model_path = None
-        self._classification_path = None
+
+        self.acc_detail_path = cfg['acc_detail_path']
+        self.model_path = cfg['model_path']
+        self.log_path = cfg['log_path']
+        self.tensorboard_path = cfg['tensorboard_path']
 
     def eval(self):
         self._parallel_network.eval()
@@ -384,8 +381,8 @@ class IncModel(IncrementalLearner):
         network.eval()
         self._ex.logger.info("save model")
         if self._cfg["save_ckpt"] and taski >= self._cfg["start_task"]:
-            save_path = os.path.join(os.getcwd(), "ckpts")
-            torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(save_path, self._task))
+            # save_path = os.path.join(os.getcwd(), "ckpts")
+            torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.model_path, self._task))
 
         if self._cfg["decouple"]['enable'] and taski > 0:
             print('decouple')
@@ -417,8 +414,8 @@ class IncModel(IncrementalLearner):
                                 save_path=f'{self.acc_detail_path}/task_{self._task}_decouple')
             network = deepcopy(self._parallel_network)
             if self._cfg["save_ckpt"]:
-                save_path = os.path.join(os.getcwd(), "ckpts")
-                torch.save(network.cpu().state_dict(), "{}/decouple_step{}.ckpt".format(save_path, self._task))
+                # save_path = os.path.join(os.getcwd(), "ckpts")
+                torch.save(network.cpu().state_dict(), "{}/decouple_step{}.ckpt".format(self.model_path, self._task))
 
         if self._cfg["postprocessor"]["enable"]:
             self._update_postprocessor(inc_dataset)
@@ -433,7 +430,8 @@ class IncModel(IncrementalLearner):
             self.build_exemplars(inc_dataset, self._coreset_strategy)
 
             if self._cfg["save_mem"]:
-                save_path = os.path.join(os.getcwd(), "ckpts/mem")
+                # save_path = os.path.join(os.getcwd(), "ckpts/mem")
+                save_path = self.model_path + 'mem'
                 data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
                 memory = {
                     'x': data_memory,
@@ -465,6 +463,7 @@ class IncModel(IncrementalLearner):
         # return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader):
+        preds_aux, targets_aux = np.array([]), np.array([])
         acc = averageMeter()
         acc_aux = averageMeter()
 
@@ -487,12 +486,12 @@ class IncModel(IncrementalLearner):
                     output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
                     targets_aux = torch.cat((targets_aux, _targets_aux.cpu()), 0)
 
-        # targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
-        # self.record_details(output, targets, targets_0, acc)
+        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+        self.record_details(output, targets, targets_0, acc)
         self.curr_acc_list = [acc]
 
         if _output_aux is not None:
-            # self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
+            self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
             self.curr_acc_list_aux = [acc_aux]
 
         # test
@@ -505,9 +504,30 @@ class IncModel(IncrementalLearner):
                 preds_list.append(leaf_inv[int(preds[i])])
 
             preds = np.array(preds_list)
-        np.save('results/plots/preds_res.npy', preds)
-        np.save('results/plots/targets_res.npy', targets)
-        # return preds, targets
+        save_path = self.acc_detail_path + 'plots/'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        np.save(save_path + 'preds_res.npy', preds)
+        np.save(save_path + 'targets_res.npy', targets)
+
+        self._ex.logger.info(f"After train acc: {acc.avg}, aux_acc: {acc_aux.avg}")
+
+        preds_aux_list = []
+        preds_aux_npy = np.array(preds_aux)
+        for i in range(targets_aux.shape[0]):
+            pos = np.where(preds_aux_npy == 1)
+            preds_aux_class_i = pos[1][np.where(pos[0] == i)][0]
+            if preds_aux_class_i != 0:
+                preds_aux_list.append(self._inc_dataset.targets_cur_unique[preds_aux_class_i - 1])
+            else:
+                preds_aux_list.append(0)
+
+        preds_aux = np.array(preds_aux_list)
+
+        np.save(save_path + 'preds_aux_res.npy', preds_aux)
+        np.save(save_path + 'targets_aux_res.npy', targets_aux)
+
+        return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
         features, targets_ = extract_features(self._parallel_network, loader, self._device)
@@ -559,7 +579,8 @@ class IncModel(IncrementalLearner):
                                                 metric='None')
 
     def build_exemplars(self, inc_dataset, coreset_strategy):
-        save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
+        save_path = self.model_path + f'mem/mem_step{self._task}.ckpt'
+        # save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)
             self._inc_dataset.data_memory = memory_states['x']

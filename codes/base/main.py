@@ -39,16 +39,18 @@ def initialization(config, seed, mode, exp_id):
     # ex.captured_out_filter = lambda text: 'Output capturing turned off.'
     cfg = edict(config)
     utils.set_seed(cfg['seed'])
+    utils.set_save_paths(cfg)
+
     if exp_id is None:
         exp_id = -1
-        cfg.exp.savedir = "./logs"
-    logger = utils.make_logger(f"exp{exp_id}_{cfg.exp.name}_{mode}", savedir=cfg.exp.savedir)
+    #     cfg.exp.savedir = "./logs"
+    logger = utils.make_logger(f"{mode}", savedir=cfg['log_path'])
 
     # Tensorboard
-    exp_name = f'{exp_id}_{cfg["exp"]["name"]}' if exp_id is not None else f'../inbox/{cfg["exp"]["name"]}'
-    tensorboard_dir = cfg["exp"]["tensorboard_dir"] + f"/{exp_name}"
+    # exp_name = f'{exp_id}_{cfg["exp"]["name"]}' if exp_id is not None else f'../inbox/{cfg["exp"]["name"]}'
+    # tensorboard_dir = cfg["exp"]["tensorboard_dir"] + f"/{exp_name}"
 
-    tensorboard = SummaryWriter(tensorboard_dir)
+    tensorboard = SummaryWriter(cfg['tensorboard_path'])
     return cfg, logger, tensorboard
 
 
@@ -166,8 +168,8 @@ def test(_run, _rnd, _seed):
 
         model.new_task()
         model.before_task(inc_dataset)
-        state_dict = torch.load(f'./ckpts_2/step{task_i}.ckpt')
-        # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
+        # state_dict = torch.load(f'./ckpts_2/step{task_i}.ckpt')
+        state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
         model.eval()
         model.eval_task(model._cur_test_loader)

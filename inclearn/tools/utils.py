@@ -4,6 +4,7 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 import torch
+import os
 
 from inclearn.tools.metrics import ClassErrorMeter
 
@@ -204,3 +205,18 @@ def plot_cls_detail(cls_detail):
     cls_num = cls_detail.shape[0]
     for k in range(cls_num):
         plt.bar(np.arange(0, cls_num), cls_detail[0, :])
+
+
+def set_save_paths(cfg):
+    exp_path = 'results/' + cfg['exp']['name'] + '/'
+    if os.path.exists(exp_path):
+        raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists!')
+    else:
+        cfg['acc_detail_path'] = exp_path + 'acc_details/'
+        cfg['model_path'] = exp_path + 'ckpts/'
+        cfg['log_path'] = exp_path + 'logs/'
+        cfg['tensorboard_path'] = exp_path + 'tensorboard/'
+        os.makedirs(cfg['acc_detail_path'])
+        os.makedirs(cfg['model_path'])
+        os.makedirs(cfg['log_path'])
+        os.makedirs(cfg['tensorboard_path'])
