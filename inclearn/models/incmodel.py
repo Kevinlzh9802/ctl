@@ -304,7 +304,7 @@ class IncModel(IncrementalLearner):
 
             # measure accuracy
             self.record_accuracy(output, targets_0, acc)
-            # self.record_details(output, targets, targets_0, acc)
+            self.record_details(output, targets, targets_0, acc)
 
             if aux_output is not None:
                 self.record_accuracy(aux_output, aux_targets, acc_aux)
@@ -314,6 +314,8 @@ class IncModel(IncrementalLearner):
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
 
             loss = torch.mean(criterion(output, targets.long()))
+            self.record_accuracy(output, targets, acc)
+            self.record_details(output, targets, targets, acc)
             aux_loss = torch.tensor(0)
         return loss, aux_loss, acc, acc_aux
 
@@ -327,7 +329,7 @@ class IncModel(IncrementalLearner):
         # targets_0 is the re-indexed label that starts from 0, it still can be the same with targets
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-        iscorrect = torch.gather(preds, 1, targets_0.view(-1, 1)).flatten().float()
+        iscorrect = torch.gather(preds, 1, targets_0.type(torch.LongTensor).view(-1, 1)).flatten().float()
         acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
                                                  list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
         acc.update_detail(acc_update_info)
