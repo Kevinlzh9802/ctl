@@ -51,7 +51,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-acc_detail_path: 'results/acc_detail/'
+#acc_detail_path: 'results/acc_detail/'
 
 postprocessor:
   enable: False
