@@ -1,5 +1,5 @@
 exp:
-  name: "joint"
+  name: "joint2"
   savedir: "./logs"
   ckptdir: "./ckpts"
   tensorboard_dir: "./tensorboard"
