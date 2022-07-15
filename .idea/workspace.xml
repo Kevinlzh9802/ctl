@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7edc904-5290-4b38-89ac-2a06861e0483" name="Changes" comment="0629 changes">
-      <change beforePath="$PROJECT_DIR$/codes/base/scripts/test_server.sh" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/scripts/test_server.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,7 +48,7 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.simplified">
+  <component name="RunManager" selected="Python.test">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python">
       <module name="ctl" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -105,7 +107,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/codes/base/main.py" />
-      <option name="PARAMETERS" value="test with &quot;./configs/ctl1_cpu.yaml&quot; --name=&quot;cifar100_trial5_debug&quot; --force" />
+      <option name="PARAMETERS" value="test with &quot;./configs/joint.yaml&quot; --name=&quot;cifar100_trial5_debug&quot; --force" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -172,13 +174,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
-          <line>530</line>
+          <line>532</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/inclearn/models/incmodel.py</url>
-          <line>516</line>
-          <option name="timeStamp" value="56" />
+          <line>492</line>
+          <option name="timeStamp" value="57" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

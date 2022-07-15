@@ -489,8 +489,10 @@ class IncModel(IncrementalLearner):
                     _targets_aux = self._get_aux_targets(lbls)
                     output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
                     targets_aux = torch.cat((targets_aux, _targets_aux.cpu()), 0)
-
-        targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+        if self._cfg['taxonomy']:
+            targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+        else:
+            targets_0 = targets
         self.record_details(output, targets, targets_0, acc)
         self.curr_acc_list = [acc]
 
