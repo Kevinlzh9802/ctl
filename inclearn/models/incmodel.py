@@ -329,9 +329,7 @@ class IncModel(IncrementalLearner):
         # targets_0 is the re-indexed label that starts from 0, it still can be the same with targets
         max_z = torch.max(output, dim=1)[0]
         preds = torch.eq(output, max_z.view(-1, 1))
-        if self._device.type == 'cuda':
-            preds = preds.cuda()
-        iscorrect = torch.gather(preds, 1, targets_0.type(torch.LongTensor).view(-1, 1)).flatten().float()
+        iscorrect = torch.gather(preds.cpu(), 1, targets_0.type(torch.LongTensor).view(-1, 1)).flatten().float()
         acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
                                                  list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
         acc.update_detail(acc_update_info)
