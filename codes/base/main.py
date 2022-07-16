@@ -70,6 +70,9 @@ def train(_run, _rnd, _seed):
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
+    with open('delete_warning.txt', 'w') as dw:
+        dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
+                 'it may lose important data and results. See log file for configuration details.')
 
 
 def _train(cfg, _run, ex, tensorboard):
@@ -87,7 +90,8 @@ def _train(cfg, _run, ex, tensorboard):
 
     results = results_utils.get_template_results(cfg)
 
-    for task_i in range(inc_dataset.n_tasks):
+    # for task_i in range(inc_dataset.n_tasks):
+    for task_i in range(1):
         model.new_task()
         model.before_task(inc_dataset)
 
@@ -104,14 +108,6 @@ def _train(cfg, _run, ex, tensorboard):
         model.after_task(inc_dataset)
         model.save_acc_detail_info('after_train')
 
-    # top1_avg_acc, top5_avg_acc = results_utils.compute_avg_inc_acc(results["results"])
-
-    # _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top1"] = top1_avg_acc
-    # _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top5"] = top5_avg_acc
-    # ex.logger.info("Average Incremental Accuracy Top 1: {} Top 5: {}.".format(
-    #     _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top1"],
-    #     _run.info[f"trial{trial_i}"][f"avg_incremental_accu_top5"],
-    # ))
     if cfg["exp"]["name"]:
         results_utils.save_results(results, cfg["exp"]["name"])
 

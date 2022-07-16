@@ -210,7 +210,8 @@ def plot_cls_detail(cls_detail):
 def set_save_paths(cfg):
     exp_path = 'results/' + cfg['exp']['name'] + '/'
     if os.path.exists(exp_path):
-        raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists!')
+        raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists! To make sure existing files and data '
+                                                             'are not overwritten, please choose an unused name.')
     else:
         cfg['acc_detail_path'] = exp_path + 'acc_details/'
         cfg['model_path'] = exp_path + 'ckpts/'

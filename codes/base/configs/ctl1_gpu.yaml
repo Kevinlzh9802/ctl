@@ -1,5 +1,5 @@
 exp:
-  name: "der_deep_rtc_6"
+  name: "der_deep_rtc_task0_full_data"
 #  savedir: "./logs"
 #  ckptdir: "./ckpts"
 #  tensorboard_dir: "./tensorboard"
