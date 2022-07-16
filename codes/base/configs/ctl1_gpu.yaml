@@ -33,6 +33,7 @@ save_ckpt: True
 save_mem: True
 load_mem: False
 new_train_from: 0
+retrain_from_task0: True
 
 # Optimization; Training related
 task_max: 2
@@ -91,7 +92,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: -1
+trial: 5
 increment: 10
 batch_size: 128
 
