@@ -10,10 +10,8 @@ import copy
 import time
 from pathlib import Path
 import numpy as np
-import random
 from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
-from torchinfo import summary
 
 repo_name = 'ctl'
 base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name)]
@@ -21,9 +19,6 @@ sys.path.append(base_dir)
 
 from sacred import Experiment
 ex = Experiment(base_dir=base_dir, save_git_info=False)
-
-# MongoDB Observer
-# ex.observers.append(MongoObserver.create(url='xx.xx.xx.xx:port', db_name='classil'))
 
 import torch
 
@@ -75,13 +70,12 @@ def train(_run, _rnd, _seed):
                  'it may lose important data and results. See log file for configuration details.')
 
 
-def _train(cfg, _run, ex, tensorboard):
-
+def _train(cfg, _run, exp, tensorboard):
     inc_dataset = factory.get_data(cfg)
-    ex.logger.info("curriculum")
-    ex.logger.info(inc_dataset.curriculum)
+    exp.logger.info("curriculum")
+    exp.logger.info(inc_dataset.curriculum)
 
-    model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
+    model = factory.get_model(cfg, _run, exp, tensorboard, inc_dataset)
 
     if _run.meta_info["options"]["--file_storage"] is not None:
         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
@@ -90,8 +84,8 @@ def _train(cfg, _run, ex, tensorboard):
 
     results = results_utils.get_template_results(cfg)
 
-    # for task_i in range(inc_dataset.n_tasks):
-    for task_i in range(1):
+    for task_i in range(inc_dataset.n_tasks):
+    # for task_i in range(1):
         model.new_task()
         model.before_task(inc_dataset)
 
@@ -104,7 +98,7 @@ def _train(cfg, _run, ex, tensorboard):
 
         model.save_acc_detail_info('train_with_step')
 
-        model.eval_task(model._cur_test_loader)
+        model.eval_task(model._cur_test_loader, save_option=None)
         model.after_task(inc_dataset)
         model.save_acc_detail_info('after_train')
 
@@ -154,14 +148,11 @@ def test(_run, _rnd, _seed):
 
     cfg.data_folder = osp.join(base_dir, "data")
     inc_dataset = factory.get_data(cfg)
-    # inc_dataset._current_task = task_i
-    # train_loader = inc_dataset._get_loader(inc_dataset.data_cur, inc_dataset.targets_cur)
     model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
     # model._network.task_size = cfg.increment
 
     test_results = results_utils.get_template_results(cfg)
     for task_i in range(inc_dataset.n_tasks):
-
         model.new_task()
         model.before_task(inc_dataset)
         state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')

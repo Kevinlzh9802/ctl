@@ -16,7 +16,8 @@ from inclearn.tools.memory import MemorySize
 from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
-from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss, targets_from_0
+from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss
+from inclearn.datasets.data import tgt_to_tgt0, tgt0_to_tgt, tgt_to_aux_tgt, aux_tgt_to_tgt
 from inclearn.tools.utils import plot_cls_detail
 
 import pandas as pd
@@ -286,7 +287,7 @@ class IncModel(IncrementalLearner):
             aux_output = outputs['aux_logit']
             nout = outputs['nout']
             sfmx_base = outputs['sfmx_base']
-            targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+            targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
             aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
 
             nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
@@ -305,7 +306,7 @@ class IncModel(IncrementalLearner):
 
             if aux_output is not None:
                 self.record_accuracy(aux_output, aux_targets, acc_aux)
-                # self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
+                self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
         else:
             output = outputs['output']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
@@ -350,27 +351,11 @@ class IncModel(IncrementalLearner):
 
         return res_dict
 
-    def _get_aux_targets(self, targets):
-        aux_targets = targets.clone()
-        if self._cfg["aux_n+1"]:
-            # targets_memory = list(self._inc_dataset.memory_dict.keys())
-            cur_labels = self._inc_dataset.targets_cur_unique  # it should be sorted
-            # print(aux_targets)
-            # print(targets_memory)
-            # set the labels that are not in current task (i.e. in memory) to 0
-            aux_targets[np.logical_not(np.isin(aux_targets, cur_labels))] = 0
-            for index_i in range(len(cur_labels)):
-                aux_targets[aux_targets == cur_labels[index_i]] = index_i + 1
-        aux_targets = aux_targets.type(torch.LongTensor)
-
-        if self._device.type == 'cuda':
-            aux_targets = aux_targets.cuda()
-        return aux_targets
-
     def _compute_aux_loss(self, targets, aux_output):
         aux_targets = targets
         if aux_output is not None:
-            aux_targets = self._get_aux_targets(targets)
+            cur_labels = self._inc_dataset.targets_cur_unique  # it should be sorted
+            aux_targets = tgt_to_aux_tgt(targets, cur_labels, self._device)
             aux_loss = F.cross_entropy(aux_output, aux_targets)
         else:
             if str(self._device) == 'cuda:0':
@@ -454,7 +439,7 @@ class IncModel(IncrementalLearner):
         del self._inc_dataset.shared_data_inc
         self._inc_dataset.shared_data_inc = None
 
-    def _eval_task(self, data_loader):
+    def _eval_task(self, data_loader, save_option=None):
         if self._infer_head == "softmax":
             # ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
             self._compute_accuracy_by_netout(data_loader)
@@ -486,11 +471,11 @@ class IncModel(IncrementalLearner):
                 targets = torch.cat((targets, lbls), 0)
 
                 if _output_aux is not None:
-                    _targets_aux = self._get_aux_targets(lbls)
+                    _targets_aux = tgt_to_aux_tgt(lbls, self._inc_dataset.targets_cur_unique, self._device)
                     output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
                     targets_aux = torch.cat((targets_aux, _targets_aux.cpu()), 0)
         if self._cfg['taxonomy']:
-            targets_0 = targets_from_0(targets, self._network.leaf_id, self._device)
+            targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             targets_0 = targets
         self.record_details(output, targets, targets_0, acc)
@@ -505,12 +490,9 @@ class IncModel(IncrementalLearner):
         preds = output.argmax(1)
 
         if self._cfg['taxonomy']:
-            leaf_inv = {self._network.leaf_id[i]: i for i in self._network.leaf_id}
-            for i in range(targets.shape[0]):
-                preds_list.append(leaf_inv[int(preds[i])])
-
-            preds = np.array(preds_list)
+            preds = tgt0_to_tgt(preds, self._network.leaf_id)
         save_path = self.acc_detail_path + 'plots/'
+        
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         np.save(save_path + 'preds_res.npy', preds)
@@ -520,12 +502,7 @@ class IncModel(IncrementalLearner):
 
         if len(output_aux) > 0:
             preds_aux_ori = output_aux.argmax(1)
-            new_idx_pos = (preds_aux_ori != 0)
-            new_idx = preds_aux_ori[new_idx_pos]
-            targets_ori = torch.tensor(self._inc_dataset.targets_cur_unique)
-            # map the non-zero targets into original ones and keep the zeros
-            preds_aux_ori[new_idx_pos] = targets_ori[new_idx - 1].long()
-            preds_aux = preds_aux_ori
+            preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
 
         np.save(save_path + 'preds_aux_res.npy', preds_aux)
         np.save(save_path + 'targets_aux_res.npy', targets_aux)
@@ -691,7 +668,7 @@ class IncModel(IncrementalLearner):
 
         print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')
 
-    def set_save_paths(self, exp_name):
-        self._acc_path = exp_name + ''
-        self._model_path = 'ckpts/' + exp_name + ''
-        self._classification_path = exp_name + ''
+    # def set_save_paths(self, exp_name):
+    #     self._acc_path = exp_name + ''
+    #     self._model_path = 'ckpts/' + exp_name + ''
+    #     self._classification_path = exp_name + ''

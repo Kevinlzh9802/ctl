@@ -128,16 +128,6 @@ class IncrementalDataset:
         parent_labels = set([self.taxonomy_tree.nodes[x].label_index for x in parent_names])
         for lb in parent_labels:
             self.memory_dict.pop(lb, -1)
-        # self.update_memory_array()
-
-    # def update_memory_array(self):
-    #     data_memory = []
-    #     target_memory = []
-    #     for i in self.memory_dict:
-    #         data_memory += [self.memory_dict[i]]
-    #         target_memory += [i] * self.memory_dict[i].shape[0]
-    #     self.data_memory = np.concatenate(data_memory)
-    #     self.targets_memory = np.array(target_memory)
 
     def gen_memory_array_from_dict(self):
         data_memory = []
@@ -226,8 +216,6 @@ class IncrementalDataset:
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []
         self.dict_val, self.dict_train, self.dict_test = {}, {}, {}
-        # self.increments = []
-        # self.class_order = []
         # current_class_idx = 0  # When using multiple datasets
         self.train_dataset = dataset(self.data_folder, train=True)
         self.test_dataset = dataset(self.data_folder, train=False)
@@ -272,7 +260,7 @@ class IncrementalDataset:
     @staticmethod
     def _split_per_class(x, y, validation_split=0.0):
         """Splits train data for a subset of validation data.
-        Split is done so that each class has a much data.
+        Split is done so that each class has equal amount of data.
         """
         shuffled_indexes = np.random.permutation(x.shape[0])
         x = x[shuffled_indexes]
@@ -458,3 +446,45 @@ class DummyDataset(torch.utils.data.Dataset):
         else:
             x = self.trsf(image=x)['image']
         return x, y
+
+
+def tgt_to_aux_tgt(targets, targets_unique_list, device):
+    aux_targets = targets.clone()
+    # set the labels that are not in current task (i.e. in memory) to 0
+    aux_targets[np.logical_not(np.isin(aux_targets, targets_unique_list))] = 0
+    for index_i in range(len(targets_unique_list)):
+        aux_targets[aux_targets == targets_unique_list[index_i]] = index_i + 1
+    aux_targets = aux_targets.type(torch.LongTensor)
+
+    if device.type == 'cuda':
+        aux_targets = aux_targets.cuda()
+    return aux_targets
+
+
+def aux_tgt_to_tgt(aux_targets, targets_unique_list):
+    new_idx_pos = (aux_targets != 0)
+    new_idx = aux_targets[new_idx_pos]
+    targets_ori = torch.tensor(targets_unique_list)
+    # map the non-zero targets into original ones and keep the zeros
+    aux_targets[new_idx_pos] = targets_ori[new_idx - 1].long()
+    return aux_targets
+
+
+def tgt_to_tgt0(targets, leaf_id, device):
+    targets0 = []
+    for target_i in list(np.array(targets.cpu())):
+        if target_i in leaf_id.keys():
+            targets0.append(leaf_id[target_i])
+    if device.type == 'cuda':
+        leaf_id_indexes = torch.tensor(targets0).cuda()
+    else:
+        leaf_id_indexes = torch.tensor(targets0)
+    return leaf_id_indexes
+
+
+def tgt0_to_tgt(targets0, leaf_id):
+    targets = []
+    leaf_inv = {leaf_id[i]: i for i in leaf_id}
+    for i in range(targets0.shape[0]):
+        targets.append(leaf_inv[int(targets0[i])])
+    return np.array(targets)
