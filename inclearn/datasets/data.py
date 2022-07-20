@@ -452,7 +452,8 @@ def tgt_to_aux_tgt(targets, targets_unique_list, device):
     aux_targets = targets.clone()
     t_list = torch.tensor(targets_unique_list)
     # set the labels that are not in current task (i.e. in memory) to 0
-    aux_targets[torch.logical_not(torch.isin(aux_targets, t_list))] = 0
+    old_idx = np.logical_not(np.isin(aux_targets.cpu(), t_list.cpu()))
+    aux_targets[old_idx] = 0
     for index_i in range(len(t_list)):
         aux_targets[aux_targets == t_list[index_i]] = index_i + 1
     aux_targets = aux_targets.type(torch.LongTensor)
