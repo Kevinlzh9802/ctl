@@ -497,7 +497,6 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             targets_0 = targets
-        print(self._device.type)
         if self._device.type == 'cuda':
             targets_0 = targets_0.cuda()
 
@@ -692,6 +691,8 @@ class IncModel(IncrementalLearner):
             targets_d = targets.cuda()
         else:
             targets_d = targets
+        print(output.argmax(1).device)
+        print(targets_d.device)
         iscorrect = (output.argmax(1) == targets_d)
         acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
 
