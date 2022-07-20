@@ -497,6 +497,7 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             targets_0 = targets
+        print(self._device.type)
         if self._device.type == 'cuda':
             targets_0 = targets_0.cuda()
 
@@ -686,9 +687,12 @@ class IncModel(IncrementalLearner):
              })
         df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
 
-    @staticmethod
-    def record_accuracy(output, targets, acc):
-        iscorrect = (output.argmax(1) == targets)
+    def record_accuracy(self, output, targets, acc):
+        if self._device.type == 'cuda':
+            targets_d = targets.cuda()
+        else:
+            targets_d = targets
+        iscorrect = (output.argmax(1) == targets_d)
         acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
 
     def record_acc_details(self, output, targets, targets_0, acc):
