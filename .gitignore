@@ -3,5 +3,6 @@
 /codes/base/logs
 /codes/base/tensorboard
 /codes/base/results
-.idea
+/.idea
+.DS_Store
 main_test.ipynb
