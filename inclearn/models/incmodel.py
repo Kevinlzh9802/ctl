@@ -492,7 +492,7 @@ class IncModel(IncrementalLearner):
                 if _output_aux is not None:
                     _targets_aux = tgt_to_aux_tgt(lbls, self._inc_dataset.targets_cur_unique, self._device)
                     output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
-                    targets_aux = torch.cat((targets_aux, _targets_aux.cpu()), 0)
+                    targets_aux = torch.cat((targets_aux, _targets_aux), 0)
         if self._cfg['taxonomy']:
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
