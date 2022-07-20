@@ -225,6 +225,7 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
+                inputs = inputs.to(self._device, non_blocking=True)
 
                 self.train()
                 self._optimizer.zero_grad()
