@@ -351,50 +351,6 @@ class IncModel(IncrementalLearner):
             aux_loss = torch.tensor(0)
         return loss, aux_loss
 
-    # def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
-    #     batch_size = inputs.size(0)
-    #     inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
-    #
-    #     outputs = self._parallel_network(inputs)
-    #     # since self._parallel_network = DataParallel(self._network)
-    #     # this is equivalent to self._network.forward(inputs)
-    #
-    #     if self._cfg["taxonomy"] is not None:
-    #         output = outputs['output']
-    #         aux_output = outputs['aux_logit']
-    #         nout = outputs['nout']
-    #         sfmx_base = outputs['sfmx_base']
-    #         targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
-    #         aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
-    #
-    #         nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
-    #         nlosses.update(nloss.item(), batch_size)
-    #
-    #         gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
-    #         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
-    #         stslosses.update(stsloss.item(), batch_size)
-    #
-    #         loss = nloss + stsloss * 1
-    #         losses.update(loss.item(), batch_size)
-    #
-    #         # measure accuracy
-    #         self.record_accuracy(output, targets_0, acc)
-    #         self.record_details(output, targets, targets_0, acc)
-    #
-    #         if aux_output is not None:
-    #             self.record_accuracy(aux_output, aux_targets, acc_aux)
-    #             self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
-    #     else:
-    #         output = outputs['output']
-    #         criterion = torch.nn.CrossEntropyLoss(reduction='none')
-    #
-    #         loss = torch.mean(criterion(output, targets.long()))
-    #         losses.update(loss.item(), batch_size)
-    #         self.record_accuracy(output, targets, acc)
-    #         self.record_details(output, targets, targets, acc)
-    #         aux_loss = torch.tensor(0)
-    #     return loss, aux_loss, acc, acc_aux
-
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in leaf_id_index_list}
 
@@ -663,70 +619,6 @@ class IncModel(IncrementalLearner):
         ypred, ytrue = self._eval_task(data_loader)
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=self._increments, n_classes=self._n_classes)
         self._ex.logger.info(f"test top1acc:{test_acc_stats['top1']}")
-
-    # def save_acc_detail_info(self, save_name):
-    #     class_index = []
-    #     sum_list = []
-    #     count_list = []
-    #     multi_num_list = []
-    #     avg_acc_list = []
-    #     multi_rate_list = []
-    #
-    #     class_index_aux = []
-    #     sum_list_aux = []
-    #     count_list_aux = []
-    #     multi_num_list_aux = []
-    #     avg_acc_list_aux = []
-    #     multi_rate_list_aux = []
-    #
-    #     for epoch_i in range(len(self.curr_acc_list)):
-    #         class_index.append(f'epoch_{epoch_i}')
-    #         sum_list.append('')
-    #         count_list.append('')
-    #         multi_num_list.append('')
-    #         avg_acc_list.append('')
-    #         multi_rate_list.append('')
-    #
-    #         acc_epoch_i_info = self.curr_acc_list[epoch_i].info_detail
-    #
-    #         for i in sorted(acc_epoch_i_info.keys()):
-    #             class_index.append(i)
-    #             sum_list.append(acc_epoch_i_info[i]['sum'])
-    #             count_list.append(acc_epoch_i_info[i]['count'])
-    #             multi_num_list.append(acc_epoch_i_info[i]['multi_num'])
-    #             avg_acc_list.append(acc_epoch_i_info[i]['avg'])
-    #             multi_rate_list.append(acc_epoch_i_info[i]['multi_rate'])
-    #
-    #     for epoch_i in range(len(self.curr_acc_list_aux)):
-    #         class_index_aux.append(f'epoch_{epoch_i}')
-    #         sum_list_aux.append('')
-    #         count_list_aux.append('')
-    #         multi_num_list_aux.append('')
-    #         avg_acc_list_aux.append('')
-    #         multi_rate_list_aux.append('')
-    #
-    #         acc_epoch_i_info_aux = self.curr_acc_list_aux[epoch_i].info_detail
-    #
-    #         for i in sorted(acc_epoch_i_info_aux.keys()):
-    #             class_index_aux.append(i)
-    #             count_list_aux.append(acc_epoch_i_info_aux[i]['count'])
-    #             sum_list_aux.append(acc_epoch_i_info_aux[i]['sum'])
-    #             multi_num_list_aux.append(acc_epoch_i_info_aux[i]['multi_num'])
-    #             avg_acc_list_aux.append(acc_epoch_i_info_aux[i]['avg'])
-    #             multi_rate_list_aux.append(acc_epoch_i_info_aux[i]['multi_rate'])
-    #
-    #     df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
-    #                        'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list,
-    #                        })
-    #     df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
-    #
-    #     df_aux = pd.DataFrame(
-    #         {'class_index_aux': class_index_aux, 'avg_acc_aux': avg_acc_list_aux, 'multi_rate_aux': multi_rate_list_aux,
-    #          'count_aux': count_list_aux, 'acc_sum_aux': sum_list_aux, 'multi_num_aux': multi_num_list_aux,
-    #          })
-    #     df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
-    #
-    #     print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')
 
     def save_acc_details(self, save_name):
         class_index = []
