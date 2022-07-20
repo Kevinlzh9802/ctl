@@ -93,6 +93,10 @@ class IncModel(IncrementalLearner):
                     os.mkdir(save_path)
         self.curr_acc_list = []
         self.curr_acc_list_aux = []
+        self.curr_preds = torch.tensor([])
+        self.curr_preds_aux = torch.tensor([])
+        self.curr_targets = torch.tensor([])
+        self.curr_targets_aux = torch.tensor([])
 
         # Task info
         self._task = 0
@@ -108,7 +112,7 @@ class IncModel(IncrementalLearner):
         self._cur_val_loader = None
 
         # Save paths
-
+        self.train_save_option = cfg['train_save_option']
         self.acc_detail_path = cfg['acc_detail_path']
         self.model_path = cfg['model_path']
         self.log_path = cfg['log_path']
@@ -200,8 +204,9 @@ class IncModel(IncrementalLearner):
         self._optimizer.zero_grad()
         self._optimizer.step()
 
-        acc_list = []
-        acc_list_aux = []
+        acc_list, acc_list_aux = [], []
+        self.curr_preds, self.curr_preds_aux = torch.tensor([]), torch.tensor([])
+        self.curr_targets, self.curr_targets_aux = torch.tensor([]), torch.tensor([])
 
         for epoch in range(self._n_epochs):
             _ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0
@@ -224,8 +229,11 @@ class IncModel(IncrementalLearner):
                 self.train()
                 self._optimizer.zero_grad()
 
-                ce_loss, loss_aux, acc, acc_aux = \
-                    self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
+                outputs = self._parallel_network(inputs)
+                self.record_details(outputs, targets, acc, acc_aux, self.train_save_option)
+                ce_loss, loss_aux = self._compute_loss(outputs, targets, nlosses, stslosses, losses)
+                # ce_loss, loss_aux, acc, acc_aux = \
+                #     self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
 
                 if self._cfg["use_aux_cls"] and self._task > 0:
                     total_loss = loss_aux + ce_loss
@@ -271,17 +279,53 @@ class IncModel(IncrementalLearner):
 
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = train_loader.dataset.share_memory
+
+        # save accuracy and preds info into files
         self.curr_acc_list = acc_list
         self.curr_acc_list_aux = acc_list_aux
+        if self.train_save_option["acc_details"]:
+            self.save_acc_details('train')
+        if self.train_save_option["acc_aux_details"]:
+            self.save_acc_aux_details('train')
 
-    def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
-        batch_size = inputs.size(0)
-        inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
+        save_path = self.acc_detail_path + 'preds/'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        if self.train_save_option["preds_details"]:
+            self.save_preds_details(self.curr_preds, self.curr_targets, save_path)
+        if self.train_save_option["preds_aux_details"]:
+            self.save_preds_aux_details(self.curr_preds_aux, self.curr_targets_aux, save_path)
 
-        outputs = self._parallel_network(inputs)
-        # since self._parallel_network = DataParallel(self._network)
-        # this is equivalent to self._network.forward(inputs)
+    def record_details(self, outputs, targets, acc, acc_aux, save_option=None):
+        if self._cfg["taxonomy"] is not None:
+            targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
+        else:
+            targets_0 = targets
 
+        # if self._cfg["taxonomy"] is not None:
+        output = outputs['output']
+        aux_output = outputs['aux_logit']
+        # targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
+        self.record_accuracy(output, targets_0, acc)
+        # record to self.curr_acc_list
+        if save_option["acc_details"]:
+            self.record_acc_details(output, targets, targets_0, acc)
+        if save_option["preds_details"]:
+            self.curr_preds = torch.cat((self.curr_preds, output.cpu()), 0)
+            self.curr_targets = torch.cat((self.curr_targets, targets), 0)
+
+        if aux_output is not None:
+            cur_labels = self._inc_dataset.targets_cur_unique  # it should be sorted
+            aux_targets = tgt_to_aux_tgt(targets, cur_labels, self._device)
+            self.record_accuracy(aux_output, aux_targets, acc_aux)
+            if save_option["acc_aux_details"]:
+                self.record_acc_details(aux_output, aux_targets, aux_targets, acc_aux)
+            if save_option["preds_aux_details"]:
+                self.curr_preds_aux = torch.cat((self.curr_preds_aux, aux_output.cpu()), 0)
+                self.curr_targets_aux = torch.cat((self.curr_targets_aux, aux_targets), 0)
+
+    def _compute_loss(self, outputs, targets, nlosses, stslosses, losses):
+        batch_size = targets.size(0)
         if self._cfg["taxonomy"] is not None:
             output = outputs['output']
             aux_output = outputs['aux_logit']
@@ -299,38 +343,57 @@ class IncModel(IncrementalLearner):
 
             loss = nloss + stsloss * 1
             losses.update(loss.item(), batch_size)
-
-            # measure accuracy
-            self.record_accuracy(output, targets_0, acc)
-            self.record_details(output, targets, targets_0, acc)
-
-            if aux_output is not None:
-                self.record_accuracy(aux_output, aux_targets, acc_aux)
-                self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
         else:
             output = outputs['output']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
-
             loss = torch.mean(criterion(output, targets.long()))
-            self.record_accuracy(output, targets, acc)
-            self.record_details(output, targets, targets, acc)
+            losses.update(loss.item(), batch_size)
             aux_loss = torch.tensor(0)
-        return loss, aux_loss, acc, acc_aux
+        return loss, aux_loss
 
-    @staticmethod
-    def record_accuracy(output, targets, acc):
-        iscorrect = (output.argmax(1) == targets)
-        acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
-
-    def record_details(self, output, targets, targets_0, acc):
-        # targets is the real label
-        # targets_0 is the re-indexed label that starts from 0, it still can be the same with targets
-        max_z = torch.max(output, dim=1)[0]
-        preds = torch.eq(output, max_z.view(-1, 1))
-        iscorrect = torch.gather(preds.cpu(), 1, targets_0.type(torch.LongTensor).view(-1, 1)).flatten().float()
-        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
-                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
-        acc.update_detail(acc_update_info)
+    # def _forward_loss(self, inputs, targets, nlosses, stslosses, losses, acc, acc_aux):
+    #     batch_size = inputs.size(0)
+    #     inputs, targets = inputs.to(self._device, non_blocking=True), targets.to(self._device, non_blocking=True)
+    #
+    #     outputs = self._parallel_network(inputs)
+    #     # since self._parallel_network = DataParallel(self._network)
+    #     # this is equivalent to self._network.forward(inputs)
+    #
+    #     if self._cfg["taxonomy"] is not None:
+    #         output = outputs['output']
+    #         aux_output = outputs['aux_logit']
+    #         nout = outputs['nout']
+    #         sfmx_base = outputs['sfmx_base']
+    #         targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
+    #         aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
+    #
+    #         nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
+    #         nlosses.update(nloss.item(), batch_size)
+    #
+    #         gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
+    #         stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
+    #         stslosses.update(stsloss.item(), batch_size)
+    #
+    #         loss = nloss + stsloss * 1
+    #         losses.update(loss.item(), batch_size)
+    #
+    #         # measure accuracy
+    #         self.record_accuracy(output, targets_0, acc)
+    #         self.record_details(output, targets, targets_0, acc)
+    #
+    #         if aux_output is not None:
+    #             self.record_accuracy(aux_output, aux_targets, acc_aux)
+    #             self.record_details(aux_output, aux_targets, aux_targets, acc_aux)
+    #     else:
+    #         output = outputs['output']
+    #         criterion = torch.nn.CrossEntropyLoss(reduction='none')
+    #
+    #         loss = torch.mean(criterion(output, targets.long()))
+    #         losses.update(loss.item(), batch_size)
+    #         self.record_accuracy(output, targets, acc)
+    #         self.record_details(output, targets, targets, acc)
+    #         aux_loss = torch.tensor(0)
+    #     return loss, aux_loss, acc, acc_aux
 
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in leaf_id_index_list}
@@ -439,10 +502,10 @@ class IncModel(IncrementalLearner):
         del self._inc_dataset.shared_data_inc
         self._inc_dataset.shared_data_inc = None
 
-    def _eval_task(self, data_loader, save_option=None):
+    def _eval_task(self, data_loader, eval_name='default', save_option=None):
         if self._infer_head == "softmax":
             # ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
-            self._compute_accuracy_by_netout(data_loader)
+            self._compute_accuracy_by_netout(data_loader, eval_name=eval_name, save_option=save_option)
         elif self._infer_head == "NCM":
             # ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
             pass
@@ -451,8 +514,8 @@ class IncModel(IncrementalLearner):
 
         # return ypred, ytrue
 
-    def _compute_accuracy_by_netout(self, data_loader):
-        preds_aux, targets_aux = np.array([]), np.array([])
+    def _compute_accuracy_by_netout(self, data_loader, eval_name='default', save_option=None):
+        # preds_aux, targets_aux = np.array([]), np.array([])
         acc = averageMeter()
         acc_aux = averageMeter()
 
@@ -478,36 +541,33 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             targets_0 = targets
-        self.record_details(output, targets, targets_0, acc)
-        self.curr_acc_list = [acc]
+        self.record_accuracy(output, targets_0, acc)
+        if save_option["acc_details"]:
+            self.record_acc_details(output, targets, targets_0, acc)
+            self.curr_acc_list = [acc]
+            self.save_acc_details(eval_name)
 
-        if _output_aux is not None:
-            self.record_details(output_aux, targets_aux, targets_aux, acc_aux)
-            self.curr_acc_list_aux = [acc_aux]
-
-        # test
-        preds_list = []
-        preds = output.argmax(1)
-
-        if self._cfg['taxonomy']:
-            preds = tgt0_to_tgt(preds, self._network.leaf_id)
-        save_path = self.acc_detail_path + 'plots/'
-        
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        np.save(save_path + 'preds_res.npy', preds)
-        np.save(save_path + 'targets_res.npy', targets)
+        if len(output_aux) > 0:
+            self.record_accuracy(output_aux, targets_aux, acc_aux)
+            if save_option["acc_aux_details"]:
+                self.record_acc_details(output_aux, targets_aux, targets_aux, acc_aux)
+                self.curr_acc_list_aux = [acc_aux]
+                self.save_acc_aux_details(eval_name)
 
         self._ex.logger.info(f"After train acc: {acc.avg}, aux_acc: {acc_aux.avg}")
 
-        if len(output_aux) > 0:
-            preds_aux_ori = output_aux.argmax(1)
-            preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
+        # test
+        save_path = self.acc_detail_path + 'plots/'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
-        np.save(save_path + 'preds_aux_res.npy', preds_aux)
-        np.save(save_path + 'targets_aux_res.npy', targets_aux)
+        if save_option["preds_details"]:
+            self.save_preds_details(output, targets, save_path)
 
-        return preds, targets
+        if save_option["preds_aux_details"]:
+            self.save_preds_aux_details(output_aux, targets_aux, save_path)
+
+        # return preds, targets
 
     def _compute_accuracy_by_ncm(self, loader):
         features, targets_ = extract_features(self._parallel_network, loader, self._device)
@@ -604,20 +664,77 @@ class IncModel(IncrementalLearner):
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=self._increments, n_classes=self._n_classes)
         self._ex.logger.info(f"test top1acc:{test_acc_stats['top1']}")
 
-    def save_acc_detail_info(self, save_name):
+    # def save_acc_detail_info(self, save_name):
+    #     class_index = []
+    #     sum_list = []
+    #     count_list = []
+    #     multi_num_list = []
+    #     avg_acc_list = []
+    #     multi_rate_list = []
+    #
+    #     class_index_aux = []
+    #     sum_list_aux = []
+    #     count_list_aux = []
+    #     multi_num_list_aux = []
+    #     avg_acc_list_aux = []
+    #     multi_rate_list_aux = []
+    #
+    #     for epoch_i in range(len(self.curr_acc_list)):
+    #         class_index.append(f'epoch_{epoch_i}')
+    #         sum_list.append('')
+    #         count_list.append('')
+    #         multi_num_list.append('')
+    #         avg_acc_list.append('')
+    #         multi_rate_list.append('')
+    #
+    #         acc_epoch_i_info = self.curr_acc_list[epoch_i].info_detail
+    #
+    #         for i in sorted(acc_epoch_i_info.keys()):
+    #             class_index.append(i)
+    #             sum_list.append(acc_epoch_i_info[i]['sum'])
+    #             count_list.append(acc_epoch_i_info[i]['count'])
+    #             multi_num_list.append(acc_epoch_i_info[i]['multi_num'])
+    #             avg_acc_list.append(acc_epoch_i_info[i]['avg'])
+    #             multi_rate_list.append(acc_epoch_i_info[i]['multi_rate'])
+    #
+    #     for epoch_i in range(len(self.curr_acc_list_aux)):
+    #         class_index_aux.append(f'epoch_{epoch_i}')
+    #         sum_list_aux.append('')
+    #         count_list_aux.append('')
+    #         multi_num_list_aux.append('')
+    #         avg_acc_list_aux.append('')
+    #         multi_rate_list_aux.append('')
+    #
+    #         acc_epoch_i_info_aux = self.curr_acc_list_aux[epoch_i].info_detail
+    #
+    #         for i in sorted(acc_epoch_i_info_aux.keys()):
+    #             class_index_aux.append(i)
+    #             count_list_aux.append(acc_epoch_i_info_aux[i]['count'])
+    #             sum_list_aux.append(acc_epoch_i_info_aux[i]['sum'])
+    #             multi_num_list_aux.append(acc_epoch_i_info_aux[i]['multi_num'])
+    #             avg_acc_list_aux.append(acc_epoch_i_info_aux[i]['avg'])
+    #             multi_rate_list_aux.append(acc_epoch_i_info_aux[i]['multi_rate'])
+    #
+    #     df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
+    #                        'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list,
+    #                        })
+    #     df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
+    #
+    #     df_aux = pd.DataFrame(
+    #         {'class_index_aux': class_index_aux, 'avg_acc_aux': avg_acc_list_aux, 'multi_rate_aux': multi_rate_list_aux,
+    #          'count_aux': count_list_aux, 'acc_sum_aux': sum_list_aux, 'multi_num_aux': multi_num_list_aux,
+    #          })
+    #     df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
+    #
+    #     print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')
+
+    def save_acc_details(self, save_name):
         class_index = []
         sum_list = []
         count_list = []
         multi_num_list = []
         avg_acc_list = []
         multi_rate_list = []
-
-        class_index_aux = []
-        sum_list_aux = []
-        count_list_aux = []
-        multi_num_list_aux = []
-        avg_acc_list_aux = []
-        multi_rate_list_aux = []
 
         for epoch_i in range(len(self.curr_acc_list)):
             class_index.append(f'epoch_{epoch_i}')
@@ -637,6 +754,19 @@ class IncModel(IncrementalLearner):
                 avg_acc_list.append(acc_epoch_i_info[i]['avg'])
                 multi_rate_list.append(acc_epoch_i_info[i]['multi_rate'])
 
+        df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
+                           'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list,
+                           })
+        df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
+
+    def save_acc_aux_details(self, save_name):
+        class_index_aux = []
+        sum_list_aux = []
+        count_list_aux = []
+        multi_num_list_aux = []
+        avg_acc_list_aux = []
+        multi_rate_list_aux = []
+
         for epoch_i in range(len(self.curr_acc_list_aux)):
             class_index_aux.append(f'epoch_{epoch_i}')
             sum_list_aux.append('')
@@ -655,20 +785,40 @@ class IncModel(IncrementalLearner):
                 avg_acc_list_aux.append(acc_epoch_i_info_aux[i]['avg'])
                 multi_rate_list_aux.append(acc_epoch_i_info_aux[i]['multi_rate'])
 
-        df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
-                           'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list,
-                           })
-        df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
-
         df_aux = pd.DataFrame(
             {'class_index_aux': class_index_aux, 'avg_acc_aux': avg_acc_list_aux, 'multi_rate_aux': multi_rate_list_aux,
              'count_aux': count_list_aux, 'acc_sum_aux': sum_list_aux, 'multi_num_aux': multi_num_list_aux,
              })
         df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
 
-        print(f'save_path: {self.acc_detail_path}/task_{self._task}.csv')
+    @staticmethod
+    def record_accuracy(output, targets, acc):
+        iscorrect = (output.argmax(1) == targets)
+        acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
 
-    # def set_save_paths(self, exp_name):
-    #     self._acc_path = exp_name + ''
-    #     self._model_path = 'ckpts/' + exp_name + ''
-    #     self._classification_path = exp_name + ''
+    def record_acc_details(self, output, targets, targets_0, acc):
+        # targets is the real label
+        # targets_0 is the re-indexed label that starts from 0, it still can be the same with targets
+        max_z = torch.max(output, dim=1)[0]
+        preds = torch.eq(output, max_z.view(-1, 1))
+        iscorrect = torch.gather(preds.cpu(), 1, targets_0.type(torch.LongTensor).view(-1, 1)).flatten().float()
+        acc_update_info = self.update_acc_detail(list(np.array(targets.cpu())), list(np.array(iscorrect.cpu())),
+                                                 list((np.sum(np.array(preds.cpu()), 1) > 1) * 1))
+        acc.update_detail(acc_update_info)
+
+    def save_preds_details(self, output, targets, save_path):
+        preds_ori = output.argmax(1)
+        if self._cfg['taxonomy']:
+            preds = tgt0_to_tgt(preds_ori, self._network.leaf_id)
+        else:
+            preds = preds_ori
+
+        np.save(save_path + 'preds_res.npy', preds)
+        np.save(save_path + 'targets_res.npy', targets)
+
+    def save_preds_aux_details(self, output_aux, targets_aux, save_path):
+        if len(output_aux) > 0:
+            preds_aux_ori = output_aux.argmax(1)
+            preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
+            np.save(save_path + 'preds_aux_res.npy', preds_aux)
+            np.save(save_path + 'targets_aux_res.npy', targets_aux)
