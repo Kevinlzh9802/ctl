@@ -456,8 +456,8 @@ def tgt_to_aux_tgt(targets, targets_unique_list, device):
         aux_targets[aux_targets == targets_unique_list[index_i]] = index_i + 1
     aux_targets = aux_targets.type(torch.LongTensor)
 
-    # if device.type == 'cuda':
-    #     aux_targets = aux_targets.cuda()
+    if device.type == 'cuda':
+        aux_targets = aux_targets.cuda()
     return aux_targets
 
 
