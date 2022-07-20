@@ -73,7 +73,7 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 50
+  epochs: 2
   fullset: True
   lr: 0.01
   scheduling:

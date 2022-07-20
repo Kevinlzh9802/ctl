@@ -289,7 +289,7 @@ class IncModel(IncrementalLearner):
         if self.train_save_option["acc_aux_details"]:
             self.save_acc_aux_details('train')
 
-        save_path = self.acc_detail_path + 'preds/'
+        save_path = self.acc_detail_path + 'train_preds/'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         if self.train_save_option["preds_details"]:
@@ -523,7 +523,7 @@ class IncModel(IncrementalLearner):
         self._ex.logger.info(f"After train acc: {acc.avg}, aux_acc: {acc_aux.avg}")
 
         # test
-        save_path = self.acc_detail_path + 'plots/'
+        save_path = self.acc_detail_path + eval_name + 'preds/'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
