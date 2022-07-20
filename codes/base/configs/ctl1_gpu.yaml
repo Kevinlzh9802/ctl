@@ -1,7 +1,7 @@
 exp:
-  name: "test_output_14"
+  name: "der_deep_rtc_8"
+  load_model_name: 'joint2'
   debug: False
-  mode_train: True
 
 # Model Cfg
 model: "incmodel"
@@ -30,7 +30,6 @@ save_ckpt: True
 save_mem: True
 load_mem: False
 new_train_from: 0
-retrain_from_task0: True
 
 # Optimization; Training related
 task_max: 10
@@ -49,8 +48,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-pre_train_model_path: './ckpts_aux_ep170'
-load_model_exp_name: 'der_deep_rtc_0'
+retrain_from_task: 0
 
 train_save_option:
   acc_details: True
@@ -60,7 +58,7 @@ train_save_option:
 
 postprocessor:
   enable: False
-  type: 'bic' #'bic', 'wa'
+  type: 'bic'  #'bic', 'wa'
   epochs: 1
   batch_size: 128
   lr: 0.1
