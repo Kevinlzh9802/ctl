@@ -498,7 +498,9 @@ class IncModel(IncrementalLearner):
         else:
             targets_0 = targets
         if self._device.type == 'cuda':
+            output = output.cuda()
             targets_0 = targets_0.cuda()
+            targets = targets.cuda()
 
         self.record_accuracy(output, targets_0, acc)
         if save_option["acc_details"]:
@@ -507,6 +509,9 @@ class IncModel(IncrementalLearner):
             self.save_acc_details(eval_name)
 
         if len(output_aux) > 0:
+            if self._device.type == 'cuda':
+                output_aux = output_aux.cuda()
+                targets_aux = targets_aux.cuda()
             self.record_accuracy(output_aux, targets_aux, acc_aux)
             if save_option["acc_aux_details"]:
                 self.record_acc_details(output_aux, targets_aux, targets_aux, acc_aux)
@@ -686,14 +691,9 @@ class IncModel(IncrementalLearner):
              })
         df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
 
-    def record_accuracy(self, output, targets, acc):
-        if self._device.type == 'cuda':
-            targets_d = targets.cuda()
-        else:
-            targets_d = targets
-        print(output.argmax(1).device)
-        print(targets_d.device)
-        iscorrect = (output.argmax(1) == targets_d)
+    @staticmethod
+    def record_accuracy(output, targets, acc):
+        iscorrect = (output.argmax(1) == targets)
         acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
 
     def record_acc_details(self, output, targets, targets_0, acc):
