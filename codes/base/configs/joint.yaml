@@ -1,7 +1,7 @@
 exp:
-  name: "der_deep_rtc_task0_full_data"
+  name: "joint2"
   debug: False
-  load_model_name: 'der_deep_rtc_task0_full_data'
+  load_model_name: 'joint2'
 
 # Model Cfg
 model: "incmodel"
