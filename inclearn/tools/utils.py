@@ -243,8 +243,11 @@ def set_save_paths(cfg, mode):
             'log': exp_path + 'test/logs/',
             'tensorboard': exp_path + 'test/tensorboard/'
         }
-        os.makedirs(cfg['sp']['acc_detail']['test'])
-        os.makedirs(cfg['sp']['log'])
-        os.makedirs(cfg['sp']['tensorboard'])
+        if not os.path.exists(cfg['sp']['acc_detail']['test']):
+            os.makedirs(cfg['sp']['acc_detail']['test'])
+        if not os.path.exists(cfg['sp']['log']):
+            os.makedirs(cfg['sp']['log'])
+        if not os.path.exists(cfg['sp']['log']):
+            os.makedirs(cfg['sp']['tensorboard'])
     else:
         raise Exception('invalid mode!')
