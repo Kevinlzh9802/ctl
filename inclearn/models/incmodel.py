@@ -497,6 +497,9 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             targets_0 = targets
+        if self._device.type == 'cuda':
+            targets_0 = targets_0.cuda()
+
         self.record_accuracy(output, targets_0, acc)
         if save_option["acc_details"]:
             self.record_acc_details(output, targets, targets_0, acc)
