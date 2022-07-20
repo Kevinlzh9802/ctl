@@ -46,10 +46,10 @@ class IncrementalLearner(abc.ABC):
         self.eval()
         self._after_task(inc_dataset)
 
-    def eval_task(self, data_loader, eval_name='default', save_option=None):
+    def eval_task(self, data_loader, save_path='', name='default', save_option=None):
         LOGGER.info("eval task")
         self.eval()
-        return self._eval_task(data_loader, eval_name=eval_name, save_option=save_option)
+        return self._eval_task(data_loader, save_path=save_path, name=name, save_option=save_option)
 
     def get_memory(self):
         return None
@@ -72,7 +72,7 @@ class IncrementalLearner(abc.ABC):
     def _after_task(self, data_loader):
         pass
 
-    def _eval_task(self, data_loader, eval_name='default', save_option=None):
+    def _eval_task(self, data_loader, save_path='', name='default', save_option=None):
         raise NotImplementedError
 
     @property

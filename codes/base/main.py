@@ -34,18 +34,18 @@ def initialization(config, seed, mode, exp_id):
     # ex.captured_out_filter = lambda text: 'Output capturing turned off.'
     cfg = edict(config)
     utils.set_seed(cfg['seed'])
-    utils.set_save_paths(cfg)
+    utils.set_save_paths(cfg, mode)
 
     if exp_id is None:
         exp_id = -1
     #     cfg.exp.savedir = "./logs"
-    logger = utils.make_logger(f"{mode}", savedir=cfg['log_path'])
+    logger = utils.make_logger(f"{mode}", savedir=cfg['sp']['log'])
 
     # Tensorboard
     # exp_name = f'{exp_id}_{cfg["exp"]["name"]}' if exp_id is not None else f'../inbox/{cfg["exp"]["name"]}'
     # tensorboard_dir = cfg["exp"]["tensorboard_dir"] + f"/{exp_name}"
 
-    tensorboard = SummaryWriter(cfg['tensorboard_path'])
+    tensorboard = SummaryWriter(cfg['sp']['tensorboard'])
     return cfg, logger, tensorboard
 
 
@@ -60,12 +60,11 @@ def train(_run, _rnd, _seed):
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     else:
         factory.set_device(cfg)
-    cfg["exp"]["mode_train"] = True
 
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
-    with open('results/' + cfg["der_deep_rtc_1"] + '/delete_warning.txt', 'w') as dw:
+    with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
                  'it may lose important data and results. See log file for configuration details.')
 
@@ -80,7 +79,7 @@ def _train(cfg, _run, exp, tensorboard):
     if _run.meta_info["options"]["--file_storage"] is not None:
         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
     else:
-        _save_dir = cfg['model_path']
+        _save_dir = cfg['sp']['model']
 
     results = results_utils.get_template_results(cfg)
 
@@ -98,7 +97,7 @@ def _train(cfg, _run, exp, tensorboard):
 
         # model.save_acc_detail_info('train_with_step')
 
-        model.eval_task(model._cur_val_loader, eval_name='eval', save_option={
+        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval', save_option={
             "acc_details": True,
             "acc_aux_details": True,
             "preds_details": True,
@@ -144,6 +143,7 @@ def do_pretrain(cfg, ex, model, device, train_loader, test_loader):
 @ex.command
 def test(_run, _rnd, _seed):
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "test", _run._id)
+    cfg.data_folder = osp.join(base_dir, "data")
     if cfg["device_auto_detect"]:
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     else:
@@ -151,7 +151,6 @@ def test(_run, _rnd, _seed):
     cfg["exp"]["mode_train"] = False
     ex.logger.info(cfg)
 
-    cfg.data_folder = osp.join(base_dir, "data")
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, _run, ex, tensorboard, inc_dataset)
     # model._network.task_size = cfg.increment
@@ -160,11 +159,17 @@ def test(_run, _rnd, _seed):
     for task_i in range(inc_dataset.n_tasks):
         model.new_task()
         model.before_task(inc_dataset)
-        state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')
+        model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts/step{task_i}.ckpt'
+        state_dict = torch.load(model_path)
         # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
         model._parallel_network.load_state_dict(state_dict)
         model.eval()
-        model.eval_task(model._cur_test_loader)
+        model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+            "acc_details": True,
+            "acc_aux_details": True,
+            "preds_details": True,
+            "preds_aux_details": True
+        })
         # model.save_acc_detail_info('test')
 
 

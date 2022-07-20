@@ -113,10 +113,11 @@ class IncModel(IncrementalLearner):
 
         # Save paths
         self.train_save_option = cfg['train_save_option']
-        self.acc_detail_path = cfg['acc_detail_path']
-        self.model_path = cfg['model_path']
-        self.log_path = cfg['log_path']
-        self.tensorboard_path = cfg['tensorboard_path']
+        # self.acc_detail_path = cfg['acc_detail_path']
+        # self.model_path = cfg['model_path']
+        # self.log_path = cfg['log_path']
+        # self.tensorboard_path = cfg['tensorboard_path']
+        self.sp = cfg['sp']
 
     def eval(self):
         self._parallel_network.eval()
@@ -284,18 +285,7 @@ class IncModel(IncrementalLearner):
         # save accuracy and preds info into files
         self.curr_acc_list = acc_list
         self.curr_acc_list_aux = acc_list_aux
-        if self.train_save_option["acc_details"]:
-            self.save_acc_details('train')
-        if self.train_save_option["acc_aux_details"]:
-            self.save_acc_aux_details('train')
-
-        save_path = self.acc_detail_path + 'train_preds/'
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        if self.train_save_option["preds_details"]:
-            self.save_preds_details(self.curr_preds, self.curr_targets, save_path)
-        if self.train_save_option["preds_aux_details"]:
-            self.save_preds_aux_details(self.curr_preds_aux, self.curr_targets_aux, save_path)
+        self.save_details(self.sp['acc_detail']['train'], self.train_save_option)
 
     def record_details(self, outputs, targets, acc, acc_aux, save_option=None):
         if self._cfg["taxonomy"] is not None:
@@ -306,7 +296,7 @@ class IncModel(IncrementalLearner):
         # if self._cfg["taxonomy"] is not None:
         output = outputs['output']
         aux_output = outputs['aux_logit']
-        # targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
+
         self.record_accuracy(output, targets_0, acc)
         # record to self.curr_acc_list
         if save_option["acc_details"]:
@@ -324,6 +314,22 @@ class IncModel(IncrementalLearner):
             if save_option["preds_aux_details"]:
                 self.curr_preds_aux = torch.cat((self.curr_preds_aux, aux_output), 0)
                 self.curr_targets_aux = torch.cat((self.curr_targets_aux, aux_targets), 0)
+
+    def save_details(self, acc_dir, save_option):
+        if not os.path.exists(acc_dir):
+            os.makedirs(acc_dir)
+        if save_option["acc_details"]:
+            self.save_acc_details('train', acc_dir)
+        if save_option["acc_aux_details"]:
+            self.save_acc_aux_details('train', acc_dir)
+
+        preds_dir = acc_dir + 'preds/'
+        if not os.path.exists(preds_dir):
+            os.makedirs(preds_dir)
+        if save_option["preds_details"]:
+            self.save_preds_details(self.curr_preds, self.curr_targets, preds_dir)
+        if save_option["preds_aux_details"]:
+            self.save_preds_aux_details(self.curr_preds_aux, self.curr_targets_aux, preds_dir)
 
     def _compute_loss(self, outputs, targets, nlosses, stslosses, losses):
         batch_size = targets.size(0)
@@ -391,7 +397,7 @@ class IncModel(IncrementalLearner):
         self._ex.logger.info("save model")
         if self._cfg["save_ckpt"] and taski >= self._cfg["start_task"]:
             # save_path = os.path.join(os.getcwd(), "ckpts")
-            torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.model_path, self._task))
+            torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.sp['model'], self._task))
 
         if self._cfg["decouple"]['enable'] and taski > 0:
             print('decouple')
@@ -420,11 +426,12 @@ class IncModel(IncrementalLearner):
                                 weight_decay=self._decouple["weight_decay"],
                                 loss_type="ce",
                                 temperature=self._decouple["temperature"],
-                                save_path=f'{self.acc_detail_path}/task_{self._task}_decouple')
+                                save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple")
             network = deepcopy(self._parallel_network)
             if self._cfg["save_ckpt"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts")
-                torch.save(network.cpu().state_dict(), "{}/decouple_step{}.ckpt".format(self.model_path, self._task))
+                torch.save(network.cpu().state_dict(),
+                           "{}/decouple_step{}.ckpt".format(self.sp['model'], self._task))
 
         if self._cfg["postprocessor"]["enable"]:
             self._update_postprocessor(inc_dataset)
@@ -440,7 +447,7 @@ class IncModel(IncrementalLearner):
 
             if self._cfg["save_mem"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts/mem")
-                save_path = self.model_path + 'mem'
+                save_path = self.sp['model'] + 'mem'
                 data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
                 memory = {
                     'x': data_memory,
@@ -459,10 +466,10 @@ class IncModel(IncrementalLearner):
         del self._inc_dataset.shared_data_inc
         self._inc_dataset.shared_data_inc = None
 
-    def _eval_task(self, data_loader, eval_name='default', save_option=None):
+    def _eval_task(self, data_loader, save_path='', name='default', save_option=None):
         if self._infer_head == "softmax":
             # ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
-            self._compute_accuracy_by_netout(data_loader, eval_name=eval_name, save_option=save_option)
+            self._compute_accuracy_by_netout(data_loader, save_path=save_path, name=name, save_option=save_option)
         elif self._infer_head == "NCM":
             # ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
             pass
@@ -471,69 +478,28 @@ class IncModel(IncrementalLearner):
 
         # return ypred, ytrue
 
-    def _compute_accuracy_by_netout(self, data_loader, eval_name='default', save_option=None):
-        # preds_aux, targets_aux = np.array([]), np.array([])
+    def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
         acc = averageMeter()
         acc_aux = averageMeter()
+        self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
+        self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
-        output, targets = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
-        output_aux, targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
         self._parallel_network.eval()
 
         with torch.no_grad():
-            for _, (inputs, lbls) in enumerate(data_loader):
+            for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
-                lbls = lbls.to(self._device, non_blocking=True)
-                n_outputs = self._parallel_network(inputs)
-                _output = n_outputs['output']
-                _output_aux = n_outputs['aux_logit']
+                targets = targets.to(self._device, non_blocking=True)
+                outputs = self._parallel_network(inputs)
+                self.record_details(outputs, targets, acc, acc_aux, save_option)
 
-                output = torch.cat((output, _output), 0)
-                targets = torch.cat((targets, lbls), 0)
+        self._ex.logger.info(f"{name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
+        # save accuracy and preds info into files
+        self.curr_acc_list = [acc]
+        self.curr_acc_list_aux = [acc_aux]
 
-                if _output_aux is not None:
-                    _targets_aux = tgt_to_aux_tgt(lbls, self._inc_dataset.targets_cur_unique, self._device)
-                    output_aux = torch.cat((output_aux, _output_aux), 0)
-                    targets_aux = torch.cat((targets_aux, _targets_aux), 0)
-        if self._cfg['taxonomy']:
-            targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
-        else:
-            targets_0 = targets
-        if self._device.type == 'cuda':
-            output = output.cuda()
-            targets_0 = targets_0.cuda()
-            targets = targets.cuda()
-
-        self.record_accuracy(output, targets_0, acc)
-        if save_option["acc_details"]:
-            self.record_acc_details(output, targets, targets_0, acc)
-            self.curr_acc_list = [acc]
-            self.save_acc_details(eval_name)
-
-        if len(output_aux) > 0:
-            if self._device.type == 'cuda':
-                output_aux = output_aux.cuda()
-                targets_aux = targets_aux.cuda()
-            self.record_accuracy(output_aux, targets_aux, acc_aux)
-            if save_option["acc_aux_details"]:
-                self.record_acc_details(output_aux, targets_aux, targets_aux, acc_aux)
-                self.curr_acc_list_aux = [acc_aux]
-                self.save_acc_aux_details(eval_name)
-
-        self._ex.logger.info(f"After train acc: {acc.avg}, aux_acc: {acc_aux.avg}")
-
-        # test
-        save_path = self.acc_detail_path + eval_name + 'preds/'
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-
-        if save_option["preds_details"]:
-            self.save_preds_details(output, targets, save_path)
-
-        if save_option["preds_aux_details"]:
-            self.save_preds_aux_details(output_aux, targets_aux, save_path)
-
-        # return preds, targets
+        sp = save_path + name + '/acc_details/'
+        self.save_details(sp, save_option)
 
     def _compute_accuracy_by_ncm(self, loader):
         features, targets_ = extract_features(self._parallel_network, loader, self._device)
@@ -585,7 +551,7 @@ class IncModel(IncrementalLearner):
                                                 metric='None')
 
     def build_exemplars(self, inc_dataset, coreset_strategy):
-        save_path = self.model_path + f'mem/mem_step{self._task}.ckpt'
+        save_path = self.sp['model'] + f'mem/mem_step{self._task}.ckpt'
         # save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)
@@ -630,7 +596,7 @@ class IncModel(IncrementalLearner):
         test_acc_stats = utils.compute_accuracy(ypred, ytrue, increments=self._increments, n_classes=self._n_classes)
         self._ex.logger.info(f"test top1acc:{test_acc_stats['top1']}")
 
-    def save_acc_details(self, save_name):
+    def save_acc_details(self, save_name, save_path):
         class_index = []
         sum_list = []
         count_list = []
@@ -659,9 +625,9 @@ class IncModel(IncrementalLearner):
         df = pd.DataFrame({'class_index': class_index, 'avg_acc': avg_acc_list, 'multi_rate': multi_rate_list,
                            'count': count_list, 'acc_sum': sum_list, 'multi_num': multi_num_list,
                            })
-        df.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}.csv', index=False)
+        df.to_csv(f'{save_path}_task_{self._task}.csv', index=False)
 
-    def save_acc_aux_details(self, save_name):
+    def save_acc_aux_details(self, save_name, save_path):
         class_index_aux = []
         sum_list_aux = []
         count_list_aux = []
@@ -691,7 +657,7 @@ class IncModel(IncrementalLearner):
             {'class_index_aux': class_index_aux, 'avg_acc_aux': avg_acc_list_aux, 'multi_rate_aux': multi_rate_list_aux,
              'count_aux': count_list_aux, 'acc_sum_aux': sum_list_aux, 'multi_num_aux': multi_num_list_aux,
              })
-        df_aux.to_csv(f'{self.acc_detail_path}/{save_name}_task_{self._task}_aux.csv', index=False)
+        df_aux.to_csv(f'{save_path}_task_{self._task}_aux.csv', index=False)
 
     @staticmethod
     def record_accuracy(output, targets, acc):

@@ -207,17 +207,44 @@ def plot_cls_detail(cls_detail):
         plt.bar(np.arange(0, cls_num), cls_detail[0, :])
 
 
-def set_save_paths(cfg):
-    exp_path = 'results/' + cfg['exp']['name'] + '/'
-    if os.path.exists(exp_path):
-        raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists! To make sure existing files and data '
-                                                             'are not overwritten, please choose an unused name.')
+def set_save_paths(cfg, mode):
+    if mode == 'train':
+        cfg['exp']['mode_train'] = True
+        exp_path = 'results/' + cfg['exp']['name'] + '/'
+        if os.path.exists(exp_path):
+            raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists! To make sure existing files and '
+                                                                 'data are not overwritten, please choose another'
+                                                                 ' name.')
+        else:
+            cfg['sp'] = {
+                'exp': exp_path,
+                'acc_detail': {
+                    'train': exp_path + 'train/acc_details/',
+                    'eval': exp_path + 'eval/acc_details/'
+                },
+                'model': exp_path + 'train/ckpts/',
+                'log': exp_path + 'train/logs/',
+                'tensorboard': exp_path + 'train/tensorboard/'
+            }
+            os.makedirs(cfg['sp']['acc_detail']['train'])
+            os.makedirs(cfg['sp']['acc_detail']['eval'])
+            os.makedirs(cfg['sp']['model'])
+            os.makedirs(cfg['sp']['log'])
+            os.makedirs(cfg['sp']['tensorboard'])
+
+    elif mode == 'test':
+        cfg['exp']['mode_train'] = False
+        exp_path = 'results/' + cfg['exp']['load_model_name'] + '/'
+        cfg['sp'] = {
+            'exp': exp_path,
+            'acc_detail': {
+                'test': exp_path + 'test/acc_details/'
+            },
+            'log': exp_path + 'test/logs/',
+            'tensorboard': exp_path + 'test/tensorboard/'
+        }
+        os.makedirs(cfg['sp']['acc_detail']['test'])
+        os.makedirs(cfg['sp']['log'])
+        os.makedirs(cfg['sp']['tensorboard'])
     else:
-        cfg['acc_detail_path'] = exp_path + 'acc_details/'
-        cfg['model_path'] = exp_path + 'ckpts/'
-        cfg['log_path'] = exp_path + 'logs/'
-        cfg['tensorboard_path'] = exp_path + 'tensorboard/'
-        os.makedirs(cfg['acc_detail_path'])
-        os.makedirs(cfg['model_path'])
-        os.makedirs(cfg['log_path'])
-        os.makedirs(cfg['tensorboard_path'])
+        raise Exception('invalid mode!')
