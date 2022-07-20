@@ -205,8 +205,8 @@ class IncModel(IncrementalLearner):
         self._optimizer.step()
 
         acc_list, acc_list_aux = [], []
-        self.curr_preds, self.curr_preds_aux = torch.tensor([]), torch.tensor([])
-        self.curr_targets, self.curr_targets_aux = torch.tensor([]), torch.tensor([])
+        self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
+        self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
         for epoch in range(self._n_epochs):
             _ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0
@@ -311,7 +311,7 @@ class IncModel(IncrementalLearner):
         if save_option["acc_details"]:
             self.record_acc_details(output, targets, targets_0, acc)
         if save_option["preds_details"]:
-            self.curr_preds = torch.cat((self.curr_preds, output.cpu()), 0)
+            self.curr_preds = torch.cat((self.curr_preds, output), 0)
             self.curr_targets = torch.cat((self.curr_targets, targets), 0)
 
         if aux_output is not None:
@@ -321,7 +321,7 @@ class IncModel(IncrementalLearner):
             if save_option["acc_aux_details"]:
                 self.record_acc_details(aux_output, aux_targets, aux_targets, acc_aux)
             if save_option["preds_aux_details"]:
-                self.curr_preds_aux = torch.cat((self.curr_preds_aux, aux_output.cpu()), 0)
+                self.curr_preds_aux = torch.cat((self.curr_preds_aux, aux_output), 0)
                 self.curr_targets_aux = torch.cat((self.curr_targets_aux, aux_targets), 0)
 
     def _compute_loss(self, outputs, targets, nlosses, stslosses, losses):
@@ -722,3 +722,9 @@ class IncModel(IncrementalLearner):
             preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
             np.save(save_path + 'preds_aux_res.npy', preds_aux)
             np.save(save_path + 'targets_aux_res.npy', targets_aux.cpu())
+
+    def _to_device(self, x):
+        if self._device.type == 'cuda':
+            return x.cuda()
+        else:
+            return x
