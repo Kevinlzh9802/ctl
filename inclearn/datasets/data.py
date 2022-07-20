@@ -475,11 +475,11 @@ def tgt_to_tgt0(targets, leaf_id, device):
     for target_i in list(np.array(targets.cpu())):
         if target_i in leaf_id.keys():
             targets0.append(leaf_id[target_i])
+    targets0 = torch.tensor(targets0)
     if device.type == 'cuda':
-        leaf_id_indexes = torch.tensor(targets0).cuda()
+        return targets0.cuda()
     else:
-        leaf_id_indexes = torch.tensor(targets0)
-    return leaf_id_indexes
+        return targets0
 
 
 def tgt0_to_tgt(targets0, leaf_id):
