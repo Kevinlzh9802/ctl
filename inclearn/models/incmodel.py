@@ -476,23 +476,24 @@ class IncModel(IncrementalLearner):
         acc = averageMeter()
         acc_aux = averageMeter()
 
-        output, targets = torch.tensor([]), torch.tensor([])
-        output_aux, targets_aux = torch.tensor([]), torch.tensor([])
+        output, targets = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
+        output_aux, targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
         self._parallel_network.eval()
 
         with torch.no_grad():
             for _, (inputs, lbls) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
+                lbls = lbls.to(self._device, non_blocking=True)
                 n_outputs = self._parallel_network(inputs)
                 _output = n_outputs['output']
                 _output_aux = n_outputs['aux_logit']
 
-                output = torch.cat((output, _output.cpu()), 0)
+                output = torch.cat((output, _output), 0)
                 targets = torch.cat((targets, lbls), 0)
 
                 if _output_aux is not None:
                     _targets_aux = tgt_to_aux_tgt(lbls, self._inc_dataset.targets_cur_unique, self._device)
-                    output_aux = torch.cat((output_aux, _output_aux.cpu()), 0)
+                    output_aux = torch.cat((output_aux, _output_aux), 0)
                     targets_aux = torch.cat((targets_aux, _targets_aux), 0)
         if self._cfg['taxonomy']:
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
