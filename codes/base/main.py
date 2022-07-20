@@ -65,7 +65,7 @@ def train(_run, _rnd, _seed):
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
-    with open('delete_warning.txt', 'w') as dw:
+    with open('results/' + cfg["der_deep_rtc_1"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
                  'it may lose important data and results. See log file for configuration details.')
 
