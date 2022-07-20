@@ -720,7 +720,7 @@ class IncModel(IncrementalLearner):
     def save_preds_aux_details(self, output_aux, targets_aux, save_path):
         if len(output_aux) > 0:
             preds_aux_ori = output_aux.argmax(1)
-            preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
+            preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique, self._device)
             np.save(save_path + 'preds_aux_res.npy', preds_aux)
             np.save(save_path + 'targets_aux_res.npy', targets_aux.cpu())
 

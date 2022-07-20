@@ -8,6 +8,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/codes/base/configs/ctl1_gpu.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inclearn/datasets/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/datasets/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inclearn/models/incmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/inclearn/models/incmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

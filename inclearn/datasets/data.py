@@ -463,10 +463,12 @@ def tgt_to_aux_tgt(targets, targets_unique_list, device):
     return aux_targets
 
 
-def aux_tgt_to_tgt(aux_targets, targets_unique_list):
+def aux_tgt_to_tgt(aux_targets, targets_unique_list, device):
     new_idx_pos = (aux_targets != 0)
     new_idx = aux_targets[new_idx_pos]
     targets_ori = torch.tensor(targets_unique_list)
+    if device.type == 'cuda':
+        targets_ori = targets_ori.cuda()
     # map the non-zero targets into original ones and keep the zeros
     aux_targets[new_idx_pos] = targets_ori[new_idx - 1].long()
     return aux_targets
