@@ -713,12 +713,12 @@ class IncModel(IncrementalLearner):
         else:
             preds = preds_ori
 
-        np.save(save_path + 'preds_res.npy', preds.cpu())
+        np.save(save_path + 'preds_res.npy', preds)
         np.save(save_path + 'targets_res.npy', targets.cpu())
 
     def save_preds_aux_details(self, output_aux, targets_aux, save_path):
         if len(output_aux) > 0:
             preds_aux_ori = output_aux.argmax(1)
             preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique)
-            np.save(save_path + 'preds_aux_res.npy', preds_aux.cpu())
+            np.save(save_path + 'preds_aux_res.npy', preds_aux)
             np.save(save_path + 'targets_aux_res.npy', targets_aux.cpu())
