@@ -1,6 +1,6 @@
 exp:
   name: "der_deep_rtc_8"
-  load_model_name: 'joint2'
+  load_model_name: 'der_deep_rtc_task0_full_data'
   debug: False
 
 # Model Cfg
