@@ -1,5 +1,5 @@
 exp:
-  name: "joint2"
+  name: "joint_task1_trial6"
   debug: False
   load_model_name: 'joint2'
 
@@ -44,11 +44,11 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
-sample_rate: 0.3
+sample_rate: 0.7
 retrain_from_task: 0
 
 train_save_option:
