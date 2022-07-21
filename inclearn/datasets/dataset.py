@@ -229,9 +229,9 @@ class iCIFAR100(iCIFAR10):
 
         elif trial_i == -1:
             label_list = [
-                          ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel']
+                          # ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel']
                           # ['poppy', 'orchid', 'table', 'chair', 'wardrobe']
-                           # 'man', 'boy', 'girl', 'baby', 'woman',
+                           ['man', 'boy', 'girl', 'baby', 'woman']
                            # 'crab', 'snail', 'lobster', 'worm', 'spider',
                            # 'dolphin', 'whale', 'otter', 'seal', 'beaver',  #
                            # 'aquarium_fish', 'flatfish', 'ray', 'trout', 'shark',
