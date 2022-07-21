@@ -1,5 +1,5 @@
 exp:
-  name: "der2"
+  name: "der3"
   load_model_name: 'der_deep_rtc_task0_full_data'
   debug: False
 

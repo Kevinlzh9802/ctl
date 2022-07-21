@@ -694,7 +694,7 @@ class IncModel(IncrementalLearner):
         else:
             preds = preds_ori
 
-        np.save(save_path + 'preds_res.npy', preds)
+        np.save(save_path + 'preds_res.npy', preds.cpu())
         np.save(save_path + 'targets_res.npy', targets.cpu())
 
     def save_preds_aux_details(self, output_aux, targets_aux, save_path):
