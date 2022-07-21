@@ -88,7 +88,7 @@ def _train(cfg, _run, exp, tensorboard):
         model.new_task()
         model.before_task(inc_dataset)
 
-        if cfg['retrain_from_task0']:
+        if task_i >= cfg['retrain_from_task']:
             model.train_task()
         else:
             # state_dict = torch.load(f'./ckpts/step{task_i}.ckpt')

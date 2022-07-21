@@ -25,6 +25,7 @@ import pandas as pd
 # Constants
 EPSILON = 1e-8
 
+
 class IncModel(IncrementalLearner):
     def __init__(self, cfg, _run, ex, tensorboard, inc_dataset):
         super().__init__()
