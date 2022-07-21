@@ -66,7 +66,7 @@ def train(_run, _rnd, _seed):
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
-                 'it may lose important data and results. See log file for configuration details.')
+                 ' it may lose important data and results. See log file for configuration details.')
 
 
 def _train(cfg, _run, exp, tensorboard):
