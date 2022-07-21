@@ -98,7 +98,7 @@ def _train(cfg, _run, exp, tensorboard):
         # model.save_acc_detail_info('train_with_step')
 
         model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval', save_option={
-            "acc_details": True,
+            "acc_details": False,
             "acc_aux_details": True,
             "preds_details": True,
             "preds_aux_details": True

@@ -291,7 +291,8 @@ class IncModel(IncrementalLearner):
         if self._cfg["taxonomy"] is not None:
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
-            targets_0 = targets
+            # TODO: re-index for no taxonomy!
+            targets_0 = tgt_to_tgt0(targets, enumerate(targets), self._device)
 
         # if self._cfg["taxonomy"] is not None:
         output = outputs['output']
