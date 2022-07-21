@@ -1,6 +1,6 @@
 exp:
   name: "der1"
-  load_model_name: 'der_deep_rtc_task0_full_data'
+  load_model_name: 'der1'
   debug: False
 
 # Model Cfg
