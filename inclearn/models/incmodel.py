@@ -17,7 +17,7 @@ from inclearn.tools.scheduler import GradualWarmupScheduler
 from inclearn.convnet.utils import extract_features, update_classes_mean, finetune_last_layer
 from inclearn.deeprtc.metrics import averageMeter
 from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss
-from inclearn.datasets.data import tgt_to_tgt0, tgt0_to_tgt, tgt_to_aux_tgt, aux_tgt_to_tgt
+from inclearn.datasets.data import tgt_to_tgt0, tgt0_to_tgt, tgt_to_aux_tgt, aux_tgt_to_tgt, tgt_to_tgt0_no_tax
 from inclearn.tools.utils import plot_cls_detail
 
 import pandas as pd
@@ -124,11 +124,19 @@ class IncModel(IncrementalLearner):
 
     def set_task_info(self, task_info):
         self._task = task_info["task"]
+        # task size for current task
+        # n_classes for total number of classes (history + present)
         self._task_size = task_info["task_size"]
-        self._current_tax_tree = task_info["partial_tree"]
+
+        if self._cfg["taxonomy"] is None:
+            self._current_tax_tree = None
+            self._n_classes += self._task_size
+        elif self._cfg["taxonomy"] == 'rtc':
+            self._current_tax_tree = task_info["partial_tree"]
+            self._n_classes = len(self._current_tax_tree.leaf_nodes)
+
         self._n_train_data = task_info["n_train_data"]
         self._n_test_data = task_info["n_test_data"]
-        self._n_classes = len(self._current_tax_tree.leaf_nodes)
 
     def train(self):
         if self._der:
@@ -152,7 +160,10 @@ class IncModel(IncrementalLearner):
 
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
-        self._memory_size.update_memory_per_cls(self._network, self._n_classes - 1, self._task_size)
+        if self._cfg["taxonomy"] is None:
+            self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
+        elif self._cfg["taxonomy"] == 'rtc':
+            self._memory_size.update_memory_per_cls(self._network, self._n_classes - 1, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
         self._network.current_tax_tree = self._current_tax_tree
@@ -292,7 +303,7 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             # TODO: re-index for no taxonomy!
-            targets_0 = tgt_to_tgt0(targets, enumerate(targets), self._device)
+            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_cur_unique, self._device)
 
         # if self._cfg["taxonomy"] is not None:
         output = outputs['output']
@@ -354,7 +365,8 @@ class IncModel(IncrementalLearner):
         else:
             output = outputs['output']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
-            loss = torch.mean(criterion(output, targets.long()))
+            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_cur_unique, self._device)
+            loss = torch.mean(criterion(output, targets_0.long()))
             losses.update(loss.item(), batch_size)
             aux_loss = torch.tensor(0)
         return loss, aux_loss

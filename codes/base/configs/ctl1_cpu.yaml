@@ -10,7 +10,7 @@ model_pivot:
   arch: pivot
   dropout_rate: 0.0
 convnet: 'resnet18'  # modified_resnet32, resnet18
-taxonomy: 'rtc'  # rtc for Real Taxonomic Classifier
+taxonomy: # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
@@ -93,7 +93,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: 5
+trial: -1
 increment: 10
 batch_size: 128
 workers: 8

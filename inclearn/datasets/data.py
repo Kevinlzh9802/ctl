@@ -492,3 +492,14 @@ def tgt0_to_tgt(targets0, leaf_id):
     for i in range(targets0.shape[0]):
         targets.append(leaf_inv[int(targets0[i])])
     return np.array(targets)
+
+
+def tgt_to_tgt0_no_tax(targets, targets_unique_list, device):
+    targets0 = targets.clone()
+    map_dict = {targets_unique_list[x]: x for x in range(len(targets_unique_list))}
+    for k in map_dict.keys():
+        targets0[targets == k] = map_dict[k]
+    if device.type == 'cuda':
+        return targets0.cuda()
+    else:
+        return targets0
