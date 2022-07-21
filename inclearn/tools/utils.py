@@ -211,7 +211,7 @@ def set_save_paths(cfg, mode):
     if mode == 'train':
         cfg['exp']['mode_train'] = True
         exp_path = 'results/' + cfg['exp']['name'] + '/'
-        if os.path.exists(exp_path):
+        if cfg['overwrite_prevention'] and os.path.exists(exp_path):
             raise Exception('Experiment ' + cfg['exp']['name'] + ' already exists! To make sure existing files and '
                                                                  'data are not overwritten, please choose another'
                                                                  ' name.')
@@ -226,11 +226,16 @@ def set_save_paths(cfg, mode):
                 'log': exp_path + 'train/logs/',
                 'tensorboard': exp_path + 'train/tensorboard/'
             }
-            os.makedirs(cfg['sp']['acc_detail']['train'])
-            os.makedirs(cfg['sp']['acc_detail']['eval'])
-            os.makedirs(cfg['sp']['model'])
-            os.makedirs(cfg['sp']['log'])
-            os.makedirs(cfg['sp']['tensorboard'])
+            if not os.path.exists(cfg['sp']['acc_detail']['train']):
+                os.makedirs(cfg['sp']['acc_detail']['train'])
+            if not os.path.exists(cfg['sp']['acc_detail']['eval']):
+                os.makedirs(cfg['sp']['acc_detail']['eval'])
+            if not os.path.exists(cfg['sp']['model']):
+                os.makedirs(cfg['sp']['model'])
+            if not os.path.exists(cfg['sp']['log']):
+                os.makedirs(cfg['sp']['log'])
+            if not os.path.exists(cfg['sp']['tensorboard']):
+                os.makedirs(cfg['sp']['tensorboard'])
 
     elif mode == 'test':
         cfg['exp']['mode_train'] = False
