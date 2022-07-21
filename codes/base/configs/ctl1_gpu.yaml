@@ -1,5 +1,5 @@
 exp:
-  name: "der1"
+  name: "der2"
   load_model_name: 'der_deep_rtc_task0_full_data'
   debug: False
 
@@ -93,7 +93,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: 5
+trial: -1
 increment: 10
 batch_size: 128
 
