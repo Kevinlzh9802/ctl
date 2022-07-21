@@ -73,6 +73,7 @@ class IncrementalDataset:
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
         self.targets_cur_unique = []
+        self.targets_all_unique = []
         # Available data \tilde{D}_t = D_t \cup M_t
         self.data_inc, self.targets_inc = None, None  # Cur task data + memory
         self.data_test_inc, self.targets_test_inc = [], []
@@ -90,6 +91,7 @@ class IncrementalDataset:
         x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
         self.targets_cur_unique = sorted(list(set(self.targets_cur)))
+        self.targets_all_unique += self.targets_cur_unique
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
         if self.mode_train:

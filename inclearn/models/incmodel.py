@@ -160,12 +160,8 @@ class IncModel(IncrementalLearner):
 
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
-        if self._cfg["taxonomy"] is None:
-            self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
-        elif self._cfg["taxonomy"] == 'rtc':
-            self._memory_size.update_memory_per_cls(self._network, self._n_classes - 1, self._task_size)
+        self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
-
         self._network.current_tax_tree = self._current_tax_tree
         self._network.add_classes(self._task_size)
         self._network.task_size = self._task_size
@@ -303,7 +299,7 @@ class IncModel(IncrementalLearner):
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
             # TODO: re-index for no taxonomy!
-            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_cur_unique, self._device)
+            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_all_unique, self._device)
 
         # if self._cfg["taxonomy"] is not None:
         output = outputs['output']
@@ -365,7 +361,7 @@ class IncModel(IncrementalLearner):
         else:
             output = outputs['output']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
-            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_cur_unique, self._device)
+            targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_all_unique, self._device)
             loss = torch.mean(criterion(output, targets_0.long()))
             losses.update(loss.item(), batch_size)
             aux_loss = torch.tensor(0)
@@ -439,7 +435,8 @@ class IncModel(IncrementalLearner):
                                 weight_decay=self._decouple["weight_decay"],
                                 loss_type="ce",
                                 temperature=self._decouple["temperature"],
-                                save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple")
+                                save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple",
+                                index_map=self._inc_dataset.targets_all_unique)
             network = deepcopy(self._parallel_network)
             if self._cfg["save_ckpt"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts")

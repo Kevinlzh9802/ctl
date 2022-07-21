@@ -228,9 +228,9 @@ class iCIFAR100(iCIFAR10):
             return label_list
 
         elif trial_i == -1:
-            label_list = [[
-                           # 'hamster', 'mouse', 'shrew', 'rabbit', 'squirrel',
-                           'poppy', 'orchid', 'table', 'chair', 'wardrobe',
+            label_list = [
+                          ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel']
+                          # ['poppy', 'orchid', 'table', 'chair', 'wardrobe']
                            # 'man', 'boy', 'girl', 'baby', 'woman',
                            # 'crab', 'snail', 'lobster', 'worm', 'spider',
                            # 'dolphin', 'whale', 'otter', 'seal', 'beaver',  #
@@ -250,7 +250,7 @@ class iCIFAR100(iCIFAR10):
                            # 'butterfly', 'bee', 'beetle', 'caterpillar', 'cockroach',  #
                            # 'lamp', 'television', 'telephone', 'keyboard', 'clock',
                            # 'raccoon', 'fox', 'porcupine', 'skunk', 'possum'
-                           ]]
+                           ]
             return label_list
 
     @classmethod

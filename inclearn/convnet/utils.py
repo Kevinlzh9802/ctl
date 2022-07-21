@@ -6,11 +6,12 @@ import torch.nn.functional as F
 from inclearn.tools.metrics import ClassErrorMeter, AverageValueMeter
 from inclearn.tools.utils import to_onehot
 from inclearn.deeprtc.utils import deep_rtc_nloss
-from inclearn.datasets.data import tgt_to_tgt0
+from inclearn.datasets.data import tgt_to_tgt0, tgt_to_tgt0_no_tax
 
 
 def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
-                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path=''):
+                        weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path='',
+                        index_map=None):
     if scheduling is None:
         scheduling = [15, 35]
     network.eval()
@@ -63,14 +64,15 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 total_correct += iscorrect.sum()
                 total_count += inputs.size(0)
             else:
-                outputs = network(inputs)['logit']
+                outputs = network(inputs)['output']
+                targets_0 = tgt_to_tgt0_no_tax(targets, index_map, device)
                 _, preds = outputs.max(1)
                 optim.zero_grad()
-                loss = criterion(outputs / temperature, targets)
+                loss = criterion(outputs / temperature, targets_0.long())
                 loss.backward()
                 optim.step()
                 total_loss += loss * inputs.size(0)
-                total_correct += (preds == targets).sum()
+                total_correct += (preds == targets_0).sum()
                 total_count += inputs.size(0)
 
         if test_loader is not None:
