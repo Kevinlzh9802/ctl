@@ -347,7 +347,7 @@ class IncModel(IncrementalLearner):
             nout = outputs['nout']
             sfmx_base = outputs['sfmx_base']
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
-            aux_loss, aux_targets = self._compute_aux_loss(targets, aux_output)
+            aux_loss = self._compute_aux_loss(targets, aux_output)
 
             nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
             nlosses.update(nloss.item(), batch_size)
@@ -360,11 +360,12 @@ class IncModel(IncrementalLearner):
             losses.update(loss.item(), batch_size)
         else:
             output = outputs['output']
+            aux_output = outputs['aux_logit']
             criterion = torch.nn.CrossEntropyLoss(reduction='none')
             targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_all_unique, self._device)
             loss = torch.mean(criterion(output, targets_0.long()))
             losses.update(loss.item(), batch_size)
-            aux_loss = torch.tensor(0)
+            aux_loss = self._compute_aux_loss(targets, aux_output)
         return loss, aux_loss
 
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
@@ -387,7 +388,6 @@ class IncModel(IncrementalLearner):
         return res_dict
 
     def _compute_aux_loss(self, targets, aux_output):
-        aux_targets = targets
         if aux_output is not None:
             cur_labels = self._inc_dataset.targets_cur_unique  # it should be sorted
             aux_targets = tgt_to_aux_tgt(targets, cur_labels, self._device)
@@ -397,7 +397,7 @@ class IncModel(IncrementalLearner):
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
-        return aux_loss, aux_targets
+        return aux_loss
 
     def _after_task(self, inc_dataset):
         taski = self._task
@@ -418,7 +418,8 @@ class IncModel(IncrementalLearner):
                                                        mode="balanced_train")
 
             # finetuning
-            if self._device.type == 'cuda':
+            # only hiernet on cuda needs .module
+            if self._cfg["taxonomy"] and self._device.type == 'cuda':
                 self._parallel_network.module.classifier.module.reset_parameters()
             else:
                 self._parallel_network.module.classifier.reset_parameters()

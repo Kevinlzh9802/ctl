@@ -82,15 +82,16 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
             # gate[:, 0] = 1
             output, nout, sfmx_base = self.classifier(x=features, gate=gate)
-
             # logits = self.classifier(features)
-            if self.use_aux_cls:
-                aux_logits = self.aux_classifier(features[:, -self.out_dim:]) if features.shape[1] > self.out_dim else None
-            else:
-                aux_logits = None
         else:
             output = self.classifier(features)
-            nout, sfmx_base, aux_logits = None, None, None
+            nout, sfmx_base = None, None
+
+        if self.use_aux_cls:
+            aux_logits = self.aux_classifier(features[:, -self.out_dim:]) \
+                if features.shape[1] > self.out_dim else None
+        else:
+            aux_logits = None
         return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits}
 
     @property
