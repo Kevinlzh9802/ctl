@@ -95,19 +95,23 @@ def _train(cfg, _run, exp, tensorboard):
             state_dict = torch.load(f"{cfg['pre_train_model_path']}/step{task_i}.ckpt")
             model._parallel_network.load_state_dict(state_dict)
 
-        # model.save_acc_detail_info('train_with_step')
-
-        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval', save_option={
+        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
             "acc_details": True,
             "acc_aux_details": True,
             "preds_details": True,
             "preds_aux_details": True
         })
         model.after_task(inc_dataset)
-        # model.save_acc_detail_info('after_train')
 
-    if cfg["exp"]["name"]:
-        results_utils.save_results(results, cfg["exp"]["name"])
+        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
+            "acc_details": True,
+            "acc_aux_details": True,
+            "preds_details": True,
+            "preds_aux_details": True
+        })
+
+    # if cfg["exp"]["name"]:
+    #     results_utils.save_results(results, cfg["exp"]["name"])
 
 
 def do_pretrain(cfg, ex, model, device, train_loader, test_loader):

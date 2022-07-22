@@ -409,7 +409,6 @@ class IncModel(IncrementalLearner):
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.sp['model'], self._task))
 
         if self._cfg["decouple"]['enable'] and taski > 0:
-            print('decouple')
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:
@@ -479,7 +478,6 @@ class IncModel(IncrementalLearner):
 
     def _eval_task(self, data_loader, save_path='', name='default', save_option=None):
         if self._infer_head == "softmax":
-            # ypred, ytrue, cls_detail = self._compute_accuracy_by_netout(data_loader)
             self._compute_accuracy_by_netout(data_loader, save_path=save_path, name=name, save_option=save_option)
         elif self._infer_head == "NCM":
             # ypred, ytrue = self._compute_accuracy_by_ncm(data_loader)
@@ -490,6 +488,7 @@ class IncModel(IncrementalLearner):
         # return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
+        self._ex.logger.info(f"Begin evaluation: {name}")
         acc = averageMeter()
         acc_aux = averageMeter()
         self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
@@ -504,7 +503,7 @@ class IncModel(IncrementalLearner):
                 outputs = self._parallel_network(inputs)
                 self.record_details(outputs, targets, acc, acc_aux, save_option)
 
-        self._ex.logger.info(f"{name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
+        self._ex.logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
         # save accuracy and preds info into files
         self.curr_acc_list = [acc]
         self.curr_acc_list_aux = [acc_aux]

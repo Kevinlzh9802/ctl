@@ -16,11 +16,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         scheduling = [15, 35]
     network.eval()
     n_module = network.module
-    # if hasattr(network.module, "convnets"):
-    #    for net in network.module.convnets:
-    #        net.eval()
-    # else:
-    #    network.module.convnet.eval()
     optim = SGD(n_module.classifier.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optim, scheduling, gamma=lr_decay)
 
