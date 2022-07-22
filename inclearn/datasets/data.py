@@ -127,10 +127,11 @@ class IncrementalDataset:
 
     def _update_memory_for_new_task(self, labels):
         # delete the memory data with parent labels that have been replaced by finer labels
-        parent_names = set([self.taxonomy_tree.nodes[x].parent for x in labels])
-        parent_labels = set([self.taxonomy_tree.nodes[x].label_index for x in parent_names])
-        for lb in parent_labels:
-            self.memory_dict.pop(lb, -1)
+        if self.taxonomy:
+            parent_names = set([self.taxonomy_tree.nodes[x].parent for x in labels])
+            parent_labels = set([self.taxonomy_tree.nodes[x].label_index for x in parent_names])
+            for lb in parent_labels:
+                self.memory_dict.pop(lb, -1)
 
     def gen_memory_array_from_dict(self):
         data_memory = []

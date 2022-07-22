@@ -25,6 +25,9 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         criterion = nn.BCEWithLogitsLoss()
 
     logger.info("Begin finetuning last layer")
+    a1, b1 = np.unique(loader.dataset.y, return_counts=True)
+    print(a1)
+    print(b1)
     for i in range(nepoch):
         total_loss = 0.0
         total_correct = 0.0
@@ -32,9 +35,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         # print(f"dataset loader length {len(loader.dataset)}")
         all_preds = None
         all_is_correct = np.array([])
-        a1, b1 = np.unique(loader.dataset.y, return_counts=True)
-        print(a1)
-        print(b1)
         for inputs, targets in loader:
             if device.type == 'cuda':
                 inputs, targets = inputs.cuda(), targets.cuda()
