@@ -139,6 +139,8 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
         alph_ranked.sort(key=lambda x: x[1])
         new_memory_dict[class_i] = inputs[[i[0] for i in alph_ranked]]
 
+    for k in new_memory_dict.keys():
+        print(len(new_memory_dict[k]))
     return new_memory_dict
 
     # data_memory = []
