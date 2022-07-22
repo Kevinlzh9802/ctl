@@ -117,9 +117,6 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
     x_train = inc_dataset.data_inc
     y_train = inc_dataset.targets_inc
 
-    a1, b1 = np.unique(y_train, return_counts=True)
-    print(a1)
-    print(b1)
     for class_i in set(y_train):
         # if class_i != int((20-n_classes)/4)-1:
         inputs = x_train[y_train == class_i]
@@ -140,6 +137,7 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
         alph = select_examplars(features, memory_per_class[0])[0]
         alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
         alph_ranked.sort(key=lambda x: x[1])
+        print(len(alph_ranked))
         new_memory_dict[class_i] = inputs[[i[0] for i in alph_ranked]]
 
     for k in new_memory_dict.keys():
