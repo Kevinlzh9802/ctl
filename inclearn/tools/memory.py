@@ -117,6 +117,9 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
     x_train = inc_dataset.data_inc
     y_train = inc_dataset.targets_inc
 
+    a1, b1 = np.unique(y_train, return_counts=True)
+    print(a1)
+    print(b1)
     for class_i in set(y_train):
         # if class_i != int((20-n_classes)/4)-1:
         inputs = x_train[y_train == class_i]
