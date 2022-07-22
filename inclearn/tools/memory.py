@@ -136,7 +136,7 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
                                          batch_size=bs, shuffle=False, mode="test")
 
         features, _ = extract_features(network, loader, device)  # order
-
+        print(features.shape)
         alph = select_examplars(features, memory_per_class[0])[0]
         alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
         alph_ranked.sort(key=lambda x: x[1])
