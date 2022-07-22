@@ -32,6 +32,9 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         # print(f"dataset loader length {len(loader.dataset)}")
         all_preds = None
         all_is_correct = np.array([])
+        a1, b1 = np.unique(loader.dataset.y, return_counts=True)
+        print(a1)
+        print(b1)
         for inputs, targets in loader:
             if device.type == 'cuda':
                 inputs, targets = inputs.cuda(), targets.cuda()
@@ -62,13 +65,6 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 outputs = network(inputs)['output']
                 targets_0 = tgt_to_tgt0_no_tax(targets, index_map, device)
                 _, preds = outputs.max(1)
-
-                a1, b1 = torch.unique(targets_0, return_counts=True)
-                a2, b2 = torch.unique(preds, return_counts=True)
-                print(a1)
-                print(b1)
-                print(a2)
-                print(b2)
                 optim.zero_grad()
                 loss = criterion(outputs / temperature, targets_0.long())
                 loss.backward()
