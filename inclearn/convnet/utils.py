@@ -75,6 +75,15 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 total_correct += (preds == targets_0).sum()
                 total_count += inputs.size(0)
 
+                max_z = torch.max(outputs, dim=1)[0]
+                preds = torch.eq(outputs, max_z.view(-1, 1))
+
+                iscorrect = torch.gather(preds, 1, targets_0.long().view(-1, 1)).flatten().float()
+                if all_preds is None:
+                    all_preds = np.empty([0, preds.shape[1]])
+                all_preds = np.concatenate((all_preds, preds.cpu()))
+                all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
+
         if test_loader is not None:
             test_correct = 0.0
             test_count = 0.0

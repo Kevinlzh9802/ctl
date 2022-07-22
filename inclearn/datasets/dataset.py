@@ -136,6 +136,7 @@ class iCIFAR100(iCIFAR10):
 
     @classmethod
     def class_order(cls, trial_i):
+        idx_to_label = {cls.data_label_index_dict[x]: x for x in cls.data_label_index_dict}
         if trial_i == 0:
             return [
                 62, 54, 84, 20, 94, 22, 40, 29, 78, 27, 26, 79, 17, 76, 68, 88, 3, 19, 31, 21, 33, 60, 24, 14, 6, 10,
@@ -144,12 +145,27 @@ class iCIFAR100(iCIFAR10):
                 67, 91, 0, 51, 83, 13, 58, 80, 74, 65, 4, 30, 45, 77, 99, 85, 41, 96, 59, 52
             ]
         elif trial_i == 1:
-            return [
-                68, 56, 78, 8, 23, 84, 90, 65, 74, 76, 40, 89, 3, 92, 55, 9, 26, 80, 43, 38, 58, 70, 77, 1, 85, 19, 17,
-                50, 28, 53, 13, 81, 45, 82, 6, 59, 83, 16, 15, 44, 91, 41, 72, 60, 79, 52, 20, 10, 31, 54, 37, 95, 14,
-                71, 96, 98, 97, 2, 64, 66, 42, 22, 35, 86, 24, 34, 87, 21, 99, 0, 88, 27, 18, 94, 11, 12, 47, 25, 30,
-                46, 62, 69, 36, 61, 7, 63, 75, 5, 32, 4, 51, 48, 73, 93, 39, 67, 29, 49, 57, 33
-            ]
+            return cls.lt_convert([
+                [68, 56, 78, 8, 23],
+                [84, 90, 65, 74, 76],
+                [40, 89, 3, 92, 55],
+                [9, 26, 80, 43, 38],
+                [58, 70, 77, 1, 85],
+                [19, 17, 50, 28, 53],
+                [13, 81, 45, 82, 6],
+                [59, 83, 16, 15, 44],
+                [91, 41, 72, 60, 79],
+                [52, 20, 10, 31, 54],
+                [37, 95, 14, 71, 96],
+                [98, 97, 2, 64, 66],
+                [42, 22, 35, 86, 24],
+                [34, 87, 21, 99, 0],
+                [88, 27, 18, 94, 11],
+                [12, 47, 25, 30, 46],
+                [62, 69, 36, 61, 7],
+                [63, 75, 5, 32, 4],
+                [51, 48, 73, 93, 39],
+                [67, 29, 49, 57, 33]], idx_to_label)
         elif trial_i == 2:  # PODNet
             return [
                 87, 0, 52, 58, 44, 91, 68, 97, 51, 15, 94, 92, 10, 72, 49, 78, 61, 14, 8, 86, 84, 96, 18, 24, 32, 45,
@@ -231,6 +247,7 @@ class iCIFAR100(iCIFAR10):
             label_list = [
                           # ['hamster', 'mouse', 'shrew', 'rabbit', 'squirrel']
                           # ['poppy', 'orchid', 'table', 'chair', 'wardrobe']
+                            ['people'],
                            ['man', 'boy', 'girl', 'baby', 'woman']
                            # 'crab', 'snail', 'lobster', 'worm', 'spider',
                            # 'dolphin', 'whale', 'otter', 'seal', 'beaver',  #
@@ -262,6 +279,16 @@ class iCIFAR100(iCIFAR10):
                 task_id_list.append(cls.data_label_index_dict[task_label])
             class_id_list.append(task_id_list)
         return class_id_list
+
+    @staticmethod
+    def lt_convert(ori_list, mapping):
+        new_list = []
+        for ori_sub_list in ori_list:
+            new_sub_list = []
+            for task_label in ori_sub_list:
+                new_sub_list.append(mapping[task_label])
+            new_list.append(new_sub_list)
+        return new_list
 
 
 class DataHandler:
