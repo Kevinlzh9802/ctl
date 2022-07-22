@@ -1,6 +1,6 @@
 exp:
-  name: "der_all"
-  load_model_name: 'der_all'
+  name: "der_all2"
+  load_model_name: 'der_all2'
   debug: False
 
 # Model Cfg

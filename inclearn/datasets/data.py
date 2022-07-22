@@ -24,7 +24,7 @@ def get_data_folder(data_folder, dataset_name):
 class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, device=None,
                  batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0, resampling=False,
-                 data_folder="./data", start_class=0, mode_train=True):
+                 data_folder="./data", start_class=0, mode_train=True, taxonomy=None):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -61,6 +61,7 @@ class IncrementalDataset:
         self.transform_type = dataset_class.transform_type
 
         # Taxonomy setting
+        self.taxonomy = taxonomy
         self.curriculum = None
         self._setup_curriculum(dataset_class)
         self._current_task = 0
@@ -143,6 +144,7 @@ class IncrementalDataset:
         label_map_train = self._gen_label_map(self.curriculum[self._current_task])
         label_map_test = self._gen_label_map(list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten()))
         x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, train=True)
+        x_val, y_val = self._select_from_idx(self.dict_val, label_map_test, train=False)
         x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, train=False)
         return x_train, y_train, x_test, y_test
 
@@ -172,14 +174,14 @@ class IncrementalDataset:
                 data_frac = self._sample_rate(label_map[lf][1], label_map[lf][2])
 
                 if self._device.type == 'cuda':
-                    if data_frac > 0:
+                    if data_frac > 0 and self.taxonomy:
                         sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
                     else:
-                        if len(self.memory_dict) == 0:
-                            sel_ind = idx_available
-                        else:
-                            memory_size = self.memory_dict[list(self.memory_dict.keys())[0]].shape[0]
-                            sel_ind = idx_available[:memory_size]
+                        # if len(self.memory_dict) == 0:
+                        sel_ind = idx_available
+                        # else:
+                        #     memory_size = self.memory_dict[list(self.memory_dict.keys())[0]].shape[0]
+                        #     sel_ind = idx_available[:memory_size]
                 else:
                     if data_frac > 0:
                         sel_ind = random.sample(list(idx_available), 2)

@@ -54,7 +54,8 @@ def get_data(cfg):
         resampling=cfg["resampling"],
         increment=cfg["increment"],
         data_folder=cfg["data_folder"],
-        mode_train=cfg["exp"]["mode_train"]
+        mode_train=cfg["exp"]["mode_train"],
+        taxonomy=cfg["taxonomy"]
     )
 
 
