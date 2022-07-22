@@ -216,10 +216,6 @@ class IncModel(IncrementalLearner):
         self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
         self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
-        a1, b1 = np.unique(train_loader.dataset.y, return_counts=True)
-        print(a1)
-        print(b1)
-
         for epoch in range(self._n_epochs):
             _ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0
 

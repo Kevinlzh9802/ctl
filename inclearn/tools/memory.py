@@ -133,22 +133,8 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
                                          batch_size=bs, shuffle=False, mode="test")
 
         features, _ = extract_features(network, loader, device)  # order
-        print(features.shape)
         alph = select_examplars(features, memory_per_class[0])[0]
         alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
         alph_ranked.sort(key=lambda x: x[1])
-        print(len(alph_ranked))
         new_memory_dict[class_i] = inputs[[i[0] for i in alph_ranked]]
-
-    for k in new_memory_dict.keys():
-        print(len(new_memory_dict[k]))
     return new_memory_dict
-
-    # data_memory = []
-    # target_memory = []
-    # for i in new_memory_dict:
-    #     data_memory += [new_memory_dict[i]]
-    #     target_memory += [i] * new_memory_dict[i].shape[0]
-    # data_memory = np.concatenate(data_memory)
-    # target_memory = np.array(target_memory)
-    # return new_memory_dict, data_memory, target_memory
