@@ -72,7 +72,7 @@ def select_examplars(features, nb_max):
 
     iter_herding, iter_herding_eff = 0, 0
 
-    while not (np.sum(herding_matrix != 0) == min(nb_max, features.shape[0])) and iter_herding_eff < 1000:
+    while not (np.sum(herding_matrix != 0) == min(nb_max, features.shape[0])) and iter_herding_eff < 10000:
         tmp_t = np.dot(w_t, D)
         # tmp_t = -np.linalg.norm(w_t[:,np.newaxis]-D, axis=0)
         # tmp_t = np.linalg.norm(w_t[:,np.newaxis]-D, axis=0)
