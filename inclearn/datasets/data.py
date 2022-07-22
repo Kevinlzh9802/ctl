@@ -89,7 +89,7 @@ class IncrementalDataset:
         return len(self.curriculum)
 
     def new_task(self):
-        x_train, y_train, x_test, y_test = self._get_cur_data_for_all_children()
+        x_train, y_train, x_val, y_val, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
         self.targets_cur_unique = sorted(list(set(self.targets_cur)))
         self.targets_all_unique += self.targets_cur_unique
@@ -109,7 +109,7 @@ class IncrementalDataset:
         self.data_test_inc, self.targets_test_inc = x_test, y_test
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
-        val_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
+        val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
@@ -146,7 +146,7 @@ class IncrementalDataset:
         x_train, y_train = self._select_from_idx(self.dict_train, label_map_train, train=True)
         x_val, y_val = self._select_from_idx(self.dict_val, label_map_test, train=False)
         x_test, y_test = self._select_from_idx(self.dict_test, label_map_test, train=False)
-        return x_train, y_train, x_test, y_test
+        return x_train, y_train, x_val, y_val, x_test, y_test
 
     def _gen_label_map(self, name_coarse):
         label_map = {}
@@ -215,7 +215,6 @@ class IncrementalDataset:
     #           Data Setup
     # --------------------------------
     def _setup_data(self, dataset):
-        # FIXME: handles online loading of images
         self.data_train, self.targets_train = [], []
         self.data_test, self.targets_test = [], []
         self.data_val, self.targets_val = [], []
