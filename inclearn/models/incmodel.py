@@ -18,7 +18,6 @@ from inclearn.convnet.utils import extract_features, update_classes_mean, finetu
 from inclearn.deeprtc.metrics import averageMeter
 from inclearn.deeprtc.utils import deep_rtc_nloss, deep_rtc_sts_loss
 from inclearn.datasets.data import tgt_to_tgt0, tgt0_to_tgt, tgt_to_aux_tgt, aux_tgt_to_tgt, tgt_to_tgt0_no_tax
-from inclearn.tools.utils import plot_cls_detail
 
 import pandas as pd
 
@@ -113,10 +112,6 @@ class IncModel(IncrementalLearner):
 
         # Save paths
         self.train_save_option = cfg['train_save_option']
-        # self.acc_detail_path = cfg['acc_detail_path']
-        # self.model_path = cfg['model_path']
-        # self.log_path = cfg['log_path']
-        # self.tensorboard_path = cfg['tensorboard_path']
         self.sp = cfg['sp']
 
     def eval(self):
@@ -162,11 +157,14 @@ class IncModel(IncrementalLearner):
         self._memory_size.update_n_classes(self._n_classes)
         self._memory_size.update_memory_per_cls(self._network, self._n_classes, self._task_size)
         self._ex.logger.info("Now {} examplars per class.".format(self._memory_per_class))
+
+        # Network
         self._network.current_tax_tree = self._current_tax_tree
-        self._network.add_classes(self._task_size)
-        self._network.task_size = self._task_size
         self._network.task_size = self._task_size
         self._network.current_task = self._task
+
+        self._network.add_classes(self._task_size)
+        self._network.n_classes = self._n_classes
         self.set_optimizer()
 
     def set_optimizer(self, lr=None):
@@ -298,7 +296,6 @@ class IncModel(IncrementalLearner):
         if self._cfg["taxonomy"] is not None:
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
-            # TODO: re-index for no taxonomy!
             targets_0 = tgt_to_tgt0_no_tax(targets, self._inc_dataset.targets_all_unique, self._device)
 
         # if self._cfg["taxonomy"] is not None:
@@ -484,8 +481,6 @@ class IncModel(IncrementalLearner):
             pass
         else:
             raise ValueError()
-
-        # return ypred, ytrue
 
     def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
         self._ex.logger.info(f"Begin evaluation: {name}")
@@ -688,10 +683,12 @@ class IncModel(IncrementalLearner):
         preds_ori = output.argmax(1)
         if self._cfg['taxonomy']:
             preds = tgt0_to_tgt(preds_ori, self._network.leaf_id)
+        elif preds_ori.device.type == 'cuda':
+            preds = preds_ori.cpu()
         else:
             preds = preds_ori
 
-        np.save(save_path + 'preds_res.npy', preds.cpu())
+        np.save(save_path + 'preds_res.npy', preds)
         np.save(save_path + 'targets_res.npy', targets.cpu())
 
     def save_preds_aux_details(self, output_aux, targets_aux, save_path):

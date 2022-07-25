@@ -185,9 +185,9 @@ class IncrementalDataset:
                         #     sel_ind = idx_available[:memory_size]
                 else:
                     if data_frac > 0:
-                        sel_ind = random.sample(list(idx_available), 2)
+                        sel_ind = random.sample(list(idx_available), 6)
                     else:
-                        sel_ind = random.sample(list(idx_available), 2)
+                        sel_ind = random.sample(list(idx_available), 6)
 
                 x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
                 y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
