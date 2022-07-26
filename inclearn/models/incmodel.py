@@ -680,6 +680,7 @@ class IncModel(IncrementalLearner):
         acc.update_detail(acc_update_info)
 
     def save_preds_details(self, output, targets, save_path):
+        # TODO: fix the output!
         preds_ori = output.argmax(1)
         if self._cfg['taxonomy']:
             preds = tgt0_to_tgt(preds_ori, self._network.leaf_id)
@@ -692,6 +693,7 @@ class IncModel(IncrementalLearner):
         np.save(save_path + 'targets_res.npy', targets.cpu())
 
     def save_preds_aux_details(self, output_aux, targets_aux, save_path):
+        # TODO: fix the output!
         if len(output_aux) > 0:
             preds_aux_ori = output_aux.argmax(1)
             preds_aux = aux_tgt_to_tgt(preds_aux_ori, self._inc_dataset.targets_cur_unique, self._device)
