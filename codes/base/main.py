@@ -163,18 +163,19 @@ def test(_run, _rnd, _seed):
     for task_i in range(inc_dataset.n_tasks):
         model.new_task()
         model.before_task(inc_dataset)
-        model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts2/decouple_step{task_i}.ckpt'
-        state_dict = torch.load(model_path)
-        # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
-        model._parallel_network.load_state_dict(state_dict)
-        model.eval()
-        model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test_ori_decouple', save_option={
-            "acc_details": True,
-            "acc_aux_details": True,
-            "preds_details": True,
-            "preds_aux_details": True
-        })
-        # model.save_acc_detail_info('test')
+        if task_i >= 1:
+            model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts2/decouple_step{task_i}.ckpt'
+            state_dict = torch.load(model_path)
+            # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
+            model._parallel_network.load_state_dict(state_dict)
+            model.eval()
+            model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test_ori_decouple', save_option={
+                "acc_details": True,
+                "acc_aux_details": True,
+                "preds_details": True,
+                "preds_aux_details": True
+            })
+            # model.save_acc_detail_info('test')
 
 
 if __name__ == "__main__":
