@@ -92,7 +92,8 @@ class IncrementalDataset:
     def new_task(self):
         x_train, y_train, x_val, y_val, x_test, y_test = self._get_cur_data_for_all_children()
         self.data_cur, self.targets_cur = x_train, y_train
-        self.targets_cur_unique = list(OrderedDict.fromkeys(self.targets_cur))
+        # self.targets_cur_unique = list(OrderedDict.fromkeys(self.targets_cur))
+        self.targets_cur_unique = sorted(list(set(self.targets_cur)))
         self.targets_all_unique += self.targets_cur_unique
         if self._current_task >= len(self.curriculum):
             raise Exception("No more tasks.")
