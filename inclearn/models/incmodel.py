@@ -205,6 +205,9 @@ class IncModel(IncrementalLearner):
     def _train_task(self):
         train_loader = self._cur_train_loader
         val_loader = self._cur_val_loader
+        a1, b1 = np.unique(train_loader.dataset.y, return_counts=True)
+        print(a1)
+        print(b1)
         self._ex.logger.info(f"nb {len(train_loader.dataset)}")
 
         self._optimizer.zero_grad()
