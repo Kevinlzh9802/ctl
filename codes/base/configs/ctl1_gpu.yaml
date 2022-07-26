@@ -1,5 +1,5 @@
 exp:
-  name: "der_compare"
+  name: "der_all3"
   load_model_name: 'der_all3'
   debug: False
 
