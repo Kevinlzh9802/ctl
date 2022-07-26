@@ -115,4 +115,4 @@ fixed_memory_per_cls: 20  # the fixed number of exemplars per cls
 device_auto_detect: True  # If True, use GPU whenever possible
 device: 0 # GPU index to use, for cpu use -1
 seed: 1993
-overwrite_prevention: False
+overwrite_prevention: True
