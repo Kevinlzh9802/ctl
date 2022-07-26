@@ -1,6 +1,6 @@
 exp:
-  name: "der_all4"
-  load_model_name: 'der_all4'
+  name: "der_all5"
+  load_model_name: 'der_all5'
   debug: False
 
 # Model Cfg
@@ -47,7 +47,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-retrain_from_task: 6
+retrain_from_task: 0
 
 train_save_option:
   acc_details: True
