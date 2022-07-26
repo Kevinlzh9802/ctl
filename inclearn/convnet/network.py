@@ -119,7 +119,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
     def _add_classes_multi_fc(self, n_classes):
         if self.taxonomy:
-            all_classes = len(self._current_tax_tree.leaf_nodes)
+            all_classes = len(self.current_tax_tree.leaf_nodes)
         else:
             all_classes = self.n_classes + n_classes
 
@@ -131,9 +131,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                                           remove_last_relu=self.remove_last_relu).to(self.device)
             new_clf.load_state_dict(self.convnets[-1].state_dict())
             self.convnets.append(new_clf)
-
-        if self.classifier is not None:
-            weight = copy.deepcopy(self.classifier.weight.data)
 
         fc = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
 

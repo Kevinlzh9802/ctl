@@ -41,6 +41,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
             if n_module.taxonomy == 'rtc':
                 outputs = network(inputs)
                 nout = outputs['nout']
+                optim.zero_grad()
                 loss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
 
                 max_z = torch.max(outputs["output"], dim=1)[0]
@@ -53,6 +54,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 all_preds = np.concatenate((all_preds, preds.cpu()))
                 all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
                 # print(loss)
+
                 loss.backward()
                 optim.step()
                 total_loss += loss
