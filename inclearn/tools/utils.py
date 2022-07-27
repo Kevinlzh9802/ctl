@@ -238,15 +238,16 @@ def set_save_paths(cfg, mode):
                 os.makedirs(cfg['sp']['tensorboard'])
 
     elif mode == 'test':
+        test_name = cfg['exp']['name']
         cfg['exp']['mode_train'] = False
         exp_path = 'results/' + cfg['exp']['load_model_name'] + '/'
         cfg['sp'] = {
             'exp': exp_path,
             'acc_detail': {
-                'test': exp_path + 'test/acc_details/'
+                'test': exp_path + test_name + '/acc_details/'
             },
-            'log': exp_path + 'test/logs/',
-            'tensorboard': exp_path + 'test/tensorboard/'
+            'log': exp_path + test_name + '/logs/',
+            'tensorboard': exp_path + test_name + '/tensorboard/'
         }
         if not os.path.exists(cfg['sp']['acc_detail']['test']):
             os.makedirs(cfg['sp']['acc_detail']['test'])
