@@ -35,6 +35,7 @@ class IncModel(IncrementalLearner):
         self._run = _run  # the sacred _run object.
 
         # Data
+        self._train_from_task = cfg['retrain_from_task']
         self._inc_dataset = inc_dataset
         self._n_classes = 0
         self._trial_i = cfg['trial']  # which class order is used
@@ -408,7 +409,7 @@ class IncModel(IncrementalLearner):
             # save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.sp['model'], self._task))
 
-        if self._cfg["decouple"]['enable'] and taski > 0:
+        if self._cfg["decouple"]['enable'] and taski > 0 and taski >= self._train_from_task:
             if self._cfg["decouple"]["fullset"]:
                 train_loader = inc_dataset._get_loader(inc_dataset.data_inc, inc_dataset.targets_inc, mode="train")
             else:
@@ -563,8 +564,12 @@ class IncModel(IncrementalLearner):
         # save_path = os.path.join(os.getcwd(), f"ckpts/mem/mem_step{self._task}.ckpt")
         if self._cfg["load_mem"] and os.path.exists(save_path):
             memory_states = torch.load(save_path)
-            self._inc_dataset.data_memory = memory_states['x']
-            self._inc_dataset.targets_memory = memory_states['y']
+            data_memory = memory_states['x']
+            targets_memory = memory_states['y']
+            memory_dict = {}
+            for class_i in set(targets_memory):
+                memory_dict[class_i] = data_memory[targets_memory == class_i]
+            self._inc_dataset.memory_dict = memory_dict
             self._herding_matrix = memory_states['herding']
             self._ex.logger.info(f"Load saved step{self._task} memory!")
             return
