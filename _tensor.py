@@ -49,19 +49,28 @@ def _rebuild_from_type(func, type, args, dict):
 # otherwise, it will not show up in autocomplete.
 class Tensor(torch._C._TensorBase):
     def __deepcopy__(self, memo):
-        if has_torch_function_unary(self):
-            return handle_torch_function(Tensor.__deepcopy__, (self,), self, memo)
+        from torch.overrides import has_torch_function, handle_torch_function
+        relevant_args = (self,)
+        if type(self) is not Tensor and has_torch_function(relevant_args):
+            return handle_torch_function(Tensor.__deepcopy__, relevant_args, self, memo)
         if not self.is_leaf:
-            raise RuntimeError("Only Tensors created explicitly by the user "
-                               "(graph leaves) support the deepcopy protocol at the moment")
+            if id(self) in memo:
+                return memo[id(self)]
+            if self.is_sparse:
+                new_tensor = self.clone()
+            else:
+                new_storage = self.storage().__deepcopy__(memo)
+                new_tensor = self.new()
+                new_tensor.set_(new_storage, self.storage_offset(), self.size(), self.stride())
+            new_tensor.requires_grad = self.requires_grad
+            if self.grad is not None:
+                new_tensor.grad = self.grad.__deepcopy__(memo)
+            memo[id(self)] = new_tensor
+            return new_tensor
         if id(self) in memo:
             return memo[id(self)]
         with torch.no_grad():
-            # TODO: skipping storage copy is wrong for meta, as meta
-            # does accurate alias tracking; however, the code below
-            # doesn't work because of
-            # https://github.com/pytorch/pytorch/issues/47442
-            if self.is_sparse or self.device.type in ['xla', 'mlc', 'meta']:
+            if self.is_sparse or self.device.type == 'xla':
                 new_tensor = self.clone()
             else:
                 new_storage = self.storage().__deepcopy__(memo)
@@ -89,8 +98,6 @@ class Tensor(torch._C._TensorBase):
                     new_tensor = self.new()
                     new_tensor.set_(new_storage, self.storage_offset(), self.size(), self.stride())
                     new_tensor.requires_grad = self.requires_grad
-            if self.grad is not None:
-                new_tensor.grad = self.grad.__deepcopy__(memo)
             memo[id(self)] = new_tensor
             return new_tensor
 
