@@ -1,5 +1,5 @@
 exp:
-  name: "test_ori_before_decouple"
+  name: "test_before_decouple"
   load_model_name: 'der_all7'
   debug: False
 
