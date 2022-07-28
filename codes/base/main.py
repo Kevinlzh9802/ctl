@@ -95,20 +95,20 @@ def _train(cfg, _run, exp, tensorboard):
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts2/step{task_i}.ckpt")
             model._parallel_network.load_state_dict(state_dict)
 
-        # model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
-        #     "acc_details": True,
-        #     "acc_aux_details": True,
-        #     "preds_details": True,
-        #     "preds_aux_details": True
-        # })
+        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
+            "acc_details": True,
+            "acc_aux_details": True,
+            "preds_details": True,
+            "preds_aux_details": True
+        })
         model.after_task(inc_dataset)
 
-        # model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
-        #     "acc_details": True,
-        #     "acc_aux_details": True,
-        #     "preds_details": True,
-        #     "preds_aux_details": True
-        # })
+        model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
+            "acc_details": True,
+            "acc_aux_details": True,
+            "preds_details": True,
+            "preds_aux_details": True
+        })
 
     # if cfg["exp"]["name"]:
     #     results_utils.save_results(results, cfg["exp"]["name"])

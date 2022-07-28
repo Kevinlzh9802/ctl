@@ -499,6 +499,9 @@ class IncModel(IncrementalLearner):
 
         self._parallel_network.eval()
 
+        a1, b1 = np.unique(data_loader.dataset.y, return_counts=True)
+        print(a1)
+        print(b1)
         with torch.no_grad():
             for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
