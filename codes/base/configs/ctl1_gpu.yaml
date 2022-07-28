@@ -1,5 +1,5 @@
 exp:
-  name: "test"
+  name: "test_ori"
   load_model_name: 'der_all7'
   debug: False
 
