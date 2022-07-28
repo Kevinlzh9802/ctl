@@ -211,6 +211,10 @@ class IncModel(IncrementalLearner):
         print(b1)
         self._ex.logger.info(f"nb {len(train_loader.dataset)}")
 
+        # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "Initial trainset")
+        utils.display_feature_norm(self._ex.logger, self._parallel_network, train_loader, self._n_classes,
+                                   self._increments, "Initial trainset")
+
         self._optimizer.zero_grad()
         self._optimizer.step()
 
