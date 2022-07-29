@@ -424,11 +424,7 @@ class IncModel(IncrementalLearner):
 
             # finetuning
             # only hiernet on cuda needs .module
-            if self._cfg["taxonomy"] and self._device.type == 'cuda':
-                self._parallel_network.module.classifier.module.reset_parameters()
-            else:
-                self._parallel_network.module.classifier.reset_parameters()
-
+            self._network.classifier.reset_parameters()
             finetune_last_layer(self._ex.logger,
                                 self._parallel_network,
                                 train_loader,
