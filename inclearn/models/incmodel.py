@@ -240,6 +240,7 @@ class IncModel(IncrementalLearner):
                         self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
+                    self._parallel_network.to(self._device)
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
