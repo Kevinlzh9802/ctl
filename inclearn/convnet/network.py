@@ -133,11 +133,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             self.convnets.append(new_net)
 
         new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
-        if self.device.type == 'cuda':
-            print(new_clf)
-            new_clf = new_clf.module
-            print(new_clf)
-
         if self.taxonomy:
             if self.classifier is not None and self.reuse_oldfc:
                 # weight = copy.deepcopy(self.classifier.weight.data)
@@ -147,7 +142,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                     for j in range(old_clf.cur_task):
                         fc_old = getattr(old_clf, f'N{k}TF{j}', None)
                         fc_new = getattr(new_clf, f'N{k}TF{j}', None)
-                        print(new_clf)
                         assert fc_old is not None
                         assert fc_new is not None
                         weight = copy.deepcopy(fc_old.weight.data)
@@ -201,7 +195,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
                 if self.device.type == 'cuda':
                     model_cls = get_model(model_dict, self.used_nodes).cuda()
-                    model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
+                    # model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
                 else:
                     model_cls = get_model(model_dict, self.used_nodes)
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
