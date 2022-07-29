@@ -1,6 +1,6 @@
 exp:
-  name: "test_before_decouple"
-  load_model_name: 'der_all7'
+  name: "der_deep_rtc_reuse"
+  load_model_name: 'der_deep_rtc_reuse'
   debug: False
 
 # Model Cfg
