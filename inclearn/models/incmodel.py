@@ -234,7 +234,10 @@ class IncModel(IncrementalLearner):
             if self._warmup:
                 self._warmup_scheduler.step()
                 if epoch == self._cfg['warmup_epochs']:
-                    self._network.classifier.reset_parameters()
+                    if self._cfg["taxonomy"] and self._device.type == 'cuda':
+                        self._parallel_network.module.classifier.module.reset_parameters()
+                    else:
+                        self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
             for i, data in enumerate(train_loader, start=1):

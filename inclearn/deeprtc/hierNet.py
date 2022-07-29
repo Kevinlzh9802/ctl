@@ -10,17 +10,21 @@ class HierNet(nn.Module):
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
-
+        self.cur_task = int(input_size / 512)
         for i in range(self.num_nodes):
-            self.add_module('fc{}'.format(i), nn.Linear(input_size, len(nodes[i].children)))
+            for j in range(self.cur_task):
+                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(nodes[i].children)))
 
     def forward(self, x, gate=None, pred=False, thres=0):
         if pred is False:
             # for training
             nout = []
             for i in range(self.num_nodes):
-                fc_layers = getattr(self, 'fc{}'.format(i))
-                nout.append(fc_layers(x)/5)
+                prod = 0.0
+                for j in range(self.cur_task):
+                    fc_layers = getattr(self, f'N{i}TF{j}')
+                    prod += fc_layers(x[:, 512 * j: 512 * (j + 1)])
+                nout.append(prod / 5)
 
             outs = []
             out_masks = []

@@ -10,7 +10,7 @@ model_pivot:
   arch: pivot
   dropout_rate: 0.0
 convnet: 'resnet18'  # modified_resnet32, resnet18
-taxonomy: # rtc for Real Taxonomic Classifier
+taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
@@ -42,7 +42,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 12
 resampling: False
 warmup: True
 warmup_epochs: 10
@@ -70,7 +70,7 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 50
+  epochs: 2
   fullset: False
   lr: 0.05
   scheduling:
@@ -93,7 +93,7 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: 1
+trial: 5
 increment: 10
 batch_size: 128
 

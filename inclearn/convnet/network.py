@@ -140,9 +140,16 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 # fc.weight.data[:self.n_classes, :self.out_dim * (len(self.convnets) - 1)] = weight
                 old_cls = self.classifier
                 for k in range(old_cls.num_nodes):
-                    fc_old = getattr(old_cls, 'fc{}'.format(k))
-                    fc_new = getattr(fc, 'fc{}'.format(k))
-                pass
+                    for j in range(self.current_task):
+                        fc_old = getattr(old_cls, f'N{k}TF{j}', None)
+                        fc_new = getattr(fc, f'N{k}TF{j}', None)
+                        if fc_old is not None:
+                            weight = copy.deepcopy(fc_old.weight.data)
+                            fc_new.weight.data = weight
+                            for param in fc_new.parameters():
+                                param.requires_grad = False
+                            fc_new.eval()
+                    c = 9
         else:
             if self.classifier is not None and self.reuse_oldfc:
                 weight = copy.deepcopy(self.classifier.weight.data)

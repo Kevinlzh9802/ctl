@@ -8,7 +8,6 @@ import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchvision import datasets, transforms
 
 from .dataset import get_dataset
