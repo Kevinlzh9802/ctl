@@ -44,8 +44,8 @@ lr_decay: 0.1
 optimizer: "sgd"
 epochs: 2
 resampling: False
-warmup: False
-warmup_epochs: 10
+warmup: True
+warmup_epochs: 2
 sample_rate: 0.3
 retrain_from_task: 0
 

@@ -230,21 +230,15 @@ class IncModel(IncrementalLearner):
 
             if self._warmup:
                 self._warmup_scheduler.step()
-                print(self._network.device)
-                print(self._parallel_network.device_ids)
                 if epoch == self._cfg['warmup_epochs']:
                     # print(self._network)
                     # print(self._parallel_network)
-                    # self._parallel_network.to(self._device)
-                    # print(self._network)
-                    # print(self._parallel_network)
-                    # print('end')
                     self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
-                        print('in epoch warmup')
-                        print(self._network.device)
-                        print(self._parallel_network.device_ids)
+
+                    self._parallel_network.to(self._device)
+                    print(self._parallel_network)
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
