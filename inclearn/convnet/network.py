@@ -124,25 +124,28 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             all_classes = self.n_classes + n_classes
 
         if self.current_task > 0:
-            new_clf = factory.get_convnet(self.convnet_type,
+            new_net = factory.get_convnet(self.convnet_type,
                                           nf=self.nf,
                                           dataset=self.dataset,
                                           start_class=self.start_class,
                                           remove_last_relu=self.remove_last_relu).to(self.device)
-            new_clf.load_state_dict(self.convnets[-1].state_dict())
-            self.convnets.append(new_clf)
+            new_net.load_state_dict(self.convnets[-1].state_dict())
+            self.convnets.append(new_net)
 
-        fc = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
+        new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
 
         if self.taxonomy:
             if self.classifier is not None and self.reuse_oldfc:
                 # weight = copy.deepcopy(self.classifier.weight.data)
                 # fc.weight.data[:self.n_classes, :self.out_dim * (len(self.convnets) - 1)] = weight
-                old_cls = self.classifier
-                for k in range(old_cls.num_nodes):
+                if self.device.type == 'cuda':
+                    old_clf = self.classifier.module
+                else:
+                    old_clf = self.classifier
+                for k in range(old_clf.num_nodes):
                     for j in range(self.current_task):
-                        fc_old = getattr(old_cls, f'N{k}TF{j}', None)
-                        fc_new = getattr(fc, f'N{k}TF{j}', None)
+                        fc_old = getattr(old_clf, f'N{k}TF{j}', None)
+                        fc_new = getattr(new_clf, f'N{k}TF{j}', None)
                         if fc_old is not None:
                             weight = copy.deepcopy(fc_old.weight.data)
                             fc_new.weight.data = weight
@@ -152,10 +155,10 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         else:
             if self.classifier is not None and self.reuse_oldfc:
                 weight = copy.deepcopy(self.classifier.weight.data)
-                fc.weight.data[:self.n_classes, :self.out_dim * (len(self.convnets) - 1)] = weight
+                new_clf.weight.data[:self.n_classes, :self.out_dim * (len(self.convnets) - 1)] = weight
 
         del self.classifier
-        self.classifier = fc
+        self.classifier = new_clf
 
         if self.aux_nplus1:
             # aux_fc = self._gen_classifier(self.out_dim, n_classes + 1)
