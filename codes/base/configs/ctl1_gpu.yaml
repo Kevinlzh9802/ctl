@@ -42,7 +42,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 12
+epochs: 2
 resampling: False
 warmup: True
 warmup_epochs: 10
