@@ -133,8 +133,9 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             self.convnets.append(new_net)
 
         new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
-        # if self.device.type == 'cuda':
-        #     new_clf = new_clf.module
+        if self.device.type == 'cuda':
+            print(new_clf)
+            new_clf = new_clf.module
 
         if self.taxonomy:
             if self.classifier is not None and self.reuse_oldfc:
