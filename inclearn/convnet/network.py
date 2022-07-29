@@ -149,7 +149,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                             for param in fc_new.parameters():
                                 param.requires_grad = False
                             fc_new.eval()
-                    c = 9
         else:
             if self.classifier is not None and self.reuse_oldfc:
                 weight = copy.deepcopy(self.classifier.weight.data)
