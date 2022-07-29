@@ -133,8 +133,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             self.convnets.append(new_net)
 
         new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
-        if self.device.type == 'cuda':
-            new_clf = new_clf.module
+        # if self.device.type == 'cuda':
+        #     new_clf = new_clf.module
 
         if self.taxonomy:
             if self.classifier is not None and self.reuse_oldfc:
@@ -148,6 +148,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                     for j in range(old_clf.cur_task):
                         fc_old = getattr(old_clf, f'N{k}TF{j}', None)
                         fc_new = getattr(new_clf, f'N{k}TF{j}', None)
+                        print(k)
+                        print(j)
                         assert fc_old is not None
                         assert fc_new is not None
                         weight = copy.deepcopy(fc_old.weight.data)
