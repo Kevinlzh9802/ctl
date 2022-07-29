@@ -13,7 +13,7 @@ class HierNet(nn.Module):
         self.cur_task = int(input_size / 512)
         for i in range(self.num_nodes):
             for j in range(self.cur_task):
-                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(nodes[i].children)))
+                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
 
     def forward(self, x, gate=None, pred=False, thres=0):
         if pred is False:
@@ -87,7 +87,8 @@ class HierNet(nn.Module):
 
     def reset_parameters(self):
         for i in range(self.num_nodes):
-            self.add_module('fc{}'.format(i), nn.Linear(self.input_size, len(self.nodes[i].children)))
+            for j in range(self.cur_task):
+                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
         return
 
 

@@ -238,7 +238,6 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
 
                     self._parallel_network.to(self._device)
-                    print(self._parallel_network)
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
