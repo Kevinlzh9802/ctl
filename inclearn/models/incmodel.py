@@ -206,9 +206,6 @@ class IncModel(IncrementalLearner):
     def _train_task(self):
         train_loader = self._cur_train_loader
         val_loader = self._cur_val_loader
-        a1, b1 = np.unique(train_loader.dataset.y, return_counts=True)
-        print(a1)
-        print(b1)
         self._ex.logger.info(f"nb {len(train_loader.dataset)}")
 
         # utils.display_weight_norm(self._ex.logger, self._parallel_network, self._increments, "Initial trainset")
@@ -240,7 +237,12 @@ class IncModel(IncrementalLearner):
                         self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
+                    print(self._network)
+                    print(self._parallel_network)
                     self._parallel_network.to(self._device)
+                    print(self._network)
+                    print(self._parallel_network)
+                    print('end')
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
