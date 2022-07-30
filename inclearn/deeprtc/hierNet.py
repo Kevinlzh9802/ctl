@@ -29,10 +29,10 @@ class HierNet(nn.Module):
             outs = []
             out_masks = []
             # root node (no dependency to other nodes)
-            cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
-            outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
+            # cw = torch.from_numpy(self.nodes[0].codeword).float().to(nout[0].device)
+            # outs.append(torch.matmul(nout[0], cw) * gate[:, 0].view(-1, 1))
             # other internal nodes
-            for i in range(1, self.num_nodes):
+            for i in range(self.num_nodes):
                 cw = torch.from_numpy(self.nodes[i].codeword).float().to(nout[i].device)
                 cond = self.nodes[i].cond
                 cond_gate = torch.ones([x.size(0), 1]).to(nout[i].device)
@@ -44,7 +44,7 @@ class HierNet(nn.Module):
                 mask = torch.clamp(torch.from_numpy(self.nodes[i].mask).float().to(nout[i].device), 1e-17, 1)
                 out_masks.append(torch.log(mask) * (1 - gate[:, i].view(-1, 1)))
 
-            self.output = torch.sum(torch.stack(outs[1:]), 0)
+            self.output = torch.sum(torch.stack(outs[:]), 0)
             out_mask = torch.eq(torch.sum(torch.stack(out_masks), 0), 0).float()
             self.sfmx_base = torch.sum(torch.exp(self.output) * out_mask, 1)
 
@@ -82,13 +82,15 @@ class HierNet(nn.Module):
                 outs.append(torch.matmul(nout[i], cw) * cond_gate * gate[:, i].view(-1, 1))
 
             self.output = torch.sum(torch.stack(outs), 0)
-
             return self.output, nout
 
     def reset_parameters(self):
+        j = self.cur_task - 1
         for i in range(self.num_nodes):
-            for j in range(self.cur_task):
-                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
+            self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
+        i = self.num_nodes - 1
+        for j in range(self.num_nodes):
+            self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
         return
 
 

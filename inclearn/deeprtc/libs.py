@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 
 class TreeNode:
@@ -47,7 +47,7 @@ class TreeNode:
 
 
 class Tree:
-    def __init__(self, dataset_name, label_dict_hier=None, label_dict_index=None):
+    def __init__(self, dataset_name, label_dict_hier=None, label_dict_index=None, node_order=None):
         if label_dict_index is None:
             label_dict_index = {}
         if label_dict_hier is None:
@@ -57,7 +57,8 @@ class Tree:
         self.label_dict_index = label_dict_index
         """For the root node, attach a child node with name of the dataset. root.depth=0, dataset.depth=1."""
         self._setup_root_nodes()
-        self._buildTree(self.data_root, label_dict_hier, label_dict_index)
+        # self._buildTree(self.data_root, label_dict_hier, label_dict_index)
+        self._buildTree(self.root, label_dict_hier, label_dict_index, node_order)
         self.max_depth = max(n.depth for n in self.nodes.values())  # including root(0) and datasets(1)
         self.dict_depth = self.max_depth - 1
 
@@ -79,12 +80,12 @@ class Tree:
             used_nodes[n_id] = self.nodes.get(name).copy()
             used_nodes[n_id].codeword = self.get_codeword(name)
             # generate mask for internal nodes other than root node
-            if n_id > 0:
-                n_cw = self.nodes.get(name).codeword
-                idx = n_cw.tolist().index(1)
-                used_nodes[n_id].mask = 1 - n_cw
-                assert used_nodes[n_id].mask[idx] == 0
-                used_nodes[n_id].mask[idx] = 1
+            # if n_id > 0:
+            n_cw = self.nodes.get(name).codeword
+            idx = n_cw.tolist().index(1)
+            used_nodes[n_id].mask = 1 - n_cw
+            assert used_nodes[n_id].mask[idx] == 0
+            used_nodes[n_id].mask[idx] = 1
         # print('number of used nodes: {}'.format(len(used_nodes)))
 
         # save leaf nodes
@@ -113,11 +114,13 @@ class Tree:
 
     def _setup_root_nodes(self):
         self.root = TreeNode('root', 'root', 0, 0)
-        self.root.add_child('data_root')
-        self.data_root = TreeNode('data_root', self.dataset_name, 1, 1, child_idx=1, parent='root')
-        self.nodes = {'root': self.root, 'data_root': self.data_root}
+        # self.root.add_child('data_root')
+        # self.data_root = TreeNode('data_root', self.dataset_name, 1, 1, child_idx=1, parent='root')
+        # self.nodes = {'root': self.root, 'data_root': self.data_root}
+        self.nodes = {'root': self.root}
 
-    def _buildTree(self, root, label_dict_hier, label_dict_index):
+    def _buildTree(self, root, label_dict_hier, label_dict_index, node_order=None):
+        c = 9
         for child_name in sorted(list(label_dict_hier.keys())):
             root.add_child(child_name)
             child = TreeNode(child_name, label_dict_index[child_name], root.depth + 1, len(self.nodes),
@@ -221,7 +224,8 @@ class Tree:
         node = self.nodes.get(node_name)
         if not node:
             raise ValueError('{} is not in the tree'.format(node_name))
-        if node.depth == 0 or node.depth == 1:
+        # if node.depth == 0 or node.depth == 1:
+        if node.depth == 0:
             finest_nodes_name = list(self.leaf_nodes.values())
         elif len(node.children) == 0:
             finest_nodes_name = [node.name]
@@ -250,10 +254,19 @@ class Tree:
             parent_label_index_list.append(node_i.label_index)
         return parent_name_list, parent_label_index_list
 
-    def gen_partial_tree(self, name_list):
-        partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
-        tree = Tree(self.dataset_name, partial_dict, self.label_dict_index)
+    def gen_partial_tree(self, task_until_now):
+        name_list = list(np.array(task_until_now).flatten())
+        parent_node_order = [self.get_task_parent(x) for x in task_until_now]
+        parent_node_order.pop(0)
+        if len(parent_node_order) == 0:
+            partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
+        else:
+            partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
+        tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
         return tree
+
+    def get_task_parent(self, name_list):
+        return [self.nodes.get(x).parent for x in name_list][0]
 
 
 def write_file(file_name, data_list):
@@ -262,9 +275,14 @@ def write_file(file_name, data_list):
             f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
 
 
-def partial_copy_dict(dict_full, name_list):
-    dict_part = {}
-    for name in dict_full.keys():
-        if name in name_list:
-            dict_part[name] = partial_copy_dict(dict_full[name], name_list)
+def partial_copy_dict(dict_full, name_list, key_order=None):
+    dict_part = OrderedDict()
+    if key_order is None:
+        for name in dict_full.keys():
+            if name in name_list:
+                dict_part[name] = partial_copy_dict(dict_full[name], name_list)
+    else:
+        c = 9
+        for x in key_order:
+            dict_part[x] = dict_full[x]
     return dict_part

@@ -66,6 +66,7 @@ class IncrementalDataset:
         self._setup_curriculum(dataset_class)
         self._current_task = 0
         self.taxonomy_tree = dataset_class.taxonomy_tree
+        self.current_ordered_dict = OrderedDict()
 
         # memory Mt
         # self.data_memory = None
@@ -113,12 +114,16 @@ class IncrementalDataset:
         val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
-        cur_names = list(np.concatenate(self.curriculum[:self._current_task + 1]).flatten())
+        task_until_now = self.curriculum[:self._current_task + 1]
+        cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])[0]
+        parent_node_order = [self.taxonomy_tree.get_task_parent(x) for x in task_until_now]
+        self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
+        c = 9
         task_info = {
             "task": self._current_task,
             "task_size": len(self.curriculum[self._current_task]),
             "full_tree": self.taxonomy_tree,
-            "partial_tree": self.taxonomy_tree.gen_partial_tree(cur_names),
+            "partial_tree": self.taxonomy_tree.gen_partial_tree(task_until_now),
             "n_train_data": len(x_train),
             "n_test_data": len(y_train),
         }
