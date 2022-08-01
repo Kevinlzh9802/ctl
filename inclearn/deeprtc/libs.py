@@ -121,7 +121,7 @@ class Tree:
 
     def _buildTree(self, root, label_dict_hier, label_dict_index, node_order=None):
         c = 9
-        for child_name in sorted(list(label_dict_hier.keys())):
+        for child_name in label_dict_hier.keys():
             root.add_child(child_name)
             child = TreeNode(child_name, label_dict_index[child_name], root.depth + 1, len(self.nodes),
                              len(root.children), root.name)
@@ -285,4 +285,7 @@ def partial_copy_dict(dict_full, name_list, key_order=None):
         c = 9
         for x in key_order:
             dict_part[x] = dict_full[x]
+        for x in dict_full.keys():
+            if x not in dict_part.keys():
+                dict_part[x] = {}
     return dict_part
