@@ -142,8 +142,9 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                         fc_new = getattr(new_clf, f'N{k}TF{j}', None)
                         assert fc_old is not None
                         assert fc_new is not None
-                        weight = copy.deepcopy(fc_old.weight.data)
-                        fc_new.weight.data = weight
+                        # weight = copy.deepcopy(fc_old.weight.data)
+                        fc_new.weight.data = copy.deepcopy(fc_old.weight.data)
+                        fc_new.bias.data = copy.deepcopy(fc_old.bias.data)
                         for param in fc_new.parameters():
                             param.requires_grad = False
                         fc_new.eval()

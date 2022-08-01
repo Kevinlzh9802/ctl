@@ -231,8 +231,6 @@ class IncModel(IncrementalLearner):
             if self._warmup:
                 self._warmup_scheduler.step()
                 if epoch == self._cfg['warmup_epochs']:
-                    # print(self._network)
-                    # print(self._parallel_network)
                     self._network.classifier.reset_parameters()
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
