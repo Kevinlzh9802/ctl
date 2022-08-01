@@ -80,6 +80,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         if self.taxonomy is not None:
             gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
             # gate[:, 0] = 1
+            print(features)
             output, nout, sfmx_base = self.classifier(x=features, gate=gate)
             # logits = self.classifier(features)
         else:
