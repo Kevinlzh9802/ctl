@@ -42,10 +42,10 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 4
+epochs: 170
 resampling: False
 warmup: True
-warmup_epochs: 2
+warmup_epochs: 10
 sample_rate: 0.3
 retrain_from_task: 0
 
@@ -70,7 +70,7 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 2
+  epochs: 50
   fullset: False
   lr: 0.05
   scheduling:
