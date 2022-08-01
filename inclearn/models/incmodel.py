@@ -355,7 +355,7 @@ class IncModel(IncrementalLearner):
 
             nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
             nlosses.update(nloss.item(), batch_size)
-            print(nloss)
+            # print(nloss)
 
             gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
             stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
