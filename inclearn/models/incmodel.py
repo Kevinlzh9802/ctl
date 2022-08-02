@@ -275,8 +275,8 @@ class IncModel(IncrementalLearner):
                 _loss_aux += loss_aux
                 _ce_loss += ce_loss
                 _total_loss += total_loss
-                
-                print(ce_loss == np.nan)
+
+                print(ce_loss)
                 if ce_loss == np.nan:
                     a = self._optimizer.param_groups[0]['params']
                     for x in len(a):
