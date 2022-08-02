@@ -276,13 +276,13 @@ class IncModel(IncrementalLearner):
                 _ce_loss += ce_loss
                 _total_loss += total_loss
 
-                print(ce_loss)
-                if ce_loss == np.nan:
-                    a = self._optimizer.param_groups[0]['params']
-                    for x in len(a):
-                        if any(a[x] == np.nan):
-                            print(x)
-                            print(a[x])
+                # print(ce_loss)
+                # if sum(torch.isnan(ce_loss)) > 0:
+                #     a = self._optimizer.param_groups[0]['params']
+                #     for x in len(a):
+                #         if any(a[x] == np.nan):
+                #             print(x)
+                #             print(a[x])
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
@@ -513,9 +513,6 @@ class IncModel(IncrementalLearner):
 
         self._parallel_network.eval()
 
-        a1, b1 = np.unique(data_loader.dataset.y, return_counts=True)
-        print(a1)
-        print(b1)
         with torch.no_grad():
             for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)

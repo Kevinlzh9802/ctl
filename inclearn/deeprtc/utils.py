@@ -6,8 +6,8 @@ from ..datasets.data import tgt_to_tgt0
 def deep_rtc_nloss(nout, targets, leaf_id, node_labels, device):
     criterion = torch.nn.CrossEntropyLoss(reduction='none')
     nloss = []
-    # print(nout)
-    # print(targets)
+    print(nout)
+    print(targets)
     for idx in range(targets.size(0)):
         index = targets.cpu().numpy()[idx]
         if index in leaf_id.keys():
