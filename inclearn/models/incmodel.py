@@ -283,7 +283,7 @@ class IncModel(IncrementalLearner):
                     for x in range(len(a)):
                         if torch.sum(torch.isnan(a[x]) > 0):
                             print(x)
-                            print(a[x])
+                            print(a[x].grad)
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
