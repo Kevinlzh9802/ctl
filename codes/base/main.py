@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 from easydict import EasyDict as edict
 from tensorboardX import SummaryWriter
+from copy import deepcopy
 
 repo_name = 'ctl'
 base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name)]
@@ -90,6 +91,9 @@ def _train(cfg, _run, exp, tensorboard):
 
         if task_i >= cfg['retrain_from_task']:
             model.train_task()
+            network = deepcopy(model._parallel_network)
+            network.eval()
+            torch.save(model._network.cpu().state_dict(), "{}/step{}.ckpt".format(model.sp['model'], model._task))
         else:
             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
