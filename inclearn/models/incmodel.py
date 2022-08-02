@@ -281,7 +281,7 @@ class IncModel(IncrementalLearner):
                 if count >= 20:
                     a = self._optimizer.param_groups[0]['params']
                     for x in range(len(a)):
-                        if any(a[x] == np.nan):
+                        if sum(torch.isnan(a[x]) > 0):
                             print(x)
                             print(a[x])
 
