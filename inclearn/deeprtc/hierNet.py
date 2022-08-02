@@ -5,12 +5,13 @@ from torch import nn
 
 class HierNet(nn.Module):
     """Module of hierarchical classifier"""
-    def __init__(self, input_size, nodes):
+    def __init__(self, input_size, nodes, reuse=False):
         super(HierNet, self).__init__()
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
         self.cur_task = int(input_size / 512)
+        self.reuse_old = reuse
         for i in range(self.num_nodes):
             for j in range(self.cur_task):
                 self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
@@ -85,12 +86,17 @@ class HierNet(nn.Module):
             return self.output, nout
 
     def reset_parameters(self):
-        j = self.cur_task - 1
-        for i in range(self.num_nodes):
-            self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
-        i = self.num_nodes - 1
-        for j in range(self.num_nodes):
-            self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
+        if self.reuse_old:
+            j = self.cur_task - 1
+            for i in range(self.num_nodes):
+                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
+            i = self.num_nodes - 1
+            for j in range(self.num_nodes):
+                self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
+        else:
+            for i in range(self.num_nodes):
+                for j in range(self.num_nodes):
+                    self.add_module(f'N{i}TF{j}', nn.Linear(512, len(self.nodes[i].children)))
         return
 
 

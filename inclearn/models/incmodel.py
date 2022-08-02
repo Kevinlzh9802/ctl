@@ -255,7 +255,16 @@ class IncModel(IncrementalLearner):
                     total_loss = ce_loss
 
                 total_loss.backward()
+
+                # if self._task == 1:
+                #     a = self._network.classifier.N0TF1.weight
+                #     print(a)
+                #     print(a.grad)
+                #     print(a - 0.1 * a.grad)
                 self._optimizer.step()
+                # if self._task == 1:
+                #     b = self._network.classifier.N0TF1.weight
+                #     print(b)
 
                 if self._cfg["postprocessor"]["enable"]:
                     if self._cfg["postprocessor"]["type"].lower() == "wa":
@@ -266,6 +275,14 @@ class IncModel(IncrementalLearner):
                 _loss_aux += loss_aux
                 _ce_loss += ce_loss
                 _total_loss += total_loss
+
+                if ce_loss == np.nan:
+                    a = self._optimizer.param_groups[0]['params']
+                    for x in len(a):
+                        if any(a[x] == np.nan):
+                            print(x)
+                            print(a[x])
+
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
             _total_loss = _total_loss.item()
