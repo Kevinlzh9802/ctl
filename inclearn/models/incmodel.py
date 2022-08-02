@@ -255,9 +255,10 @@ class IncModel(IncrementalLearner):
                 else:
                     total_loss = ce_loss
 
-                if total_loss < 0:
-                    print(loss_aux)
-                    print(ce_loss)
+                if ce_loss < 0:
+                    print('ce_loss: ', ce_loss)
+                if loss_aux < 0:
+                    print('loss_aux: ', loss_aux)
                     a = self._optimizer.param_groups[0]['params']
                     for x in range(len(a)):
                         if torch.sum(torch.isnan(a[x]) > 0):
@@ -389,9 +390,10 @@ class IncModel(IncrementalLearner):
 
             loss = nloss + stsloss * 1
             losses.update(loss.item(), batch_size)
-            if loss < 0:
-                print(nloss)
-                print(stsloss)
+            if nloss < 0:
+                print('nloss: ', nloss)
+            if stsloss < 0:
+                print('stsloss: ', stsloss)
         else:
             output = outputs['output']
             aux_output = outputs['aux_logit']
