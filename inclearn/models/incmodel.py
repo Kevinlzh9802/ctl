@@ -257,15 +257,14 @@ class IncModel(IncrementalLearner):
 
                 total_loss.backward()
 
-                # if self._task == 1:
-                #     a = self._network.classifier.N0TF1.weight
-                #     print(a)
-                #     print(a.grad)
-                #     print(a - 0.1 * a.grad)
+                a = self._optimizer.param_groups[0]['params']
+                for x in range(len(a)):
+                    if torch.sum(torch.isnan(a[x].grad) > 0):
+                        print(x)
+                        print(a[x].grad)
+                        print(total_loss)
+
                 self._optimizer.step()
-                # if self._task == 1:
-                #     b = self._network.classifier.N0TF1.weight
-                #     print(b)
 
                 if self._cfg["postprocessor"]["enable"]:
                     if self._cfg["postprocessor"]["type"].lower() == "wa":
@@ -277,12 +276,12 @@ class IncModel(IncrementalLearner):
                 _ce_loss += ce_loss
                 _total_loss += total_loss
                 count += 1
-
-                a = self._optimizer.param_groups[0]['params']
-                for x in range(len(a)):
-                    if torch.sum(torch.isnan(a[x]) > 0):
-                        print(x)
-                        print(a[x].grad)
+                #
+                # a = self._optimizer.param_groups[0]['params']
+                # for x in range(len(a)):
+                #     if torch.sum(torch.isnan(a[x]) > 0):
+                #         print(x)
+                #         print(a[x].grad)
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
