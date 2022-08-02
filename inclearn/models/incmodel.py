@@ -236,6 +236,7 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
 
                     self._parallel_network.to(self._device)
+            count = 0
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
@@ -275,14 +276,14 @@ class IncModel(IncrementalLearner):
                 _loss_aux += loss_aux
                 _ce_loss += ce_loss
                 _total_loss += total_loss
+                count += 1
 
-                # print(ce_loss)
-                # if sum(torch.isnan(ce_loss)) > 0:
-                #     a = self._optimizer.param_groups[0]['params']
-                #     for x in len(a):
-                #         if any(a[x] == np.nan):
-                #             print(x)
-                #             print(a[x])
+                if count == 21:
+                    a = self._optimizer.param_groups[0]['params']
+                    for x in len(a):
+                        if any(a[x] == np.nan):
+                            print(x)
+                            print(a[x])
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
