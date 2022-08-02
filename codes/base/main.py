@@ -94,9 +94,12 @@ def _train(cfg, _run, exp, tensorboard):
             # network = deepcopy(model._parallel_network)
             # network.eval()
             # torch.save(model._network.cpu().state_dict(), "{}/step{}.ckpt".format(model.sp['model'], model._task))
-        else:
+        elif task_i >= 1:
             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
+            model._parallel_network.load_state_dict(state_dict)
+        else:
+            state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
             model._parallel_network.load_state_dict(state_dict)
 
         if cfg['device'].type == 'cuda':
