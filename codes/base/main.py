@@ -90,10 +90,9 @@ def _train(cfg, _run, exp, tensorboard):
         model.before_task(inc_dataset)
 
         if task_i >= cfg['retrain_from_task']:
-            model.train_task()
-            # network = deepcopy(model._parallel_network)
-            # network.eval()
-            # torch.save(model._network.cpu().state_dict(), "{}/step{}.ckpt".format(model.sp['model'], model._task))
+            # model.train_task()
+            state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
+            model._parallel_network.load_state_dict(state_dict)
         elif task_i >= 1:
             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
@@ -172,8 +171,8 @@ def test(_run, _rnd, _seed):
     for task_i in range(inc_dataset.n_tasks):
         model.new_task()
         model.before_task(inc_dataset)
-        if task_i >= 1:
-            model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts/step{task_i}.ckpt'
+        if task_i == 20:
+            model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts/decouple_step{task_i}.ckpt'
             state_dict = torch.load(model_path)
             # state_dict = torch.load(f'../../../cyz_codes/ctl/codes/base/ckpts/step{task_i}.ckpt')
             model._parallel_network.load_state_dict(state_dict)
