@@ -278,9 +278,9 @@ class IncModel(IncrementalLearner):
                 _total_loss += total_loss
                 count += 1
 
-                if count == 21:
+                if count >= 20:
                     a = self._optimizer.param_groups[0]['params']
-                    for x in len(a):
+                    for x in range(len(a)):
                         if any(a[x] == np.nan):
                             print(x)
                             print(a[x])
