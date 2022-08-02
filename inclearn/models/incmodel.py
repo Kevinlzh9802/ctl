@@ -438,7 +438,7 @@ class IncModel(IncrementalLearner):
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
-        if self._cfg["save_ckpt"] and taski >= self._cfg["start_task"]:
+        if self._cfg["save_ckpt"] and taski >= self._train_from_task:
             # save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.sp['model'], self._task))
 
