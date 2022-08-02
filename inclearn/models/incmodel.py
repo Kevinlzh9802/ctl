@@ -256,7 +256,8 @@ class IncModel(IncrementalLearner):
                     total_loss = ce_loss
 
                 if total_loss < 0:
-                    print(total_loss)
+                    print(loss_aux)
+                    print(ce_loss)
                     a = self._optimizer.param_groups[0]['params']
                     for x in range(len(a)):
                         if torch.sum(torch.isnan(a[x]) > 0):
