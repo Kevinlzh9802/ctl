@@ -251,7 +251,7 @@ class IncModel(IncrementalLearner):
                 #     self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
 
                 if self._cfg["use_aux_cls"] and self._task > 0:
-                    total_loss = loss_aux + ce_loss
+                    total_loss = ce_loss + loss_aux
                 else:
                     total_loss = ce_loss
 
