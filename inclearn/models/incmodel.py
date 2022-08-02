@@ -278,12 +278,11 @@ class IncModel(IncrementalLearner):
                 _total_loss += total_loss
                 count += 1
 
-                if count >= 20:
-                    a = self._optimizer.param_groups[0]['params']
-                    for x in range(len(a)):
-                        if torch.sum(torch.isnan(a[x]) > 0):
-                            print(x)
-                            print(a[x].grad)
+                a = self._optimizer.param_groups[0]['params']
+                for x in range(len(a)):
+                    if torch.sum(torch.isnan(a[x]) > 0):
+                        print(x)
+                        print(a[x].grad)
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
