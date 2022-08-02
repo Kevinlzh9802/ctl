@@ -388,10 +388,8 @@ class IncModel(IncrementalLearner):
             stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
             stslosses.update(stsloss.item(), batch_size)
 
-            loss = nloss + stsloss * 1
+            loss = nloss + stsloss * 0
             losses.update(loss.item(), batch_size)
-            if nloss < 0:
-                print('nloss: ', nloss)
             if stsloss < 0:
                 print('stsloss: ', stsloss)
         else:
