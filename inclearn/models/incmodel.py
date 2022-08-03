@@ -438,7 +438,7 @@ class IncModel(IncrementalLearner):
         network = deepcopy(self._parallel_network)
         network.eval()
         self._ex.logger.info("save model")
-        if self._cfg["save_ckpt"] and taski >= self._train_from_task:
+        if self._cfg["save_ckpt"] and taski >= self._train_from_task and taski in self._cfg["save_ckpt"]:
             # save_path = os.path.join(os.getcwd(), "ckpts")
             torch.save(network.cpu().state_dict(), "{}/step{}.ckpt".format(self.sp['model'], self._task))
 
@@ -468,7 +468,7 @@ class IncModel(IncrementalLearner):
                                 save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple",
                                 index_map=self._inc_dataset.targets_all_unique)
             network = deepcopy(self._parallel_network)
-            if self._cfg["save_ckpt"]:
+            if self._cfg["save_ckpt"] and taski in self._cfg["save_ckpt"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts")
                 torch.save(network.cpu().state_dict(),
                            "{}/decouple_step{}.ckpt".format(self.sp['model'], self._task))

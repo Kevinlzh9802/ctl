@@ -90,9 +90,7 @@ def _train(cfg, _run, exp, tensorboard):
         model.before_task(inc_dataset)
 
         if task_i >= cfg['retrain_from_task']:
-            # model.train_task()
-            state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
-            model._parallel_network.load_state_dict(state_dict)
+            model.train_task()
         elif task_i >= 1:
             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
