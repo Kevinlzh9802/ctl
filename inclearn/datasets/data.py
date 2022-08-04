@@ -114,9 +114,12 @@ class IncrementalDataset:
         val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
+        # task_until_now = self.curriculum[:self._current_task + 1]
+        # cur_parent_nodes = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])
+        # parent_node_order = [self.taxonomy_tree.get_task_parent(x) for x in task_until_now]
+        # self.current_ordered_dict[cur_parent_nodes] = self.curriculum[self._current_task]
         task_until_now = self.curriculum[:self._current_task + 1]
         cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])[0]
-        parent_node_order = [self.taxonomy_tree.get_task_parent(x) for x in task_until_now]
         self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
         c = 9
         task_info = {

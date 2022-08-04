@@ -265,6 +265,12 @@ class Tree:
         tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
         return tree
 
+    def gen_partial_tree_new(self, parent_nodes, leaf_nodes):
+        dict_part = OrderedDict()
+        for x in range(len(parent_nodes)):
+            # TODO: fix this!
+            dict_part[parent_nodes[x]] = {}
+
     def get_task_parent(self, name_list):
         return [self.nodes.get(x).parent for x in name_list][0]
 
@@ -282,7 +288,6 @@ def partial_copy_dict(dict_full, name_list, key_order=None):
             if name in name_list:
                 dict_part[name] = partial_copy_dict(dict_full[name], name_list)
     else:
-        c = 9
         for x in key_order:
             dict_part[x] = dict_full[x]
         for x in dict_full.keys():

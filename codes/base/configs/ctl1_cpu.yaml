@@ -26,7 +26,7 @@ temperature: 2
 reuse_oldfc: True
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
-save_ckpt: [0, 1, 10, 19]
+save_ckpt: [0, 1, 10, 20]
 save_mem: False
 load_mem: False
 
@@ -46,7 +46,7 @@ epochs: 2
 resampling: False
 warmup: True
 warmup_epochs: 2
-sample_rate: 0.3
+sample_rate: 0.1
 retrain_from_task: 0
 
 train_save_option:
@@ -93,8 +93,8 @@ pretrain:
 
 # Dataset Cfg
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
-trial: 5
-increment: 10
+trial: 1
+increment: 5
 batch_size: 128
 workers: 8
 validation: 0.1  # Validation split (0. <= x <= 1.)
