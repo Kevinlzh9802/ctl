@@ -1,6 +1,6 @@
 exp:
-  name: "der_deep_rtc_test3"
-  load_model_name: 'der_deep_rtc_test3'
+  name: "der_deep_rtc_4"
+  load_model_name: 'der_deep_rtc_4'
   debug: False
 
 # Model Cfg
