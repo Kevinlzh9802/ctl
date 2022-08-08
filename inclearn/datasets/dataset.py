@@ -431,6 +431,48 @@ class iImageNet100(DataHandler):
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
+    data_name_hier_dict = {
+        'vehicles_1': {'motorcycle': {}, 'bus': {}, 'train': {}, 'bicycle': {}, 'pickup_truck': {}},
+        'trees': {'palm_tree': {}, 'willow_tree': {}, 'maple_tree': {}, 'oak_tree': {}, 'pine_tree': {}},
+        'large_man-made_outdoor_things': {'bridge': {}, 'road': {}, 'skyscraper': {}, 'house': {}, 'castle': {}},
+        'food_containers': {'can': {}, 'cup': {}, 'plate': {}, 'bowl': {}, 'bottle': {}},
+        'small_mammals': {'hamster': {}, 'mouse': {}, 'shrew': {}, 'rabbit': {}, 'squirrel': {}},
+        'large_omnivores_and_herbivores': {'cattle': {}, 'camel': {}, 'chimpanzee': {}, 'kangaroo': {}, 'elephant': {}},
+        'flowers': {'rose': {}, 'tulip': {}, 'poppy': {}, 'orchid': {}, 'sunflower': {}},
+        'large_natural_outdoor_scenes': {'forest': {}, 'plain': {}, 'cloud': {}, 'mountain': {}, 'sea': {}},
+        'reptiles': {'turtle': {}, 'crocodile': {}, 'dinosaur': {}, 'lizard': {}, 'snake': {}},
+        'household_furniture': {'wardrobe': {}, 'bed': {}, 'couch': {}, 'chair': {}, 'table': {}},
+        'fruit_and_vegetables': {'apple': {}, 'pear': {}, 'mushroom': {}, 'sweet_pepper': {}, 'orange': {}},
+        'large_carnivores': {'bear': {}, 'leopard': {}, 'tiger': {}, 'wolf': {}, 'lion': {}},
+        'vehicles_2': {'streetcar': {}, 'tractor': {}, 'tank': {}, 'lawn_mower': {}, 'rocket': {}},
+        'people': {'man': {}, 'boy': {}, 'girl': {}, 'baby': {}, 'woman': {}},
+        'insects': {'butterfly': {}, 'bee': {}, 'beetle': {}, 'caterpillar': {}, 'cockroach': {}},
+        'household_electrical_devices': {'lamp': {}, 'television': {}, 'telephone': {}, 'keyboard': {}, 'clock': {}},
+        'non-insect_invertebrates': {'crab': {}, 'snail': {}, 'lobster': {}, 'worm': {}, 'spider': {}},
+        'aquatic_mammals': {'dolphin': {}, 'whale': {}, 'otter': {}, 'seal': {}, 'beaver': {}},
+        'fish': {'aquarium_fish': {}, 'flatfish': {}, 'ray': {}, 'trout': {}, 'shark': {}},
+        'medium_mammals': {'raccoon': {}, 'fox': {}, 'porcupine': {}, 'skunk': {}, 'possum': {}}}
+
+    data_label_index_dict = {
+        'medium_mammals': -20, 'fish': -19, 'aquatic_mammals': -18, 'non-insect_invertebrates': -17,
+        'household_electrical_devices': -16, 'insects': -15, 'people': -14, 'vehicles_2': -13, 'large_carnivores': -12,
+        'fruit_and_vegetables': -11, 'household_furniture': -10, 'reptiles': -9, 'large_natural_outdoor_scenes': -8,
+        'flowers': -7, 'large_omnivores_and_herbivores': -6, 'small_mammals': -5, 'food_containers': -4,
+        'large_man-made_outdoor_things': -3, 'trees': -2, 'vehicles_1': -1, 'apple': 0, 'aquarium_fish': 1, 'baby': 2,
+        'bear': 3, 'beaver': 4, 'bed': 5, 'bee': 6, 'beetle': 7, 'bicycle': 8, 'bottle': 9, 'bowl': 10, 'boy': 11,
+        'bridge': 12, 'bus': 13, 'butterfly': 14, 'camel': 15, 'can': 16, 'castle': 17, 'caterpillar': 18, 'cattle': 19,
+        'chair': 20, 'chimpanzee': 21, 'clock': 22, 'cloud': 23, 'cockroach': 24, 'couch': 25, 'crab': 26,
+        'crocodile': 27, 'cup': 28, 'dinosaur': 29, 'dolphin': 30, 'elephant': 31, 'flatfish': 32, 'forest': 33,
+        'fox': 34, 'girl': 35, 'hamster': 36, 'house': 37, 'kangaroo': 38, 'keyboard': 39, 'lamp': 40,
+        'lawn_mower': 41, 'leopard': 42, 'lion': 43, 'lizard': 44, 'lobster': 45, 'man': 46, 'maple_tree': 47,
+        'motorcycle': 48, 'mountain': 49, 'mouse': 50, 'mushroom': 51, 'oak_tree': 52, 'orange': 53, 'orchid': 54,
+        'otter': 55, 'palm_tree': 56, 'pear': 57, 'pickup_truck': 58, 'pine_tree': 59, 'plain': 60, 'plate': 61,
+        'poppy': 62, 'porcupine': 63, 'possum': 64, 'rabbit': 65, 'raccoon': 66, 'ray': 67, 'road': 68, 'rocket': 69,
+        'rose': 70, 'sea': 71, 'seal': 72, 'shark': 73, 'shrew': 74, 'skunk': 75, 'skyscraper': 76, 'snail': 77,
+        'snake': 78, 'spider': 79, 'squirrel': 80, 'streetcar': 81, 'sunflower': 82, 'sweet_pepper': 83, 'table': 84,
+        'tank': 85, 'telephone': 86, 'television': 87, 'tiger': 88, 'tractor': 89, 'train': 90, 'trout': 91,
+        'tulip': 92, 'turtle': 93, 'wardrobe': 94, 'whale': 95, 'willow_tree': 96, 'wolf': 97, 'woman': 98, 'worm': 99}
+
     def __init__(self, data_folder, train, is_fine_label=False):
         if train is True:
             self.base_dataset = self.base_dataset_cls(osp.join(data_folder, "train"))
