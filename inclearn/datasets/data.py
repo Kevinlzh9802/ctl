@@ -233,6 +233,8 @@ class IncrementalDataset:
         self.train_dataset = dataset(self.data_folder, train=True)
         self.test_dataset = dataset(self.data_folder, train=False)
         if self.dataset_name == 'imagenet100':
+            self.re_index_imagenet(self.train_dataset)
+            self.re_index_imagenet(self.train_dataset)
             train_idx = np.logical_and(self.train_dataset.targets >= 1, self.train_dataset.targets <= 100)
             test_idx = np.logical_and(self.test_dataset.targets >= 1, self.test_dataset.targets <= 100)
             self.train_dataset.data = self.train_dataset.data[train_idx]
@@ -251,6 +253,17 @@ class IncrementalDataset:
         self.data_test = np.concatenate(self.data_test)
         self.targets_test = np.concatenate(self.targets_test)
         self.dict_train_used = {y: np.zeros(len(self.dict_train[y])) for y in self.dict_train}
+
+    def re_index_imagenet(self, dataset):
+        n_array = np.empty([0], dtype='<U74')
+        for path in dataset.data:
+            x = path.split('\\')
+            n_array = np.concatenate((n_array, [x[-2]]))
+        dataset.targets = self.get_true_targets(n_array)
+
+    @staticmethod
+    def get_true_targets(n_array):
+        return 1
 
     @staticmethod
     def read_img_for_dataset(dataset):
