@@ -1,0 +1,117 @@
+exp:
+  name: "der_deep_rtc_imagenet_1"
+  load_model_name: 'der_deep_rtc_imagenet'
+  debug: False
+
+# Model Cfg
+model: "incmodel"
+model_cls: "hiernet"
+model_pivot:
+  arch: pivot
+  dropout_rate: 0.0
+convnet: 'resnet18'  # modified_resnet32, resnet18
+taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
+train_head: 'softmax'
+infer_head: 'softmax'
+channel: 64
+use_bias: False
+last_relu: False
+
+der: True
+use_aux_cls: True
+aux_n+1: True
+distillation: "none"
+temperature: 2
+
+reuse_oldfc: True
+weight_normalization: False
+val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
+save_ckpt: [0, 1, 10, 20]
+save_mem: False
+load_mem: False
+
+# Optimization; Training related
+task_max: 10
+lr_min: 0.00005
+lr: 0.1
+weight_decay: 0.0005
+dynamic_weight_decay: False
+scheduler: 'multistep'
+scheduling:
+  - 100
+  - 120
+lr_decay: 0.1
+optimizer: "sgd"
+epochs: 2
+resampling: False
+warmup: True
+warmup_epochs: 2
+sample_rate: 0.1
+retrain_from_task: 0
+
+train_save_option:
+  acc_details: True
+  acc_aux_details: True
+  preds_details: True
+  preds_aux_details: True
+
+postprocessor:
+  enable: False
+  type: 'bic'  # 'bic', 'wa'
+  epochs: 1
+  batch_size: 128
+  lr: 0.1
+  scheduling:
+    - 60
+    - 90
+    - 120
+  lr_decay_factor: 0.1
+  weight_decay: 0.0005
+
+decouple:
+  enable: True
+  epochs: 2
+  fullset: False
+  lr: 0.05
+  scheduling:
+    - 15
+    - 30
+  lr_decay: 0.1
+  weight_decay: 0.0005
+  temperature: 5.0
+
+pretrain:
+  epochs: 200
+  lr: 0.1
+  scheduling:
+    - 60
+    - 120
+    - 160
+  lr_decay: 0.1
+  weight_decay: 0.0005
+
+
+# Dataset Cfg
+dataset: "imagenet100"  # 'imagenet100', 'cifar100'
+trial: 2
+increment: 5
+batch_size: 128
+workers: 8
+validation: 0.1  # Validation split (0. <= x <= 1.)
+random_classes: False  # Randomize classes order of increment
+start_class: 0  # number of tasks for the first step, start from 0.
+start_task: 0
+max_task:  # Cap the number of task
+
+# Memory
+memory_enable: True
+coreset_strategy: "iCaRL"  # iCaRL, random
+mem_size_mode: "uniform_fixed_total_mem" # uniform_fixed_per_cls, uniform_fixed_total_mem
+memory_size: 2000  # Max number of storable examplars
+fixed_memory_per_cls: 20  # the fixed number of exemplars per cls
+
+# Misc
+device_auto_detect: True  # If True, use GPU whenever possible
+device: -1  # GPU index to use, for cpu use -1
+seed: 1993
+overwrite_prevention: False

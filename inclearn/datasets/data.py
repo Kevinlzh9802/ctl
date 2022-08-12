@@ -121,7 +121,6 @@ class IncrementalDataset:
         task_until_now = self.curriculum[:self._current_task + 1]
         cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])[0]
         self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
-        c = 9
         task_info = {
             "task": self._current_task,
             "task_size": len(self.curriculum[self._current_task]),
@@ -160,6 +159,7 @@ class IncrementalDataset:
 
     def _gen_label_map(self, name_coarse):
         label_map = {}
+        # TODO: fix bug
         for nc in name_coarse:
             lc = self.taxonomy_tree.nodes.get(nc).label_index
             name_map_single = self.taxonomy_tree.get_finest(nc)
@@ -172,6 +172,8 @@ class IncrementalDataset:
 
     def _select_from_idx(self, data_dict, label_map, train=True):
         x_selected = np.empty([0, 32, 32, 3], dtype=np.uint8)
+        if self.dataset_name == 'imagenet100':
+            x_selected = np.empty([0], dtype='<U74')
         y_selected = np.empty([0], dtype=np.uint8)
         if train:
             for lf in label_map:
@@ -230,6 +232,14 @@ class IncrementalDataset:
         # current_class_idx = 0  # When using multiple datasets
         self.train_dataset = dataset(self.data_folder, train=True)
         self.test_dataset = dataset(self.data_folder, train=False)
+        if self.dataset_name == 'imagenet100':
+            train_idx = np.logical_and(self.train_dataset.targets >= 1, self.train_dataset.targets <= 100)
+            test_idx = np.logical_and(self.test_dataset.targets >= 1, self.test_dataset.targets <= 100)
+            self.train_dataset.data = self.train_dataset.data[train_idx]
+            self.train_dataset.targets = self.train_dataset.targets[train_idx]
+            self.test_dataset.data = self.test_dataset.data[test_idx]
+            self.test_dataset.targets = self.test_dataset.targets[test_idx]
+            # self.read_img_for_dataset(self.train_dataset)
         self.n_tot_cls = self.train_dataset.n_cls  # number of classes in whole dataset
 
         self._setup_data_for_raw_data(self.train_dataset, self.test_dataset)
@@ -241,6 +251,13 @@ class IncrementalDataset:
         self.data_test = np.concatenate(self.data_test)
         self.targets_test = np.concatenate(self.targets_test)
         self.dict_train_used = {y: np.zeros(len(self.dict_train[y])) for y in self.dict_train}
+
+    @staticmethod
+    def read_img_for_dataset(dataset):
+        data_array = np.empty([0, 395, 400, 3], dtype=np.uint8)
+        for idx, path in enumerate(dataset.data):
+            data_array = np.concatenate((data_array, np.array([cv2.imread(path)])))
+        c = 9
 
     def _setup_data_for_raw_data(self, train_dataset, test_dataset):
         x_train, y_train = train_dataset.data, np.array(train_dataset.targets)
