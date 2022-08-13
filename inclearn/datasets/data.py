@@ -35,7 +35,7 @@ class IncrementalDataset:
         self.increments = []
         self.random_order = random_order
         self.validation_split = validation_split
-
+        self._device = device
         # -------------------------------------
         # Dataset Info
         # -------------------------------------
@@ -53,7 +53,6 @@ class IncrementalDataset:
         self._seed = seed
         self._s_rate = sample_rate
         self._workers = workers
-        self._device = device
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
