@@ -69,7 +69,7 @@ class Tree:
         self.id2name = {}
         self.label2name = {}
 
-        if len(label_dict_hier) > 0 and len(label_dict_index) > 0:
+        if len(label_dict_hier) > 0:
             self.gen_codeword()
             self.gen_rel_path()
             self.gen_Id2name()
@@ -254,29 +254,22 @@ class Tree:
             parent_label_index_list.append(node_i.label_index)
         return parent_name_list, parent_label_index_list
 
-    def gen_partial_tree(self, task_until_now):
-        name_list = list(np.array(task_until_now).flatten())
-        parent_node_order = [self.get_task_parent(x) for x in task_until_now]
-        parent_node_order.pop(0)
-        if len(parent_node_order) == 0:
-            partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
-        else:
-            partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
-        tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
-        return tree
-
-    def gen_partial_tree_new(self, parent_nodes, leaf_nodes):
-        dict_part = OrderedDict()
-        for x in range(len(parent_nodes)):
-            # TODO: fix this!
-            dict_part[parent_nodes[x]] = {}
+    # def gen_partial_tree(self, task_until_now):
+    #     name_list = list(np.array(task_until_now).flatten())
+    #     parent_node_order = [self.get_task_parent(x) for x in task_until_now]
+    #     parent_node_order.pop(0)
+    #     if len(parent_node_order) == 0:
+    #         partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
+    #     else:
+    #         partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
+    #     tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
+    #     return tree
 
     def expand_tree(self, existing_tree, node_names):
         for x in node_names:
             self.connect_node(existing_tree, x)
         existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
         existing_tree.show()
-        c = 9
 
     def connect_node(self, existing_tree, node_name):
         node = self.nodes.get(node_name).copy()
@@ -291,12 +284,36 @@ class Tree:
         node_parent.add_child(node_name)
         node.child_idx = len(node_parent.children)
 
-    def flatten_children(self, node_name):
-        all_children = self.get_finest(node_name)
-        leaf_nodes = [self.nodes.get(x) for x in all_children]
-        for x in leaf_nodes:
-            self.merge
-        return
+    def reset_params(self):
+        self.label_dict_hier = self.tree_node_to_dict(self.root)
+        self.max_depth = max(n.depth for n in self.nodes.values())  # including root(0) and datasets(1)
+        self.dict_depth = self.max_depth - 1
+        self.depth_dict = {}
+
+        self.used_nodes = {}
+        self.leaf_nodes = {}
+        self.id2name = {}
+        self.label2name = {}
+
+        if len(self.label_dict_hier) > 0:
+            self.gen_codeword()
+            self.gen_rel_path()
+            self.gen_Id2name()
+        c = 9
+
+    def tree_node_to_dict(self, node):
+        child_dict = OrderedDict()
+        for x in node.children.values():
+            child_node = self.nodes.get(x)
+            child_dict[x] = self.tree_node_to_dict(child_node)
+        return child_dict
+
+    # def flatten_children(self, node_name):
+    #     all_children = self.get_finest(node_name)
+    #     leaf_nodes = [self.nodes.get(x) for x in all_children]
+    #     for x in leaf_nodes:
+    #         self.merge
+    #     return
 
     def get_task_parent(self, name_list):
         return [self.nodes.get(x).parent for x in name_list][0]
@@ -308,16 +325,16 @@ def write_file(file_name, data_list):
             f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
 
 
-def partial_copy_dict(dict_full, name_list, key_order=None):
-    dict_part = OrderedDict()
-    if key_order is None:
-        for name in dict_full.keys():
-            if name in name_list:
-                dict_part[name] = partial_copy_dict(dict_full[name], name_list)
-    else:
-        for x in key_order:
-            dict_part[x] = dict_full[x]
-        for x in dict_full.keys():
-            if x not in dict_part.keys():
-                dict_part[x] = {}
-    return dict_part
+# def partial_copy_dict(dict_full, name_list, key_order=None):
+#     dict_part = OrderedDict()
+#     if key_order is None:
+#         for name in dict_full.keys():
+#             if name in name_list:
+#                 dict_part[name] = partial_copy_dict(dict_full[name], name_list)
+#     else:
+#         for x in key_order:
+#             dict_part[x] = dict_full[x]
+#         for x in dict_full.keys():
+#             if x not in dict_part.keys():
+#                 dict_part[x] = {}
+#     return dict_part

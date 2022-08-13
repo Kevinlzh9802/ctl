@@ -61,6 +61,8 @@ def train(_run, _rnd, _seed):
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     else:
         factory.set_device(cfg)
+    # if cfg["device"].type == 'cuda':
+    #     cfg.data_folder = '/datasets/imagenet'
 
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)
