@@ -190,12 +190,10 @@ class IncrementalDataset:
                 if self._device.type == 'cuda':
                     if data_frac > 0 and self.taxonomy:
                         sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                        sel_ind = random.sample(list(idx_available), 20)
                     else:
-                        # if len(self.memory_dict) == 0:
                         sel_ind = idx_available
-                        # else:
-                        #     memory_size = self.memory_dict[list(self.memory_dict.keys())[0]].shape[0]
-                        #     sel_ind = idx_available[:memory_size]
+                        sel_ind = random.sample(list(idx_available), 20)
                 else:
                     sel_ind = random.sample(list(idx_available), 2)
                     # sel_ind = idx_available
