@@ -205,8 +205,10 @@ class IncrementalDataset:
             for lf in label_map:
                 lfx_all = data_dict[lf]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
-                x_selected = np.concatenate((x_selected, lfx_all))
-                y_selected = np.concatenate((y_selected, lfy_all))
+                idx_available = np.array([0] * len(lfx_all))
+                sel_ind = random.sample(list(idx_available), 20)
+                x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
+                y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
         return x_selected, y_selected
 
     def _sample_rate(self, leaf_depth, parent_depth):
