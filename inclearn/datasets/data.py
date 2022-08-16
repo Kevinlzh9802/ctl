@@ -189,7 +189,8 @@ class IncrementalDataset:
 
                 if self._device.type == 'cuda':
                     if data_frac > 0 and self.taxonomy:
-                        sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                        # sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                        sel_ind = random.sample(list(idx_available), round(data_frac * len(idx_available)))
                         sel_ind = random.sample(list(idx_available), 20)
                     else:
                         sel_ind = idx_available
@@ -205,10 +206,12 @@ class IncrementalDataset:
             for lf in label_map:
                 lfx_all = data_dict[lf]
                 lfy_all = np.array([label_map[lf][0]] * len(lfx_all))  # position 0: coarse label
-                idx_available = np.array([0] * len(lfx_all))
-                sel_ind = random.sample(list(idx_available), 20)
-                x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
-                y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
+                # idx_available = np.arange(len(lfx_all))
+                # sel_ind = random.sample(list(idx_available), 1)
+                x_selected = np.concatenate((x_selected, lfx_all))
+                y_selected = np.concatenate((y_selected, lfy_all))
+                # x_selected = np.concatenate((x_selected, lfx_all[sel_ind]))
+                # y_selected = np.concatenate((y_selected, lfy_all[sel_ind]))
         return x_selected, y_selected
 
     def _sample_rate(self, leaf_depth, parent_depth):

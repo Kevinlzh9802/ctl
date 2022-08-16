@@ -281,6 +281,7 @@ class Tree:
         node_parent = existing_tree.nodes.get(node.parent)
         assert node_parent is not None
         existing_tree.nodes[node_name] = node
+        node.node_id = len(existing_tree.nodes)
         node_parent.add_child(node_name)
         node.child_idx = len(node_parent.children)
 
