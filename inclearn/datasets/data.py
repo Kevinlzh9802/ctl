@@ -191,10 +191,10 @@ class IncrementalDataset:
                     if data_frac > 0 and self.taxonomy:
                         # sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
                         sel_ind = random.sample(list(idx_available), round(data_frac * len(idx_available)))
-                        sel_ind = random.sample(list(idx_available), 20)
+                        # sel_ind = random.sample(list(idx_available), 20)
                     else:
                         sel_ind = idx_available
-                        sel_ind = random.sample(list(idx_available), 20)
+                        # sel_ind = random.sample(list(idx_available), 20)
                 else:
                     sel_ind = random.sample(list(idx_available), 2)
                     # sel_ind = idx_available
@@ -466,16 +466,18 @@ class DummyDataset(torch.utils.data.Dataset):
 
         else:
             # Assume the dataset is ImageNet
-            if idx < len(self.share_memory):
-                if self.share_memory[idx] is not None:
-                    x = self.share_memory[idx]
-                else:
-                    x = cv2.imread(x)
-                    x = x[:, :, ::-1]
-                    self.share_memory[idx] = x
-            else:
-                x = cv2.imread(x)
-                x = x[:, :, ::-1]
+            x = cv2.imread(x)
+            x = x[:, :, ::-1]
+            # if idx < len(self.share_memory):
+            #     if self.share_memory[idx] is not None:
+            #         x = self.share_memory[idx]
+            #     else:
+            #         x = cv2.imread(x)
+            #         x = x[:, :, ::-1]
+            #         self.share_memory[idx] = x
+            # else:
+            #     x = cv2.imread(x)
+            #     x = x[:, :, ::-1]
 
         if 'torch' in self.trsf_type:
             x = self.trsf(x)
