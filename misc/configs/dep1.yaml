@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctl-imagenet2
+  labels:
+    k8s-app: ctl-imagenet2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: ctl-imagenet2
+  template:
+    metadata: 
+      labels:
+        k8s-app: ctl-imagenet2
+    spec:
+      containers:
+      - name: mypod
+        image: centos/python-38-centos7
+        args: ["sleep", "infinity"]
+        volumeMounts:
+        - name: datasets
+          mountPath: /datasets
+        resources:
+           limits:
+             memory: 32Gi
+             nvidia.com/gpu: "4"
+             cpu: "2"
+           requests:
+             memory: 32Gi
+             nvidia.com/gpu: "4"
+             cpu: "2"
+        command: ["sh", "-c", "sleep infinity"]
+      volumes:
+      - name: datasets
+        persistentVolumeClaim:
+          claimName: datasets
