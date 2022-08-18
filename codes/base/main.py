@@ -56,13 +56,14 @@ def train(_run, _rnd, _seed):
     ex.logger.info(cfg)
 
     # adjust config
-    cfg.data_folder = osp.join(base_dir, "data")
     if cfg["device_auto_detect"]:
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
     else:
         factory.set_device(cfg)
-    # if cfg["device"].type == 'cuda':
-    #     cfg.data_folder = '/datasets/imagenet'
+    if cfg["device"].type == 'cuda':
+        cfg.data_folder = '/datasets'
+    else:
+        cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
     _train(cfg, _run, ex, tensorboard)

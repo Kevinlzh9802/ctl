@@ -40,8 +40,8 @@ class IncrementalDataset:
         # Dataset Info
         # -------------------------------------
         self.data_folder = get_data_folder(data_folder, dataset_name)
-        if device.type == 'cuda':
-            self.data_folder = '/datasets/imagenet-ilsvrc2012'
+        ds_name = 'imagenet' if 'imagenet' in dataset_name else dataset_name
+        self.data_folder = get_data_folder(data_folder, ds_name)
         self.dataset_name = dataset_name
         self.train_dataset = None
         self.test_dataset = None
