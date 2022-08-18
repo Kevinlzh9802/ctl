@@ -226,6 +226,7 @@ class IncModel(IncrementalLearner):
             stslosses = averageMeter()
             losses = averageMeter()
             acc = averageMeter()
+            acc_5 = averageMeter()
             acc_aux = averageMeter()
 
             if self._warmup:
@@ -245,7 +246,7 @@ class IncModel(IncrementalLearner):
                 self._optimizer.zero_grad()
 
                 outputs = self._parallel_network(inputs)
-                self.record_details(outputs, targets, acc, acc_aux, self.train_save_option)
+                self.record_details(outputs, targets, acc, acc_5, acc_aux, self.train_save_option)
                 ce_loss, loss_aux = self._compute_loss(outputs, targets, nlosses, stslosses, losses)
                 # ce_loss, loss_aux, acc, acc_aux = \
                 #     self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
@@ -326,7 +327,7 @@ class IncModel(IncrementalLearner):
         self.curr_acc_list_aux = acc_list_aux
         self.save_details(self.sp['acc_detail']['train'], self.train_save_option)
 
-    def record_details(self, outputs, targets, acc, acc_aux, save_option=None):
+    def record_details(self, outputs, targets, acc, acc_5, acc_aux, save_option=None):
         if self._cfg["taxonomy"] is not None:
             targets_0 = tgt_to_tgt0(targets, self._network.leaf_id, self._device)
         else:
@@ -336,7 +337,7 @@ class IncModel(IncrementalLearner):
         output = outputs['output']
         aux_output = outputs['aux_logit']
 
-        self.record_accuracy(output, targets_0, acc)
+        self.record_accuracy(output, targets_0, acc, acc_5)
         # record to self.curr_acc_list
         if save_option["acc_details"]:
             self.record_acc_details(output, targets, targets_0, acc)
@@ -518,6 +519,7 @@ class IncModel(IncrementalLearner):
     def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
         self._ex.logger.info(f"Begin evaluation: {name}")
         acc = averageMeter()
+        acc_5 = averageMeter()
         acc_aux = averageMeter()
         self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
         self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
@@ -529,7 +531,7 @@ class IncModel(IncrementalLearner):
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
                 outputs = self._parallel_network(inputs)
-                self.record_details(outputs, targets, acc, acc_aux, save_option)
+                self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
 
         self._ex.logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
         # save accuracy and preds info into files
@@ -702,9 +704,17 @@ class IncModel(IncrementalLearner):
         df_aux.to_csv(f'{save_path}_task_{self._task}_aux.csv', index=False)
 
     @staticmethod
-    def record_accuracy(output, targets, acc):
+    def record_accuracy(output, targets, acc, acc_5=None):
         iscorrect = (output.argmax(1) == targets)
         acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
+        # if acc_5 is not None:
+        #     preds_sort = output.argsort(1)
+        #     ind_range = min(output.size(1), 5)
+        #     iscorrect_5 = torch.zeros(size=preds_sort[:, 0].size())
+        #     for x in range(ind_range):
+        #         pred = preds_sort[:, x]
+        #         iscorrect_5 = torch.logical_or(iscorrect_5, pred == targets)
+        #     acc.update(float(iscorrect_5.count_nonzero() / iscorrect_5.size(0)), iscorrect_5.size(0))
 
     def record_acc_details(self, output, targets, targets_0, acc):
         # targets is the real label
