@@ -41,6 +41,7 @@ class HierNet(nn.Module):
                     parent, _ = cond
                     cond_gate = torch.mul(cond_gate, gate[:, parent].view(-1, 1))
                     cond = self.nodes[parent].cond
+                gate = gate.to(cond_gate.device)
                 outs.append(torch.matmul(nout[i], cw) * cond_gate * gate[:, i].view(-1, 1))
                 mask = torch.clamp(torch.from_numpy(self.nodes[i].mask).float().to(nout[i].device), 1e-17, 1)
                 out_masks.append(torch.log(mask) * (1 - gate[:, i].view(-1, 1)))
