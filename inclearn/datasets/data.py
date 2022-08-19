@@ -40,7 +40,7 @@ class IncrementalDataset:
         # Dataset Info
         # -------------------------------------
         self.data_folder = get_data_folder(data_folder, dataset_name)
-        ds_name = 'imagenet' if 'imagenet' in dataset_name else dataset_name
+        ds_name = 'imagenet-ilsvrc2012' if 'imagenet' in dataset_name else dataset_name
         self.data_folder = get_data_folder(data_folder, ds_name)
         self.dataset_name = dataset_name
         self.train_dataset = None
