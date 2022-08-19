@@ -300,7 +300,6 @@ class Tree:
             self.gen_codeword()
             self.gen_rel_path()
             self.gen_Id2name()
-        c = 9
 
     def tree_node_to_dict(self, node):
         child_dict = OrderedDict()

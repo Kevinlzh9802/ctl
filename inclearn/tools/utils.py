@@ -222,7 +222,8 @@ def set_save_paths(cfg, mode):
                     'train': exp_path + 'train/acc_details/',
                     'eval': exp_path + 'eval/acc_details/'
                 },
-                'model': exp_path + 'train/ckpts/',
+                # 'model': exp_path + 'train/ckpts/',
+                'model': '/datasets/ckpts/' + cfg['exp']['name'] + '/',
                 'log': exp_path + 'train/logs/',
                 'tensorboard': exp_path + 'train/tensorboard/'
             }

@@ -57,7 +57,7 @@ def train(_run, _rnd, _seed):
 
     # adjust config
     if cfg["device_auto_detect"]:
-        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+        cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
         factory.set_device(cfg)
     if cfg["device"].type == 'cuda':
