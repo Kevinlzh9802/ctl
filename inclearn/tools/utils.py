@@ -222,11 +222,13 @@ def set_save_paths(cfg, mode):
                     'train': exp_path + 'train/acc_details/',
                     'eval': exp_path + 'eval/acc_details/'
                 },
-                # 'model': exp_path + 'train/ckpts/',
-                'model': '/datasets/ckpts/' + cfg['exp']['name'] + '/',
+                'model': exp_path + 'train/ckpts/',
+                # 'model': '/datasets/ckpts/' + cfg['exp']['name'] + '/',
                 'log': exp_path + 'train/logs/',
                 'tensorboard': exp_path + 'train/tensorboard/'
             }
+            if 'datasets' in cfg['save_ckpt_path']:
+                cfg['sp']['model'] = '/datasets/ckpts/' + cfg['exp']['name'] + '/'
             if not os.path.exists(cfg['sp']['acc_detail']['train']):
                 os.makedirs(cfg['sp']['acc_detail']['train'])
             if not os.path.exists(cfg['sp']['acc_detail']['eval']):
