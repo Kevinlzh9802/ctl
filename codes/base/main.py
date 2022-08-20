@@ -121,6 +121,13 @@ def _train(cfg, _run, exp, tensorboard):
                 "preds_aux_details": True
             })
 
+            model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+                "acc_details": True,
+                "acc_aux_details": True,
+                "preds_details": True,
+                "preds_aux_details": True
+            })
+
     # if cfg["exp"]["name"]:
     #     results_utils.save_results(results, cfg["exp"]["name"])
 

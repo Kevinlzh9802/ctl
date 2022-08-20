@@ -348,7 +348,7 @@ class IncModel(IncrementalLearner):
         if aux_output is not None:
             cur_labels = self._inc_dataset.targets_cur_unique  # it should be sorted
             aux_targets = tgt_to_aux_tgt(targets, cur_labels, self._device)
-            self.record_accuracy(aux_output, aux_targets, acc_aux)
+            self.record_accuracy(aux_output, aux_targets, acc_aux, acc_5)
             if save_option["acc_aux_details"]:
                 self.record_acc_details(aux_output, aux_targets, aux_targets, acc_aux)
             if save_option["preds_aux_details"]:
@@ -707,14 +707,14 @@ class IncModel(IncrementalLearner):
     def record_accuracy(output, targets, acc, acc_5=None):
         iscorrect = (output.argmax(1) == targets)
         acc.update(float(iscorrect.count_nonzero() / iscorrect.size(0)), iscorrect.size(0))
-        # if acc_5 is not None:
-        #     preds_sort = output.argsort(1)
-        #     ind_range = min(output.size(1), 5)
-        #     iscorrect_5 = torch.zeros(size=preds_sort[:, 0].size())
-        #     for x in range(ind_range):
-        #         pred = preds_sort[:, x]
-        #         iscorrect_5 = torch.logical_or(iscorrect_5, pred == targets)
-        #     acc.update(float(iscorrect_5.count_nonzero() / iscorrect_5.size(0)), iscorrect_5.size(0))
+        if acc_5 is not None:
+            preds_sort = output.argsort(1)
+            ind_range = min(output.size(1), 5)
+            iscorrect_5 = torch.zeros(size=preds_sort[:, 0].size())
+            for x in range(ind_range):
+                pred = preds_sort[:, x]
+                iscorrect_5 = torch.logical_or(iscorrect_5, pred == targets)
+            acc.update(float(iscorrect_5.count_nonzero() / iscorrect_5.size(0)), iscorrect_5.size(0))
 
     def record_acc_details(self, output, targets, targets_0, acc):
         # targets is the real label
