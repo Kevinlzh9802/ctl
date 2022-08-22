@@ -8,6 +8,8 @@ import os
 import os.path as osp
 import copy
 import time
+import torch.multiprocessing as mp
+import torch.distributed as dist
 from pathlib import Path
 import numpy as np
 from easydict import EasyDict as edict
@@ -52,6 +54,8 @@ def initialization(config, seed, mode, exp_id):
 
 @ex.command
 def train(_run, _rnd, _seed):
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "29500"
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "train", _run._id)
     ex.logger.info(cfg)
 
@@ -66,7 +70,9 @@ def train(_run, _rnd, _seed):
         cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
-    _train(cfg, _run, ex, tensorboard)
+    # _train(cfg, _run, ex, tensorboard)
+    world_size = 2
+    mp.spawn(_train, args=(world_size,), nprocs=world_size, join=True)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
@@ -74,6 +80,7 @@ def train(_run, _rnd, _seed):
 
 
 def _train(cfg, _run, exp, tensorboard):
+    dist.init_process_group("gloo", rank=2, world_size=2)
     inc_dataset = factory.get_data(cfg)
     exp.logger.info("curriculum")
     exp.logger.info(inc_dataset.curriculum)

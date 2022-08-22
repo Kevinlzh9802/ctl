@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 
 import torch
 from torch.nn import DataParallel
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.nn import functional as F
 
 from inclearn.convnet import network
@@ -69,6 +70,7 @@ class IncModel(IncrementalLearner):
             dataset=cfg["dataset"],
         )
         self._parallel_network = DataParallel(self._network)
+        self._DDP = DDP(self._network)
         self._train_head = cfg["train_head"]
         self._infer_head = cfg["infer_head"]
         self._old_model = None
