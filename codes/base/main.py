@@ -88,11 +88,10 @@ def train(_run, _rnd, _seed):
     a = 3
     mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
 
-
-#     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
-#     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
-#         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
-#                  ' it may lose important data and results. See log file for configuration details.')
+    ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
+    with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
+        dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
+                 ' it may lose important data and results. See log file for configuration details.')
 
 
 # def _train(rank, cfg, _run, exp, tensorboard, world_size):
