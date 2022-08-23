@@ -10,7 +10,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 def example(rank, world_size):
     # create default process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
-    print(rank)
+    # print(rank)
     # create local model
     model = nn.Linear(10, 10).to(rank)
     # construct DDP model
