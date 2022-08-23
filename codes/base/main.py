@@ -21,6 +21,7 @@ base_dir = osp.realpath(".")[:osp.realpath(".").index(repo_name) + len(repo_name
 sys.path.append(base_dir)
 
 from sacred import Experiment
+
 ex = Experiment(base_dir=base_dir, save_git_info=False)
 
 import torch
@@ -52,8 +53,14 @@ def initialization(config, seed, mode, exp_id):
     return cfg, logger, tensorboard
 
 
+def _train(rank, cfg, logger, world_size):
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+    print('process', rank)
+
+
 @ex.command
 def train(_run, _rnd, _seed):
+    print('before multiprocess')
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "29500"
     cfg, ex.logger, tensorboard = initialization(_run.config, _seed, "train", _run._id)
@@ -70,73 +77,82 @@ def train(_run, _rnd, _seed):
         cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
-    # _train(cfg, _run, ex, tensorboard)
-    gpu_num = 4
-    mp.spawn(_train, args=(cfg, _run, ex, tensorboard), nprocs=gpu_num, join=True)
-    ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
-    with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
-        dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
-                 ' it may lose important data and results. See log file for configuration details.')
-
-
-def _train(rank, cfg, _run, exp, tensorboard):
-    dist.init_process_group("gloo", rank=rank, world_size=2)
+    #     # _train(cfg, _run, ex, tensorboard)
+    #     gpu_num = 4
+    #     mp.spawn(_train, args=(cfg, _run, ex, tensorboard, gpu_num), nprocs=gpu_num, join=True)
     inc_dataset = factory.get_data(cfg)
-    exp.logger.info("curriculum")
-    exp.logger.info(inc_dataset.curriculum)
+    ex.logger.info("curriculum")
+    ex.logger.info(inc_dataset.curriculum)
 
-    model = factory.get_model(cfg, _run, exp, tensorboard, inc_dataset)
+    gpu_num = 4
+    a = 3
+    mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
 
-    if _run.meta_info["options"]["--file_storage"] is not None:
-        _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
-    else:
-        _save_dir = cfg['sp']['model']
 
-    results = results_utils.get_template_results(cfg)
+#     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
+#     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
+#         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
+#                  ' it may lose important data and results. See log file for configuration details.')
 
-    for task_i in range(inc_dataset.n_tasks):
-    # for task_i in range(1):
-        model.new_task()
-        model.before_task(inc_dataset)
 
-        if task_i >= cfg['retrain_from_task']:
-            model.train_task()
-        # elif task_i >= 1:
-        elif task_i == 19:
-            # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
-            state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
-            model._parallel_network.load_state_dict(state_dict)
-        else:
-            pass
-            # state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
-            # model._parallel_network.load_state_dict(state_dict)
+# def _train(rank, cfg, _run, exp, tensorboard, world_size):
+#     dist.init_process_group("gloo", rank=rank, world_size=world_size)
+#     inc_dataset = factory.get_data(cfg)
+#     exp.logger.info("curriculum")
+#     exp.logger.info(inc_dataset.curriculum)
 
-        if cfg['device'].type == 'cuda':
-            model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
-                "acc_details": True,
-                "acc_aux_details": True,
-                "preds_details": True,
-                "preds_aux_details": True
-            })
-        model.after_task(inc_dataset)
+#     model = factory.get_model(cfg, _run, exp, tensorboard, inc_dataset)
 
-        if cfg['device'].type == 'cuda':
-            model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
-                "acc_details": True,
-                "acc_aux_details": True,
-                "preds_details": True,
-                "preds_aux_details": True
-            })
+#     if _run.meta_info["options"]["--file_storage"] is not None:
+#         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
+#     else:
+#         _save_dir = cfg['sp']['model']
 
-            model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
-                "acc_details": True,
-                "acc_aux_details": True,
-                "preds_details": True,
-                "preds_aux_details": True
-            })
+#     results = results_utils.get_template_results(cfg)
 
-    # if cfg["exp"]["name"]:
-    #     results_utils.save_results(results, cfg["exp"]["name"])
+#     for task_i in range(inc_dataset.n_tasks):
+#     # for task_i in range(1):
+#         model.new_task()
+#         model.before_task(inc_dataset)
+
+#         if task_i >= cfg['retrain_from_task']:
+#             model.train_task()
+#         # elif task_i >= 1:
+#         elif task_i == 19:
+#             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
+#             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
+#             model._parallel_network.load_state_dict(state_dict)
+#         else:
+#             pass
+#             # state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
+#             # model._parallel_network.load_state_dict(state_dict)
+
+#         if cfg['device'].type == 'cuda':
+#             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
+#                 "acc_details": True,
+#                 "acc_aux_details": True,
+#                 "preds_details": True,
+#                 "preds_aux_details": True
+#             })
+#         model.after_task(inc_dataset)
+
+#         if cfg['device'].type == 'cuda':
+#             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
+#                 "acc_details": True,
+#                 "acc_aux_details": True,
+#                 "preds_details": True,
+#                 "preds_aux_details": True
+#             })
+
+#             model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+#                 "acc_details": True,
+#                 "acc_aux_details": True,
+#                 "preds_details": True,
+#                 "preds_aux_details": True
+#             })
+
+# if cfg["exp"]["name"]:
+#     results_utils.save_results(results, cfg["exp"]["name"])
 
 
 def do_pretrain(cfg, ex, model, device, train_loader, test_loader):

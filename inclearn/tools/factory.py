@@ -29,13 +29,13 @@ def get_convnet(convnet_type, **kwargs):
         raise NotImplementedError("Unknwon convnet type {}.".format(convnet_type))
 
 
-def get_model(cfg, _run, ex, tensorboard, inc_dataset):
+def get_model(cfg, logger, tensorboard, inc_dataset):
     if cfg["model"] == "incmodel":
-        return models.IncModel(cfg, _run, ex, tensorboard, inc_dataset)
+        return models.IncModel(cfg, logger, tensorboard, inc_dataset)
     if cfg["model"] == "weight_align":
-        return models.Weight_Align(cfg, _run, ex, tensorboard, inc_dataset)
+        return models.Weight_Align(cfg, logger, tensorboard, inc_dataset)
     if cfg["model"] == "bic":
-        return models.BiC(cfg, _run, ex, tensorboard, inc_dataset)
+        return models.BiC(cfg, logger, tensorboard, inc_dataset)
     else:
         raise NotImplementedError(cfg["model"])
 
