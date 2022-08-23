@@ -72,15 +72,14 @@ def train(_run, _rnd, _seed):
     start_time = time.time()
     # _train(cfg, _run, ex, tensorboard)
     gpu_num = 4
-    rank = 4
-    mp.spawn(_train, args=(cfg, _run, ex, tensorboard, rank,), nprocs=gpu_num, join=True)
+    mp.spawn(_train, args=(cfg, _run, ex, tensorboard), nprocs=gpu_num, join=True)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
                  ' it may lose important data and results. See log file for configuration details.')
 
 
-def _train(cfg, _run, exp, tensorboard, rank):
+def _train(rank, cfg, _run, exp, tensorboard):
     dist.init_process_group("gloo", rank=rank, world_size=2)
     inc_dataset = factory.get_data(cfg)
     exp.logger.info("curriculum")
