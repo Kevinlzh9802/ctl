@@ -55,6 +55,49 @@ def initialization(config, seed, mode, exp_id):
 
 def _train(rank, cfg, logger, world_size):
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
+    inc_dataset = factory.get_data(cfg)
+    model = factory.get_model(cfg, logger, inc_dataset)
+
+    #     for task_i in range(inc_dataset.n_tasks):
+    #     # for task_i in range(1):
+    #         model.new_task()
+    #         model.before_task(inc_dataset)
+
+    #         if task_i >= cfg['retrain_from_task']:
+    #             model.train_task()
+    #         # elif task_i >= 1:
+    #         elif task_i == 19:
+    #             # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
+    #             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
+    #             model._parallel_network.load_state_dict(state_dict)
+    #         else:
+    #             pass
+    #             # state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
+    #             # model._parallel_network.load_state_dict(state_dict)
+
+    #         if cfg['device'].type == 'cuda':
+    #             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
+    #                 "acc_details": True,
+    #                 "acc_aux_details": True,
+    #                 "preds_details": True,
+    #                 "preds_aux_details": True
+    #             })
+    #         model.after_task(inc_dataset)
+
+    #         if cfg['device'].type == 'cuda':
+    #             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
+    #                 "acc_details": True,
+    #                 "acc_aux_details": True,
+    #                 "preds_details": True,
+    #                 "preds_aux_details": True
+    #             })
+
+    #             model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+    #                 "acc_details": True,
+    #                 "acc_aux_details": True,
+    #                 "preds_details": True,
+    #                 "preds_aux_details": True
+    #             })
     print('process', rank)
 
 
@@ -78,14 +121,12 @@ def train(_run, _rnd, _seed):
 
     start_time = time.time()
     #     # _train(cfg, _run, ex, tensorboard)
-    #     gpu_num = 4
-    #     mp.spawn(_train, args=(cfg, _run, ex, tensorboard, gpu_num), nprocs=gpu_num, join=True)
+
     inc_dataset = factory.get_data(cfg)
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
 
     gpu_num = 4
-    a = 3
     mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
 
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))

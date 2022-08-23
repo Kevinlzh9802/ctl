@@ -27,7 +27,7 @@ EPSILON = 1e-8
 
 
 class IncModel(IncrementalLearner):
-    def __init__(self, cfg, logger, tensorboard, inc_dataset):
+    def __init__(self, cfg, logger, inc_dataset):
         super().__init__()
         self.mode_train = True
         self._cfg = cfg
@@ -54,7 +54,7 @@ class IncModel(IncrementalLearner):
         self._decouple = cfg["decouple"]
 
         # Logging
-        self._tensorboard = tensorboard
+        # self._tensorboard = tensorboard
         # if f"trial{self._trial_i}" not in self._run.info:
         #     self._run.info[f"trial{self._trial_i}"] = {}
         self._val_per_n_epoch = cfg["val_per_n_epoch"]
