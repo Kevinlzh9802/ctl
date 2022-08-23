@@ -72,7 +72,7 @@ def train(_run, _rnd, _seed):
     start_time = time.time()
     # _train(cfg, _run, ex, tensorboard)
     world_size = 2
-    mp.spawn(_train, args=(world_size,), nprocs=world_size, join=True)
+    mp.spawn(_train, args=(cfg, _run, ex, tensorboard), nprocs=world_size, join=True)
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
         dw.write('This is a fully conducted experiment without errors and interruptions. Please be careful as deleting'
