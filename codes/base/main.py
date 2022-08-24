@@ -75,7 +75,8 @@ def _train(rank, cfg, logger, world_size):
         else:
             pass
             state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
-            model._parallel_network.load_state_dict(state_dict)
+            # model._parallel_network.load_state_dict(state_dict)
+            model._distributed_parallel_network.load_state_dict(state_dict)
 
         if cfg['device'].type == 'cuda':
             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
