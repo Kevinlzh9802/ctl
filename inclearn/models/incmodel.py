@@ -155,7 +155,7 @@ class IncModel(IncrementalLearner):
             self._distributed_parallel_network.train()
 
     def _new_task(self):
-        self._logger('begin new task')
+        self._logger.info('begin new task')
         task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
         self.set_task_info(task_info)
         self._cur_train_loader = train_loader
