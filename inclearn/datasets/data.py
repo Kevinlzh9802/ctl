@@ -76,6 +76,7 @@ class IncrementalDataset:
         # memory Mt
         # self.data_memory = None
         #         # self.targets_memory = []
+        print('setting memory')
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
@@ -87,8 +88,6 @@ class IncrementalDataset:
         # self.targets_ori = None
         # Available data stored in cpu memory.
         self.shared_data_inc, self.shared_test_data = None, None
-
-        self.y_range = []
 
     @property
     def n_tasks(self):
