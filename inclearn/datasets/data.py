@@ -379,8 +379,6 @@ class IncrementalDataset:
             else:
                 sampler = get_weighted_random_sampler(y)
 
-            if self.is_distributed:
-                sampler = DistributedSampler(self.train_dataset)
             shuffle = False if resample_ is True else True
         elif "test" in mode:
             trsf = self.test_transforms
@@ -394,12 +392,11 @@ class IncrementalDataset:
         else:
             raise NotImplementedError("Unknown mode {}.".format(mode))
         # TODO: fix sampler
-        return DataLoader(DummyDataset(x,
-                                       y,
-                                       trsf,
-                                       trsf_type=self.transform_type,
-                                       share_memory_=share_memory,
-                                       dataset_name=self.dataset_name),
+        dataset = DummyDataset(x, y, trsf, trsf_type=self.transform_type, share_memory_=share_memory,
+                               dataset_name=self.dataset_name)
+        if self.is_distributed:
+            sampler = DistributedSampler(dataset)
+        return DataLoader(dataset,
                           batch_size=batch_size,
                           shuffle=(sampler is None),
                           num_workers=self._workers,
