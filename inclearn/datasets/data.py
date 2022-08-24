@@ -8,6 +8,7 @@ import albumentations as A
 import random
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, transforms
 
 from .dataset import get_dataset
@@ -23,15 +24,16 @@ def get_data_folder(data_folder, dataset_name):
 
 
 class IncrementalDataset:
-    def __init__(self, trial_i, dataset_name, random_order=False, shuffle=True, workers=10, device=None,
-                 batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0, resampling=False,
-                 data_folder="./data", start_class=0, mode_train=True, taxonomy=None):
+    def __init__(self, trial_i, dataset_name, is_distributed=False, random_order=False, shuffle=True, workers=10,
+                 device=None, batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0,
+                 resampling=False, data_folder="./data", start_class=0, mode_train=True, taxonomy=None):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
         self.mode_train = mode_train
         # the number of classes for each step in incremental stage
         self.task_size = increment
+        self.is_distributed = is_distributed
         self.increments = []
         self.random_order = random_order
         self.validation_split = validation_split
@@ -376,6 +378,9 @@ class IncrementalDataset:
                 sampler = None
             else:
                 sampler = get_weighted_random_sampler(y)
+
+            if self.is_distributed:
+                sampler = DistributedSampler(self.train_dataset)
             shuffle = False if resample_ is True else True
         elif "test" in mode:
             trsf = self.test_transforms
@@ -388,7 +393,7 @@ class IncrementalDataset:
             sampler = None
         else:
             raise NotImplementedError("Unknown mode {}.".format(mode))
-
+        # TODO: fix sampler
         return DataLoader(DummyDataset(x,
                                        y,
                                        trsf,
@@ -396,7 +401,7 @@ class IncrementalDataset:
                                        share_memory_=share_memory,
                                        dataset_name=self.dataset_name),
                           batch_size=batch_size,
-                          shuffle=True,
+                          shuffle=(sampler is None),
                           num_workers=self._workers,
                           sampler=sampler,
                           pin_memory=False)

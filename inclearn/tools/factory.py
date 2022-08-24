@@ -44,6 +44,7 @@ def get_data(cfg):
     return data.IncrementalDataset(
         trial_i=cfg['trial'],
         dataset_name=cfg["dataset"],
+        is_distributed=cfg["is_distributed"],
         random_order=cfg["random_classes"],
         shuffle=True,
         batch_size=cfg["batch_size"],
