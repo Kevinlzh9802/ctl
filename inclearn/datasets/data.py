@@ -258,13 +258,6 @@ class IncrementalDataset:
         self.targets_test = np.concatenate(self.targets_test)
         self.dict_train_used = {y: np.zeros(len(self.dict_train[y])) for y in self.dict_train}
 
-    def re_index_imagenet(self, dataset):
-        n_array = np.empty([0], dtype='<U74')
-        for path in dataset.data:
-            x = path.split('\\')
-            n_array = np.concatenate((n_array, [x[-2]]))
-        dataset.targets = self.get_true_targets(n_array)
-
     @staticmethod
     def get_true_targets(n_array):
         return 1
