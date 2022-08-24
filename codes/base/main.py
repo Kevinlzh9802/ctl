@@ -125,7 +125,7 @@ def train(_run, _rnd, _seed):
     inc_dataset = factory.get_data(cfg)
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
-
+    print(torch.cuda.device_count())
     gpu_num = 4
     mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
 
