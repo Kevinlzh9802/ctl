@@ -124,6 +124,7 @@ class IncModel(IncrementalLearner):
         self._distributed_parallel_network.eval()
 
     def set_task_info(self, task_info):
+        self._logger.info(f'process {self._cfg["rank"]} begin set task info')
         self._task = task_info["task"]
         # task size for current task
         # n_classes for total number of classes (history + present)
@@ -154,6 +155,7 @@ class IncModel(IncrementalLearner):
             self._distributed_parallel_network.train()
 
     def _new_task(self):
+        self._logger('begin new task')
         task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
         self.set_task_info(task_info)
         self._cur_train_loader = train_loader
