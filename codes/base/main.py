@@ -64,41 +64,41 @@ def _train(rank, cfg, logger, world_size):
         model.new_task()
         model.before_task(inc_dataset)
 
-        # if task_i >= cfg['retrain_from_task']:
-        #     model.train_task()
-        # # elif task_i >= 1:
+        if task_i >= cfg['retrain_from_task']:
+            model.train_task()
+        # elif task_i >= 1:
         # elif task_i == 19:
         #     # state_dict = torch.load(f'~/srip22/codes/DER-ClassIL.pytorch/codes/base/ckpts/step{task_i}.ckpt')
         #     state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
         #     model._parallel_network.load_state_dict(state_dict)
-        # else:
-        #     pass
-            # state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/step{task_i}.ckpt")
-            # model._parallel_network.load_state_dict(state_dict)
+        else:
+            pass
+            state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
+            model._parallel_network.load_state_dict(state_dict)
 
-        # if cfg['device'].type == 'cuda':
-        #     model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
-        #         "acc_details": True,
-        #         "acc_aux_details": True,
-        #         "preds_details": True,
-        #         "preds_aux_details": True
-        #     })
-        # model.after_task(inc_dataset)
+        if cfg['device'].type == 'cuda':
+            model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
+                "acc_details": True,
+                "acc_aux_details": True,
+                "preds_details": True,
+                "preds_aux_details": True
+            })
+        model.after_task(inc_dataset)
 
-        # if cfg['device'].type == 'cuda':
-        #     model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
-        #         "acc_details": True,
-        #         "acc_aux_details": True,
-        #         "preds_details": True,
-        #         "preds_aux_details": True
-        #     })
-        #
-        #     model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
-        #         "acc_details": True,
-        #         "acc_aux_details": True,
-        #         "preds_details": True,
-        #         "preds_aux_details": True
-        #     })
+        if cfg['device'].type == 'cuda':
+            model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
+                "acc_details": True,
+                "acc_aux_details": True,
+                "preds_details": True,
+                "preds_aux_details": True
+            })
+
+            model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+                "acc_details": True,
+                "acc_aux_details": True,
+                "preds_details": True,
+                "preds_aux_details": True
+            })
     print('process', rank)
 
 
@@ -126,8 +126,8 @@ def train(_run, _rnd, _seed):
     inc_dataset = factory.get_data(cfg)
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
-    print(torch.cuda.device_count())
-    gpu_num = 4
+    # print(torch.cuda.device_count())
+    gpu_num = torch.cuda.device_count()
     mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
 
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
