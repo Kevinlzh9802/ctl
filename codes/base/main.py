@@ -56,6 +56,7 @@ def initialization(config, seed, mode, exp_id):
 def _train(rank, cfg, logger, world_size):
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)
+    cfg["rank"] = rank
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, logger, inc_dataset)
 
