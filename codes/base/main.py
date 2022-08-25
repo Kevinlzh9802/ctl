@@ -129,8 +129,9 @@ def train(_run, _rnd, _seed):
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
     # print(torch.cuda.device_count())
+    logger2 = factory.MyCustomLoader()
     gpu_num = torch.cuda.device_count()
-    mp.spawn(_train, args=(cfg, ex.logger, gpu_num), nprocs=gpu_num, join=True)
+    mp.spawn(_train, args=(cfg, logger2, gpu_num), nprocs=gpu_num, join=True)
 
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:

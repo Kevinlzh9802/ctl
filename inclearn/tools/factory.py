@@ -71,3 +71,12 @@ def set_device(cfg):
 
 def set_acc_detail_path(cfg, mode):
     cfg["acc_detail_path"] += (cfg["exp"]["name"] + '/' + mode)
+
+
+class MyCustomLoader:
+    def __init__(self, rank=0):
+        self.rank = rank
+
+    def info(self, content=''):
+        assert isinstance(content, str)
+        print(content)
