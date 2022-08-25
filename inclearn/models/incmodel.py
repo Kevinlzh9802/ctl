@@ -35,6 +35,7 @@ class IncModel(IncrementalLearner):
         if cfg["is_distributed"]:
             self._device = torch.device("cuda:{}".format(cfg["rank"]))
         self._logger = logger
+        self._rank = self._cfg["rank"]
         # self._run = _run  # the sacred _run object.
 
         # Data
@@ -72,7 +73,7 @@ class IncModel(IncrementalLearner):
             dataset=cfg["dataset"],
         )
         self._parallel_network = DataParallel(self._network)
-        self._distributed_parallel_network = DDP(self._network, device_ids=[self._cfg["rank"]])
+        self._distributed_parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
         self._distributed_parallel_network.to(self._device)
         self._train_head = cfg["train_head"]
         self._infer_head = cfg["infer_head"]
@@ -257,8 +258,8 @@ class IncModel(IncrementalLearner):
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
 
-                print(inputs)
-                print(targets)
+                # print(inputs)
+                # print(targets)
                 self.train()
                 self._optimizer.zero_grad()
 
