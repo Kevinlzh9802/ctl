@@ -288,12 +288,8 @@ class IncModel(IncrementalLearner):
                 print(total_loss)
                 total_loss.backward()
 
-                # a = self._optimizer.param_groups[0]['params']
-                # for x in range(len(a)):
-                #     if torch.sum(torch.isnan(a[x].grad) > 0):
-                #         print(x)
-                #         print(a[x].grad)
-                #         print(total_loss)
+                a = self._optimizer.param_groups[0]['params']
+                print(a[0].grad)
 
                 self._optimizer.step()
 
