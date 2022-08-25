@@ -73,6 +73,7 @@ class IncModel(IncrementalLearner):
         )
         self._parallel_network = DataParallel(self._network)
         self._distributed_parallel_network = DDP(self._network, device_ids=[self._cfg["rank"]])
+        self._distributed_parallel_network.to(self._device)
         self._train_head = cfg["train_head"]
         self._infer_head = cfg["infer_head"]
         self._old_model = None
@@ -255,6 +256,9 @@ class IncModel(IncrementalLearner):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
+                
+                print(inputs)
+                print(targets)
                 self.train()
                 self._optimizer.zero_grad()
 

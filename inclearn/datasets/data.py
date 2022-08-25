@@ -76,7 +76,6 @@ class IncrementalDataset:
         # memory Mt
         # self.data_memory = None
         #         # self.targets_memory = []
-        print('setting memory')
         self.memory_dict = {}
         # Incoming data D_t
         self.data_cur, self.targets_cur = None, None
