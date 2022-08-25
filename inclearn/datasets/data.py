@@ -385,7 +385,7 @@ class IncrementalDataset:
         # TODO: fix sampler
         dataset = DummyDataset(x, y, trsf, trsf_type=self.transform_type, share_memory_=share_memory,
                                dataset_name=self.dataset_name)
-        if self.is_distributed:
+        if self.is_distributed and 'train' in mode:
             # TODO: fix the hardcode 4
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
         return DataLoader(dataset,

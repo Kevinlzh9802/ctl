@@ -734,7 +734,7 @@ class IncModel(IncrementalLearner):
         #     for x in range(ind_range):
         #         pred = preds_sort[:, x]
         #         iscorrect_5 = torch.logical_or(iscorrect_5, pred == targets)
-        #     acc.update(float(iscorrect_5.count_nonzero() / iscorrect_5.size(0)), iscorrect_5.size(0))
+        #     acc_5.update(float(iscorrect_5.count_nonzero() / iscorrect_5.size(0)), iscorrect_5.size(0))
 
     def record_acc_details(self, output, targets, targets_0, acc):
         # targets is the real label
