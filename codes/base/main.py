@@ -62,6 +62,9 @@ def _train(rank, cfg, world_size):
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, logger, inc_dataset)
 
+    ex.logger.info("curriculum")
+    ex.logger.info(inc_dataset.curriculum)
+
     for task_i in range(inc_dataset.n_tasks):
     # for task_i in range(1):
         model.new_task()
@@ -126,10 +129,6 @@ def train(_run, _rnd, _seed):
     start_time = time.time()
     #     # _train(cfg, _run, ex, tensorboard)
 
-    inc_dataset = factory.get_data(cfg)
-    ex.logger.info("curriculum")
-    ex.logger.info(inc_dataset.curriculum)
-    # print(torch.cuda.device_count())
     gpu_num = torch.cuda.device_count()
     mp.spawn(_train, args=(cfg, gpu_num), nprocs=gpu_num, join=True)
 

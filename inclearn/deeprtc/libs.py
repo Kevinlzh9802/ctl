@@ -269,7 +269,7 @@ class Tree:
         for x in node_names:
             self.connect_node(existing_tree, x)
         existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
-        existing_tree.show()
+        # existing_tree.show()
 
     def connect_node(self, existing_tree, node_name):
         node = self.nodes.get(node_name).copy()
