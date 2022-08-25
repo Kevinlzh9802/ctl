@@ -184,6 +184,8 @@ class IncModel(IncrementalLearner):
     def set_optimizer(self, lr=None):
         if lr is None:
             lr = self._lr
+        if self._cfg["is_distributed"]:
+            lr = lr * self._cfg["world_size"]
 
         if self._cfg["dynamic_weight_decay"]:
             # used in BiC official implementation
@@ -285,11 +287,11 @@ class IncModel(IncrementalLearner):
                 #             print(x)
                 #             print(a[x])
 
-                print(total_loss)
+                # print(total_loss)
                 total_loss.backward()
 
-                a = self._optimizer.param_groups[0]['params']
-                print(a[0].grad)
+                # a = self._optimizer.param_groups[0]['params']
+                # print(a[0].grad)
 
                 self._optimizer.step()
 

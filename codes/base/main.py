@@ -58,6 +58,7 @@ def _train(rank, cfg, world_size):
     print('start process', rank)
     torch.cuda.set_device(rank)
     cfg["rank"] = rank
+    cfg["world_size"] = world_size
     logger = factory.MyCustomLoader(rank=rank)
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, logger, inc_dataset)
