@@ -386,7 +386,7 @@ class IncrementalDataset:
         dataset = DummyDataset(x, y, trsf, trsf_type=self.transform_type, share_memory_=share_memory,
                                dataset_name=self.dataset_name)
         if self.is_distributed:
-            sampler = DistributedSampler(dataset)
+            sampler = DistributedSampler(dataset, num_replicas=sel, drop_last=True)
         return DataLoader(dataset,
                           batch_size=batch_size,
                           shuffle=(sampler is None),

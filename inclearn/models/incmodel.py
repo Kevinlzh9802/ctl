@@ -256,7 +256,7 @@ class IncModel(IncrementalLearner):
                 inputs, targets = data
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
-                
+
                 print(inputs)
                 print(targets)
                 self.train()
@@ -274,16 +274,17 @@ class IncModel(IncrementalLearner):
                 else:
                     total_loss = ce_loss
 
-                if ce_loss < 0:
-                    print('ce_loss: ', ce_loss)
-                if loss_aux < 0:
-                    print('loss_aux: ', loss_aux)
-                    a = self._optimizer.param_groups[0]['params']
-                    for x in range(len(a)):
-                        if torch.sum(torch.isnan(a[x]) > 0):
-                            print(x)
-                            print(a[x])
+                # if ce_loss < 0:
+                #     print('ce_loss: ', ce_loss)
+                # if loss_aux < 0:
+                #     print('loss_aux: ', loss_aux)
+                #     a = self._optimizer.param_groups[0]['params']
+                #     for x in range(len(a)):
+                #         if torch.sum(torch.isnan(a[x]) > 0):
+                #             print(x)
+                #             print(a[x])
 
+                print(total_loss)
                 total_loss.backward()
 
                 # a = self._optimizer.param_groups[0]['params']
@@ -305,12 +306,6 @@ class IncModel(IncrementalLearner):
                 _ce_loss += ce_loss
                 _total_loss += total_loss
                 count += 1
-                #
-                # a = self._optimizer.param_groups[0]['params']
-                # for x in range(len(a)):
-                #     if torch.sum(torch.isnan(a[x]) > 0):
-                #         print(x)
-                #         print(a[x].grad)
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
