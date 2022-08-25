@@ -29,8 +29,6 @@ EPSILON = 1e-8
 class IncModel(IncrementalLearner):
     def __init__(self, cfg, logger, inc_dataset):
         super().__init__()
-        print('begin init IncModel')
-        logger.info('begin init IncModel')
         self.mode_train = True
         self._cfg = cfg
         self._device = cfg['device']
