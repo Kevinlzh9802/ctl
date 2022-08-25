@@ -53,10 +53,12 @@ def initialization(config, seed, mode, exp_id):
     return cfg, logger, tensorboard
 
 
-def _train(rank, cfg, logger, world_size):
+def _train(rank, cfg, world_size):
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    print('start process', rank)
     torch.cuda.set_device(rank)
     cfg["rank"] = rank
+    logger = factory.MyCustomLoader(rank=rank)
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, logger, inc_dataset)
 
@@ -101,7 +103,6 @@ def _train(rank, cfg, logger, world_size):
                 "preds_details": True,
                 "preds_aux_details": True
             })
-    print('process', rank)
 
 
 @ex.command
@@ -129,9 +130,8 @@ def train(_run, _rnd, _seed):
     ex.logger.info("curriculum")
     ex.logger.info(inc_dataset.curriculum)
     # print(torch.cuda.device_count())
-    logger2 = factory.MyCustomLoader()
     gpu_num = torch.cuda.device_count()
-    mp.spawn(_train, args=(cfg, logger2, gpu_num), nprocs=gpu_num, join=True)
+    mp.spawn(_train, args=(cfg, gpu_num), nprocs=gpu_num, join=True)
 
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:

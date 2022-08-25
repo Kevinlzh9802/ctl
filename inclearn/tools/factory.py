@@ -83,4 +83,4 @@ class MyCustomLoader:
     def info(self, content=''):
         # assert isinstance(content, str)
         if self.print_enable:
-            print(str(time.time()) + ' | ' + content)
+            print(time.asctime(time.gmtime()) + ' | ' + content)
