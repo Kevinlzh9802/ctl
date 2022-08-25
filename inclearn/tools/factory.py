@@ -1,3 +1,5 @@
+import time
+
 import torch
 from torch import nn
 from torch import optim
@@ -74,9 +76,11 @@ def set_acc_detail_path(cfg, mode):
 
 
 class MyCustomLoader:
-    def __init__(self, rank=0):
+    def __init__(self, rank=0, print_rank=0):
         self.rank = rank
+        self.print_enable = (self.rank == print_rank)
 
     def info(self, content=''):
-        assert isinstance(content, str)
-        print(content)
+        # assert isinstance(content, str)
+        if self.print_enable:
+            print(str(time.time()) + ' | ' + content)
