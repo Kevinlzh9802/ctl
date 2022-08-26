@@ -34,8 +34,8 @@ class IncModel(IncrementalLearner):
         self._device = cfg['device']
         if cfg["is_distributed"]:
             self._device = torch.device("cuda:{}".format(cfg["rank"]))
+            self._rank = self._cfg["rank"]
         self._logger = logger
-        self._rank = self._cfg["rank"]
         # self._run = _run  # the sacred _run object.
 
         # Data

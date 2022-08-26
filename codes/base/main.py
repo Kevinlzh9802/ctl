@@ -54,12 +54,15 @@ def initialization(config, seed, mode, exp_id):
 
 
 def _train(rank, cfg, world_size):
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-    print('start process', rank)
-    torch.cuda.set_device(rank)
-    cfg["rank"] = rank
-    cfg["world_size"] = world_size
-    logger = factory.MyCustomLoader(rank=rank)
+    if cfg["is_distributed"]:
+        dist.init_process_group("nccl", rank=rank, world_size=world_size)
+        print('start process', rank)
+        torch.cuda.set_device(rank)
+        cfg["rank"] = rank
+        cfg["world_size"] = world_size
+        logger = factory.MyCustomLoader(rank=rank)
+    else:
+        logger = factory.MyCustomLoader(rank=0)
     inc_dataset = factory.get_data(cfg)
     model = factory.get_model(cfg, logger, inc_dataset)
 
@@ -122,16 +125,17 @@ def train(_run, _rnd, _seed):
         cfg["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
         factory.set_device(cfg)
-    if cfg["device"].type == 'cuda':
+    if cfg["device"].type == 'cuda' and 'imagenet' in cfg["dataset"]:
         cfg.data_folder = '/datasets'
     else:
         cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
-    # _train(1, cfg, 1)
-
-    gpu_num = torch.cuda.device_count()
-    mp.spawn(_train, args=(cfg, gpu_num), nprocs=gpu_num, join=True)
+    if cfg["is_distributed"]:
+        gpu_num = torch.cuda.device_count()
+        mp.spawn(_train, args=(cfg, gpu_num), nprocs=gpu_num, join=True)
+    else:
+        _train(0, cfg, 1)
 
     ex.logger.info("Training finished in {}s.".format(int(time.time() - start_time)))
     with open('results/' + cfg["exp"]["name"] + '/delete_warning.txt', 'w') as dw:
