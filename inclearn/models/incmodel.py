@@ -72,9 +72,13 @@ class IncModel(IncrementalLearner):
             use_bias=cfg["use_bias"],
             dataset=cfg["dataset"],
         )
-        self._parallel_network = DataParallel(self._network)
-        self._distributed_parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
-        self._distributed_parallel_network.to(self._device)
+        if self._cfg["is_distributed"]:
+            self._parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
+            self._parallel_network.to(self._device)
+        else:
+            self._parallel_network = DataParallel(self._network)
+        # self._distributed_parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
+        # self._distributed_parallel_network.to(self._device)
         self._train_head = cfg["train_head"]
         self._infer_head = cfg["infer_head"]
         self._old_model = None
@@ -123,7 +127,7 @@ class IncModel(IncrementalLearner):
 
     def eval(self):
         # self._parallel_network.eval()
-        self._distributed_parallel_network.eval()
+        self._parallel_network.eval()
 
     def set_task_info(self, task_info):
         self._logger.info(f'process {self._cfg["rank"]} begin set task info')
@@ -146,15 +150,15 @@ class IncModel(IncrementalLearner):
         if self._der:
             # self._parallel_network.train()
             # self._parallel_network.module.convnets[-1].train()
-            self._distributed_parallel_network.train()
-            self._distributed_parallel_network.module.convnets[-1].train()
+            self._parallel_network.train()
+            self._parallel_network.module.convnets[-1].train()
             if self._task >= 1:
                 for i in range(self._task):
                     # self._parallel_network.module.convnets[i].eval()
-                    self._distributed_parallel_network.module.convnets[i].eval()
+                    self._parallel_network.module.convnets[i].eval()
         else:
             # self._parallel_network.train()
-            self._distributed_parallel_network.train()
+            self._parallel_network.train()
 
     def _new_task(self):
         self._logger.info('begin new task')
@@ -199,7 +203,7 @@ class IncModel(IncrementalLearner):
         if self._der and self._task > 0:
             for i in range(self._task):
                 # for p in self._parallel_network.module.convnets[i].parameters():
-                for p in self._distributed_parallel_network.module.convnets[i].parameters():
+                for p in self._parallel_network.module.convnets[i].parameters():
                     p.requires_grad = False
 
         self._optimizer = factory.get_optimizer(filter(lambda p: p.requires_grad, self._network.parameters()),
@@ -253,7 +257,7 @@ class IncModel(IncrementalLearner):
                         self._network.aux_classifier.reset_parameters()
 
                     # self._parallel_network.to(self._device)
-                    self._distributed_parallel_network.to(self._device)
+                    self._parallel_network.to(self._device)
             count = 0
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
@@ -266,7 +270,7 @@ class IncModel(IncrementalLearner):
                 self._optimizer.zero_grad()
 
                 # outputs = self._parallel_network(inputs)
-                outputs = self._distributed_parallel_network(inputs)
+                outputs = self._parallel_network(inputs)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, self.train_save_option)
                 ce_loss, loss_aux = self._compute_loss(outputs, targets, nlosses, stslosses, losses)
                 # ce_loss, loss_aux, acc, acc_aux = \
@@ -449,7 +453,7 @@ class IncModel(IncrementalLearner):
     def _after_task(self, inc_dataset):
         taski = self._task
         # network = deepcopy(self._parallel_network)
-        network = deepcopy(self._distributed_parallel_network)
+        network = deepcopy(self._parallel_network)
         network.eval()
         self._logger.info("save model")
         if taski >= self._train_from_task and taski in self._cfg["save_ckpt"]:
@@ -469,7 +473,7 @@ class IncModel(IncrementalLearner):
             self._network.classifier.reset_parameters()
             finetune_last_layer(self._logger,
                                 # self._parallel_network,
-                                self._distributed_parallel_network,
+                                self._parallel_network,
                                 train_loader,
                                 self._n_classes,
                                 device=self._device,
@@ -483,7 +487,7 @@ class IncModel(IncrementalLearner):
                                 save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple",
                                 index_map=self._inc_dataset.targets_all_unique)
             # network = deepcopy(self._parallel_network)
-            network = deepcopy(self._distributed_parallel_network)
+            network = deepcopy(self._parallel_network)
             if taski in self._cfg["save_ckpt"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts")
                 torch.save(network.cpu().state_dict(),
@@ -518,8 +522,8 @@ class IncModel(IncrementalLearner):
 
         # self._parallel_network.eval()
         # self._old_model = deepcopy(self._parallel_network)
-        self._distributed_parallel_network.eval()
-        self._old_model = deepcopy(self._distributed_parallel_network)
+        self._parallel_network.eval()
+        self._old_model = deepcopy(self._parallel_network)
         self._old_model.module.freeze()
         del self._inc_dataset.shared_data_inc
         self._inc_dataset.shared_data_inc = None
@@ -535,6 +539,7 @@ class IncModel(IncrementalLearner):
 
     def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
         self._logger.info(f"Begin evaluation: {name}")
+        factory.print_dataset_info(data_loader)
         acc = averageMeter()
         acc_5 = averageMeter()
         acc_aux = averageMeter()
@@ -542,14 +547,14 @@ class IncModel(IncrementalLearner):
         self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
         # self._parallel_network.eval()
-        self._distributed_parallel_network.eval()
+        self._parallel_network.eval()
 
         with torch.no_grad():
             for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
                 # outputs = self._parallel_network(inputs)
-                outputs = self._distributed_parallel_network(inputs)
+                outputs = self._parallel_network(inputs)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
 
         self._logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
@@ -642,7 +647,7 @@ class IncModel(IncrementalLearner):
             self._inc_dataset.memory_dict = herding(
                 self._n_classes,
                 # self._parallel_network,
-                self._distributed_parallel_network,
+                self._parallel_network,
                 inc_dataset,
                 data_inc,
                 self._memory_per_class,

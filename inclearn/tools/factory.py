@@ -1,6 +1,8 @@
 import time
 
+import numpy as np
 import torch
+import torchvision
 from torch import nn
 from torch import optim
 
@@ -73,6 +75,12 @@ def set_device(cfg):
 
 def set_acc_detail_path(cfg, mode):
     cfg["acc_detail_path"] += (cfg["exp"]["name"] + '/' + mode)
+
+
+def print_dataset_info(loader):
+    b1, b2 = np.unique(loader.y, return_counts=True)
+    print(b1)
+    print(b2)
 
 
 class MyCustomLoader:
