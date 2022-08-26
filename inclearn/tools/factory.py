@@ -78,7 +78,7 @@ def set_acc_detail_path(cfg, mode):
 
 
 def print_dataset_info(loader):
-    b1, b2 = np.unique(loader.y, return_counts=True)
+    b1, b2 = np.unique(loader.dataset.y, return_counts=True)
     print(b1)
     print(b2)
 

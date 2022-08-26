@@ -128,7 +128,7 @@ def train(_run, _rnd, _seed):
         cfg.data_folder = osp.join(base_dir, "data")
 
     start_time = time.time()
-    # _train(cfg, _run, ex, tensorboard)
+    # _train(1, cfg, 1)
 
     gpu_num = torch.cuda.device_count()
     mp.spawn(_train, args=(cfg, gpu_num), nprocs=gpu_num, join=True)
@@ -139,7 +139,7 @@ def train(_run, _rnd, _seed):
                  ' it may lose important data and results. See log file for configuration details.')
 
 
-# def _train(cfg, _run, exp, tensorboard):
+# def _train(cfg, _run, exp):
 #     cfg["rank"] = 1
 #     cfg["world_size"] = 1
 #     inc_dataset = factory.get_data(cfg)
@@ -148,10 +148,10 @@ def train(_run, _rnd, _seed):
 #
 #     model = factory.get_model(cfg, exp.logger, inc_dataset)
 #
-#     if _run.meta_info["options"]["--file_storage"] is not None:
-#         _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
-#     else:
-#         _save_dir = cfg['sp']['model']
+#     # if _run.meta_info["options"]["--file_storage"] is not None:
+#     #     _save_dir = osp.join(_run.meta_info["options"]["--file_storage"], str(_run._id))
+#     # else:
+#     #     _save_dir = cfg['sp']['model']
 #
 #     results = results_utils.get_template_results(cfg)
 #
