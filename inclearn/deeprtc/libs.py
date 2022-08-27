@@ -268,7 +268,7 @@ class Tree:
     def expand_tree(self, existing_tree, node_names):
         for x in node_names:
             self.connect_node(existing_tree, x)
-        existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
+        # existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
         # existing_tree.show()
 
     def connect_node(self, existing_tree, node_name):
@@ -280,10 +280,11 @@ class Tree:
             self.connect_node(existing_tree, node.parent)
         node_parent = existing_tree.nodes.get(node.parent)
         assert node_parent is not None
-        existing_tree.nodes[node_name] = node
+
         node.node_id = len(existing_tree.nodes)
-        node_parent.add_child(node_name)
+        existing_tree.nodes[node_name] = node
         node.child_idx = len(node_parent.children)
+        node_parent.add_child(node_name)
 
     def reset_params(self):
         self.label_dict_hier = self.tree_node_to_dict(self.root)
