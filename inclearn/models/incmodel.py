@@ -408,8 +408,8 @@ class IncModel(IncrementalLearner):
 
             loss = nloss + stsloss * 0
             losses.update(loss.item(), batch_size)
-            if stsloss < 0:
-                print('stsloss: ', stsloss)
+            # if stsloss < 0:
+                # print('stsloss: ', stsloss)
         else:
             output = outputs['output']
             aux_output = outputs['aux_logit']

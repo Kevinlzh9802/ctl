@@ -301,6 +301,10 @@ class Tree:
             self.gen_rel_path()
             self.gen_Id2name()
 
+    def reset_params_2(self, hier_tree):
+        label_dict_hier = hier_tree.tree_node_to_dict(hier_tree.root)
+        return Tree(self.dataset_name, label_dict_hier, self.label_dict_index)
+
     def tree_node_to_dict(self, node):
         child_dict = OrderedDict()
         for x in node.children.values():

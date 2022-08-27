@@ -121,7 +121,9 @@ class IncrementalDataset:
         # cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])
         # self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
         self.taxonomy_tree.expand_tree(self.current_partial_tree, self.curriculum[self._current_task])
-        self.current_partial_tree.reset_params()
+        # self.current_partial_tree.reset_params()
+
+        self.current_partial_tree = self.taxonomy_tree.reset_params_2(self.current_partial_tree)
         # self.current_partial_tree = self.taxonomy_tree.gen_partial_tree(task_until_now)
         task_info = {
             "task": self._current_task,
