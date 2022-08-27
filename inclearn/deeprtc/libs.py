@@ -254,16 +254,16 @@ class Tree:
             parent_label_index_list.append(node_i.label_index)
         return parent_name_list, parent_label_index_list
 
-    # def gen_partial_tree(self, task_until_now):
-    #     name_list = list(np.array(task_until_now).flatten())
-    #     parent_node_order = [self.get_task_parent(x) for x in task_until_now]
-    #     parent_node_order.pop(0)
-    #     if len(parent_node_order) == 0:
-    #         partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
-    #     else:
-    #         partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
-    #     tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
-    #     return tree
+    def gen_partial_tree(self, task_until_now):
+        name_list = list(np.array(task_until_now).flatten())
+        parent_node_order = [self.get_task_parent(x) for x in task_until_now]
+        parent_node_order.pop(0)
+        if len(parent_node_order) == 0:
+            partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
+        else:
+            partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
+        tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
+        return tree
 
     def expand_tree(self, existing_tree, node_names):
         for x in node_names:
@@ -329,16 +329,16 @@ def write_file(file_name, data_list):
             f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
 
 
-# def partial_copy_dict(dict_full, name_list, key_order=None):
-#     dict_part = OrderedDict()
-#     if key_order is None:
-#         for name in dict_full.keys():
-#             if name in name_list:
-#                 dict_part[name] = partial_copy_dict(dict_full[name], name_list)
-#     else:
-#         for x in key_order:
-#             dict_part[x] = dict_full[x]
-#         for x in dict_full.keys():
-#             if x not in dict_part.keys():
-#                 dict_part[x] = {}
-#     return dict_part
+def partial_copy_dict(dict_full, name_list, key_order=None):
+    dict_part = OrderedDict()
+    if key_order is None:
+        for name in dict_full.keys():
+            if name in name_list:
+                dict_part[name] = partial_copy_dict(dict_full[name], name_list)
+    else:
+        for x in key_order:
+            dict_part[x] = dict_full[x]
+        for x in dict_full.keys():
+            if x not in dict_part.keys():
+                dict_part[x] = {}
+    return dict_part
