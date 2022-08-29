@@ -18,9 +18,8 @@ def deep_rtc_nloss(nout, targets, leaf_id, node_labels, device):
             else:
                 res = criterion(nout[n_id][idx, :].view(1, -1), torch.tensor([n_l]))
             nloss.append(res)
-
-    print(nloss)
     nloss = torch.mean(torch.stack(nloss))
+    print(nloss)
     return nloss
 
 
