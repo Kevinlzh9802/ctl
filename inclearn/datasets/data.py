@@ -118,10 +118,10 @@ class IncrementalDataset:
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         # old method
-        # task_until_now = self.curriculum[:self._current_task + 1]
-        # cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])
-        # self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
-        # self.current_partial_tree = self.taxonomy_tree.gen_partial_tree(task_until_now)
+        task_until_now = self.curriculum[:self._current_task + 1]
+        cur_parent_node = self.taxonomy_tree.get_task_parent(self.curriculum[self._current_task])
+        self.current_ordered_dict[cur_parent_node] = self.curriculum[self._current_task]
+        tree_old = self.taxonomy_tree.gen_partial_tree(task_until_now)
 
         # new method
         self.taxonomy_tree.expand_tree(self.current_partial_tree, self.curriculum[self._current_task])
@@ -131,7 +131,7 @@ class IncrementalDataset:
         print(self.current_partial_tree.label_dict_hier)
         self.current_partial_tree = Tree(self.current_partial_tree.dataset_name,
                                          self.current_partial_tree.label_dict_hier,
-                                         self.current_partial_tree.label_dict_index)
+                                         self.taxonomy_tree.label_dict_index)
 
         task_info = {
             "task": self._current_task,
