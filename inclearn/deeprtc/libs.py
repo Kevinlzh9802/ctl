@@ -266,6 +266,8 @@ class Tree:
         return tree
 
     def expand_tree(self, existing_tree, node_names):
+        if len(existing_tree.label_dict_index) == 0:
+            existing_tree.label_dict_index = self.label_dict_index
         for x in node_names:
             self.connect_node(existing_tree, x)
         # existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
