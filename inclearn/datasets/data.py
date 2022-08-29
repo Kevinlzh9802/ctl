@@ -129,9 +129,9 @@ class IncrementalDataset:
         # self.current_partial_tree = self.taxonomy_tree.reset_params_2(self.current_partial_tree)
 
         print(self.current_partial_tree.label_dict_hier)
-        self.current_partial_tree = Tree(self.current_partial_tree.dataset_name,
-                                         self.current_partial_tree.label_dict_hier,
-                                         self.taxonomy_tree.label_dict_index)
+        # self.current_partial_tree = Tree(self.current_partial_tree.dataset_name,
+        #                                  self.current_partial_tree.label_dict_hier,
+        #                                  self.taxonomy_tree.label_dict_index)
 
         task_info = {
             "task": self._current_task,
@@ -171,7 +171,6 @@ class IncrementalDataset:
 
     def _gen_label_map(self, name_coarse):
         label_map = {}
-        # TODO: fix bug
         for nc in name_coarse:
             lc = self.taxonomy_tree.nodes.get(nc).label_index
             name_map_single = self.taxonomy_tree.get_finest(nc)
