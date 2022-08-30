@@ -96,7 +96,7 @@ pretrain:
 dataset: "cifar100"  # 'imagenet100', 'cifar100'
 trial: 5
 increment: 10
-batch_size: 128
+batch_size: 32
 
 workers: 8
 validation: 0.1  # Validation split (0. <= x <= 1.)
