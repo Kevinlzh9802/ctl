@@ -104,7 +104,7 @@ random_classes: False  # Randomize classes order of increment
 start_class: 0  # number of tasks for the first step, start from 0.
 start_task: 0
 max_task:  # Cap the number of task
-is_distributed: False
+is_distributed: True
 
 # Memory
 memory_enable: True
