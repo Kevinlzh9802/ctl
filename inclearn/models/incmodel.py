@@ -189,8 +189,8 @@ class IncModel(IncrementalLearner):
     def set_optimizer(self, lr=None):
         if lr is None:
             lr = self._lr
-        # if self._cfg["is_distributed"]:
-        #     lr = lr * self._cfg["world_size"]
+        if self._cfg["is_distributed"]:
+            lr = lr * self._cfg["world_size"]
 
         if self._cfg["dynamic_weight_decay"]:
             # used in BiC official implementation
