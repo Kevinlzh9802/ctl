@@ -445,7 +445,7 @@ class IncModel(IncrementalLearner):
             aux_targets = tgt_to_aux_tgt(targets, cur_labels, self._device)
             aux_loss = F.cross_entropy(aux_output, aux_targets)
         else:
-            if str(self._device) == 'cuda:0':
+            if self._device.type == 'cuda':
                 aux_loss = torch.zeros([1]).cuda()
             else:
                 aux_loss = torch.zeros([1])
