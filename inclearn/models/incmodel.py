@@ -550,13 +550,14 @@ class IncModel(IncrementalLearner):
         # self._parallel_network.eval()
         self._parallel_network.eval()
 
+        print(data_loader.dataset.sampler is None)
         with torch.no_grad():
             for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
                 # outputs = self._parallel_network(inputs)
                 outputs = self._parallel_network(inputs)
-                print(targets)
+                # print(targets)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
 
         self._logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
