@@ -542,6 +542,7 @@ class IncModel(IncrementalLearner):
     def _compute_accuracy_by_netout(self, data_loader, name='default', save_path='', save_option=None):
         self._logger.info(f"Begin evaluation: {name}")
         factory.print_dataset_info(data_loader)
+        data_loader.sampler = None
         acc = averageMeter()
         acc_5 = averageMeter()
         acc_aux = averageMeter()
