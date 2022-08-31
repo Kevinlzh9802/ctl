@@ -548,24 +548,22 @@ class IncModel(IncrementalLearner):
         self.curr_preds, self.curr_preds_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
         self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
-        # self._parallel_network.eval()
         self._parallel_network.eval()
-
-        print(data_loader.sampler is None)
+        c = 0
         with torch.no_grad():
             for _, (inputs, targets) in enumerate(data_loader):
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
-                # outputs = self._parallel_network(inputs)
                 outputs = self._parallel_network(inputs)
                 # print(targets)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
+                c += 1
 
         self._logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
         # save accuracy and preds info into files
         self.curr_acc_list = [acc]
         self.curr_acc_list_aux = [acc_aux]
-
+        print(c)
         sp = save_path + name + '/acc_details/'
         self.save_details(sp, save_option)
 
