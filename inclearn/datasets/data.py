@@ -407,7 +407,7 @@ class IncrementalDataset:
                           batch_size=batch_size,
                           shuffle=False,
                           num_workers=self._workers,
-                          sampler=sampler,
+                          sampler=None,
                           pin_memory=False)
 
     def get_custom_loader(self, class_indexes, mode="test", data_source="train", imgs=None, tgts=None):
