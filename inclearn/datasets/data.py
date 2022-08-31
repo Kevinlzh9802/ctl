@@ -116,7 +116,7 @@ class IncrementalDataset:
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
         val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
-        print(val_loader.sampler)
+        # print(val_loader.sampler)
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         # old method
@@ -396,9 +396,13 @@ class IncrementalDataset:
         # TODO: fix sampler
         dataset = DummyDataset(x, y, trsf, trsf_type=self.transform_type, share_memory_=share_memory,
                                dataset_name=self.dataset_name)
+        if mode == 'test':
+            print(sampler)
         if self.is_distributed and 'train' in mode:
             # TODO: fix the hardcode 4
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
+        if mode == 'test':
+            print(sampler)
         return DataLoader(dataset,
                           batch_size=batch_size,
                           shuffle=(sampler is None),
