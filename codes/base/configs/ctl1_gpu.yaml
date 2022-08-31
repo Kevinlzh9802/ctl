@@ -1,6 +1,6 @@
 exp:
-  name: "der_rtc_dist"
-  load_model_name: 'der_rtc_dist'
+  name: "der_rtc_no_dist"
+  load_model_name: 'der_rtc_no_dist'
   debug: False
 
 # Model Cfg
@@ -104,7 +104,7 @@ random_classes: False  # Randomize classes order of increment
 start_class: 0  # number of tasks for the first step, start from 0.
 start_task: 0
 max_task:  # Cap the number of task
-is_distributed: True
+is_distributed: False
 
 # Memory
 memory_enable: True
