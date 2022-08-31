@@ -405,7 +405,7 @@ class IncrementalDataset:
         #     print(sampler)
         return DataLoader(dataset,
                           batch_size=batch_size,
-                          shuffle=(sampler is None),
+                          shuffle=False,
                           num_workers=self._workers,
                           sampler=sampler,
                           pin_memory=False)
