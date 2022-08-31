@@ -398,6 +398,7 @@ class IncrementalDataset:
         if self.is_distributed and 'train' in mode:
             # TODO: fix the hardcode 4
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
+            print(mode)
         return DataLoader(dataset,
                           batch_size=batch_size,
                           shuffle=(sampler is None),
