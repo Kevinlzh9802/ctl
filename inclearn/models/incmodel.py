@@ -168,6 +168,7 @@ class IncModel(IncrementalLearner):
         self._cur_train_loader = train_loader
         self._cur_val_loader = val_loader
         self._cur_test_loader = test_loader
+        print(self._cur_val_loader.sampler)
 
     def _before_task(self, inc_dataset):
         self._logger.info(f"Begin step {self._task}")
