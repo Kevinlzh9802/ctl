@@ -38,6 +38,13 @@ class IncrementalDataset:
         self.random_order = random_order
         self.validation_split = validation_split
         self._device = device
+
+        self._seed = seed
+        self._s_rate = sample_rate
+        self._workers = workers
+        self._shuffle = shuffle
+        self._batch_size = batch_size
+        self._resampling = resampling
         # -------------------------------------
         # Dataset Info
         # -------------------------------------
@@ -52,12 +59,6 @@ class IncrementalDataset:
         dataset_class = get_dataset(dataset_name)
         self._setup_data(dataset_class)
 
-        self._seed = seed
-        self._s_rate = sample_rate
-        self._workers = workers
-        self._shuffle = shuffle
-        self._batch_size = batch_size
-        self._resampling = resampling
         # Currently, don't support multiple datasets
         self.train_transforms = dataset_class.train_transforms
         self.test_transforms = dataset_class.test_transforms
@@ -274,9 +275,9 @@ class IncrementalDataset:
     def _setup_data_for_raw_data(self, train_dataset, test_dataset):
         x_train, y_train = train_dataset.data, np.array(train_dataset.targets)
         x_val, y_val, x_train, y_train, dict_val, dict_train = \
-            self._split_per_class(x_train, y_train, self.validation_split)
+            self._split_per_class(x_train, y_train, self.validation_split, self._seed)
         x_test, y_test = test_dataset.data, np.array(test_dataset.targets)
-        _, _, x_test, y_test, _, dict_test = self._split_per_class(x_test, y_test, 0)
+        _, _, x_test, y_test, _, dict_test = self._split_per_class(x_test, y_test, 0, self._seed)
         self.data_train.append(x_train)
         self.targets_train.append(y_train)
         self.data_val.append(x_val)
@@ -297,11 +298,12 @@ class IncrementalDataset:
             order = dataset.class_order(self.trial_i)
         self.curriculum = order
 
-    def _split_per_class(self, x, y, validation_split=0.0):
+    @staticmethod
+    def _split_per_class(x, y, validation_split=0.0, seed=0):
         """Splits train data for a subset of validation data.
         Split is done so that each class has equal amount of data.
         """
-        np.random.seed(self._seed)
+        np.random.seed(seed)
         shuffled_indexes = np.random.permutation(x.shape[0])
 
         x = x[shuffled_indexes]
