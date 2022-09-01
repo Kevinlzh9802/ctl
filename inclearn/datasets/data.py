@@ -398,18 +398,14 @@ class IncrementalDataset:
         # TODO: fix sampler
         dataset = DummyDataset(x, y, trsf, trsf_type=self.transform_type, share_memory_=share_memory,
                                dataset_name=self.dataset_name)
-        # if mode == 'test':
-        #     print(sampler)
         if self.is_distributed and 'train' in mode:
             # TODO: fix the hardcode 4
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
-        # if mode == 'test':
-        #     print(sampler)
         return DataLoader(dataset,
                           batch_size=batch_size,
-                          shuffle=False,
+                          shuffle=(sampler is None),
                           num_workers=self._workers,
-                          sampler=None,
+                          sampler=sampler,
                           pin_memory=False)
 
     def get_custom_loader(self, class_indexes, mode="test", data_source="train", imgs=None, tgts=None):
