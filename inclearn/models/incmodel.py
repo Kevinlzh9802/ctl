@@ -557,8 +557,8 @@ class IncModel(IncrementalLearner):
                 targets = targets.to(self._device, non_blocking=True)
                 outputs = self._parallel_network(inputs)
                 # print(inputs)
-                self._logger.info(inputs)
-                self._logger.info(targets)
+                # self._logger.info(inputs)
+                # self._logger.info(targets)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
 
 
