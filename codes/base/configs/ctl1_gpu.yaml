@@ -1,6 +1,6 @@
 exp:
   name: "der_rtc_dist2"
-  load_model_name: 'der_rtc_no_dist'
+  load_model_name: 'der_rtc_dist2'
   debug: False
 
 # Model Cfg
@@ -48,7 +48,7 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-retrain_from_task: 1
+retrain_from_task: 0
 
 train_save_option:
   acc_details: True
