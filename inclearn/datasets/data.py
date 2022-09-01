@@ -297,18 +297,15 @@ class IncrementalDataset:
             order = dataset.class_order(self.trial_i)
         self.curriculum = order
 
-    @staticmethod
-    def _split_per_class(x, y, validation_split=0.0):
+    def _split_per_class(self, x, y, validation_split=0.0):
         """Splits train data for a subset of validation data.
         Split is done so that each class has equal amount of data.
         """
-        np.random.seed(333)
+        np.random.seed(self._seed)
         shuffled_indexes = np.random.permutation(x.shape[0])
 
         x = x[shuffled_indexes]
         y = y[shuffled_indexes]
-        if validation_split > 0:
-            print(x[40])
         x_val, y_val = [], []
         x_train, y_train = [], []
         dict_val, dict_train = {}, {}
