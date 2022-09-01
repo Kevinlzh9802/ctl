@@ -302,6 +302,7 @@ class IncrementalDataset:
         """Splits train data for a subset of validation data.
         Split is done so that each class has equal amount of data.
         """
+        np.random.seed(333)
         shuffled_indexes = np.random.permutation(x.shape[0])
 
         x = x[shuffled_indexes]
