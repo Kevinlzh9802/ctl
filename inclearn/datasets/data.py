@@ -303,9 +303,10 @@ class IncrementalDataset:
         Split is done so that each class has equal amount of data.
         """
         shuffled_indexes = np.random.permutation(x.shape[0])
+        print(x[0])
         x = x[shuffled_indexes]
         y = y[shuffled_indexes]
-        print(x[0])
+
         x_val, y_val = [], []
         x_train, y_train = [], []
         dict_val, dict_train = {}, {}
