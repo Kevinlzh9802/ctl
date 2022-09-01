@@ -303,7 +303,8 @@ class IncrementalDataset:
         Split is done so that each class has equal amount of data.
         """
         shuffled_indexes = np.random.permutation(x.shape[0])
-        print(x[0])
+        if validation_split > 0:
+            print(x[40])
         x = x[shuffled_indexes]
         y = y[shuffled_indexes]
 
