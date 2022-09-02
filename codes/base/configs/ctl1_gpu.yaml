@@ -1,6 +1,6 @@
 exp:
-  name: "der_rtc_dist2"
-  load_model_name: 'der_rtc_dist2'
+  name: "der_rtc_no_dist3"
+  load_model_name: 'der_rtc_no_dist3'
   debug: False
 
 # Model Cfg
