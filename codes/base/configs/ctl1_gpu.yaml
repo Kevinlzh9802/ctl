@@ -26,7 +26,7 @@ temperature: 2
 reuse_oldfc: True
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
-save_ckpt: [0, 1, 10, 20]
+save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20]
 save_ckpt_path: ''  # '' or '/datasets'
 save_mem: True
 load_mem: False
