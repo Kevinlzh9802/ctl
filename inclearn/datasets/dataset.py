@@ -214,11 +214,11 @@ class iCIFAR100(iCIFAR10):
             ]
         elif trial_i == 5:
             label_list = [
-                # ['medium_mammals', 'fish', 'aquatic_mammals', 'non-insect_invertebrates',
-                #            'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores',
-                #            'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes',
-                #            'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers',
-                #            'large_man-made_outdoor_things', 'trees', 'vehicles_1'],
+                ['medium_mammals', 'fish', 'aquatic_mammals', 'non-insect_invertebrates',
+                           'household_electrical_devices', 'insects', 'people', 'vehicles_2', 'large_carnivores',
+                           'fruit_and_vegetables', 'household_furniture', 'reptiles', 'large_natural_outdoor_scenes',
+                           'flowers', 'large_omnivores_and_herbivores', 'small_mammals', 'food_containers',
+                           'large_man-made_outdoor_things', 'trees', 'vehicles_1'],
                 #           ['vehicles_1', 'trees', 'large_man-made_outdoor_things', 'food_containers', 'small_mammals',
                 #            'large_omnivores_and_herbivores', 'flowers', 'large_natural_outdoor_scenes', 'reptiles',
                 #            'household_furniture', 'fruit_and_vegetables', 'large_carnivores', 'vehicles_2', 'people',
