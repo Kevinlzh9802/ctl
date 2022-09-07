@@ -14,7 +14,7 @@ class HierNet(nn.Module):
         self.reuse_old = reuse
         for i in range(self.num_nodes):
             for j in range(self.cur_task):
-                fc_name = self.node[i].name + f'_TF{j}'
+                fc_name = self.nodes[i].name + f'_TF{j}'
                 self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
 
     def forward(self, x, gate=None, pred=False, thres=0):
@@ -24,7 +24,7 @@ class HierNet(nn.Module):
             for i in range(self.num_nodes):
                 prod = 0.0
                 for j in range(self.cur_task):
-                    fc_name = self.node[i].name + f'_TF{j}'
+                    fc_name = self.nodes[i].name + f'_TF{j}'
                     fc_layers = getattr(self, fc_name)
                     prod += fc_layers(x[:, 512 * j: 512 * (j + 1)])
                 nout.append(prod / 5)
@@ -92,16 +92,16 @@ class HierNet(nn.Module):
         if self.reuse_old:
             j = self.cur_task - 1
             for i in range(self.num_nodes):
-                fc_name = self.node[i].name + f'_TF{j}'
+                fc_name = self.nodes[i].name + f'_TF{j}'
                 self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
             i = self.num_nodes - 1
             for j in range(self.num_nodes):
-                fc_name = self.node[i].name + f'_TF{j}'
+                fc_name = self.nodes[i].name + f'_TF{j}'
                 self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
         else:
             for i in range(self.num_nodes):
                 for j in range(self.num_nodes):
-                    fc_name = self.node[i].name + f'_TF{j}'
+                    fc_name = self.nodes[i].name + f'_TF{j}'
                     self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
         return
 
