@@ -139,8 +139,9 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 old_clf = self.classifier
                 for k in range(old_clf.num_nodes):
                     for j in range(old_clf.cur_task):
-                        fc_old = getattr(old_clf, f'N{k}TF{j}', None)
-                        fc_new = getattr(new_clf, f'N{k}TF{j}', None)
+                        fc_name = self.node[k].name + f'_TF{j}'
+                        fc_old = getattr(old_clf, fc_name, None)
+                        fc_new = getattr(new_clf, fc_name, None)
                         assert fc_old is not None
                         assert fc_new is not None
                         # weight = copy.deepcopy(fc_old.weight.data)
