@@ -403,7 +403,7 @@ class IncrementalDataset:
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
         return DataLoader(dataset,
                           batch_size=batch_size,
-                          shuffle=(sampler is None),
+                          shuffle=False if sampler is not None else shuffle,
                           num_workers=self._workers,
                           sampler=sampler,
                           pin_memory=False)
