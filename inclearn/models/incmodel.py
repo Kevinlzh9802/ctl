@@ -504,14 +504,13 @@ class IncModel(IncrementalLearner):
 
         if self._cfg['memory_enable'] and self._memory_size.memsize != 0:
             self._logger.info("build memory")
-
+            print(inc_dataset.data_inc)
             self.build_exemplars(inc_dataset, self._coreset_strategy)
 
             if self._cfg["save_mem"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts/mem")
                 save_path = self.sp['model'] + 'mem'
                 data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
-                print(data_memory[0])
                 memory = {
                     'x': data_memory,
                     'y': targets_memory,
