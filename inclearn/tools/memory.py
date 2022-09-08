@@ -135,5 +135,6 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
         alph = select_examplars(features, memory_per_class[0])[0]
         alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
         alph_ranked.sort(key=lambda x: x[1])
+        print(alph_ranked)
         new_memory_dict[class_i] = inputs[[i[0] for i in alph_ranked]]
     return new_memory_dict
