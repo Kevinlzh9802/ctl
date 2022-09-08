@@ -511,6 +511,7 @@ class IncModel(IncrementalLearner):
                 # save_path = os.path.join(os.getcwd(), "ckpts/mem")
                 save_path = self.sp['model'] + 'mem'
                 data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
+                print(data_memory[0])
                 memory = {
                     'x': data_memory,
                     'y': targets_memory,
