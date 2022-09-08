@@ -263,11 +263,11 @@ class IncModel(IncrementalLearner):
             count = 0
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
+                if self._task == 1:
+                    print(inputs[1])
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
 
-                # print(inputs)
-                # print(targets)
                 self.train()
                 self._optimizer.zero_grad()
 
