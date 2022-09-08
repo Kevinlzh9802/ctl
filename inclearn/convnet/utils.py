@@ -110,14 +110,13 @@ def extract_features(model, loader, device):
     model.eval()
     with torch.no_grad():
         for _inputs, _targets in loader:
-            if device == 'cuda':
+            if device.type == 'cuda':
                 _inputs = _inputs.cuda()
-            else:
-                _inputs = _inputs
             _targets = _targets.numpy()
             _features = model(_inputs)['feature'].detach().cpu().numpy()
             features.append(_features)
             targets.append(_targets)
+        print(_inputs)
     if len(targets) == 1:
         return np.array(features), np.array(targets)
     else:
