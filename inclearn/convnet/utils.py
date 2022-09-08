@@ -116,7 +116,7 @@ def extract_features(model, loader, device):
             _features = model(_inputs)['feature'].detach().cpu().numpy()
             features.append(_features)
             targets.append(_targets)
-        print(_inputs)
+        print(_features[0])
     if len(targets) == 1:
         return np.array(features), np.array(targets)
     else:
