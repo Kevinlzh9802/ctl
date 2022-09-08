@@ -128,10 +128,10 @@ def herding(n_classes, network, inc_dataset, shared_data_inc, memory_per_class, 
                 if i < len(shared_data_inc):
                     share_memory.append(shared_data_inc[i])
 
-        bs = 128 if str(device) == 'cuda:0' else 1
+        bs = 128 if device.type == 'cuda' else 1
         loader = inc_dataset._get_loader(inputs, [class_i] * inputs.shape[0], share_memory=share_memory,
                                          batch_size=bs, shuffle=False, mode="test")
-
+        print(loader.dataset.x)
         features, _ = extract_features(network, loader, device)  # order
         alph = select_examplars(features, memory_per_class[0])[0]
         alph_ranked = list(enumerate([i for i in alph if (memory_per_class[0] + 1 > i > 0)]))
