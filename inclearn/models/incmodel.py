@@ -263,8 +263,6 @@ class IncModel(IncrementalLearner):
             count = 0
             for i, data in enumerate(train_loader, start=1):
                 inputs, targets = data
-                if self._task == 1:
-                    print(inputs[1])
                 inputs = inputs.to(self._device, non_blocking=True)
                 targets = targets.to(self._device, non_blocking=True)
 
@@ -510,7 +508,6 @@ class IncModel(IncrementalLearner):
                 # save_path = os.path.join(os.getcwd(), "ckpts/mem")
                 save_path = self.sp['model'] + 'mem'
                 data_memory, targets_memory = self._inc_dataset.gen_memory_array_from_dict()
-                print(data_memory[0])
                 memory = {
                     'x': data_memory,
                     'y': targets_memory,
