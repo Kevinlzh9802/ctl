@@ -77,8 +77,6 @@ class IncModel(IncrementalLearner):
             self._parallel_network.to(self._device)
         else:
             self._parallel_network = DataParallel(self._network)
-        # self._distributed_parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
-        # self._distributed_parallel_network.to(self._device)
         self._train_head = cfg["train_head"]
         self._infer_head = cfg["infer_head"]
         self._old_model = None
@@ -149,13 +147,10 @@ class IncModel(IncrementalLearner):
 
     def train(self):
         if self._der:
-            # self._parallel_network.train()
-            # self._parallel_network.module.convnets[-1].train()
             self._parallel_network.train()
             self._parallel_network.module.convnets[-1].train()
             if self._task >= 1:
                 for i in range(self._task):
-                    # self._parallel_network.module.convnets[i].eval()
                     self._parallel_network.module.convnets[i].eval()
         else:
             # self._parallel_network.train()
@@ -168,7 +163,6 @@ class IncModel(IncrementalLearner):
         self._cur_train_loader = train_loader
         self._cur_val_loader = val_loader
         self._cur_test_loader = test_loader
-        # print(self._cur_val_loader.sampler)
 
     def _before_task(self, inc_dataset):
         self._logger.info(f"Begin step {self._task}")
@@ -204,7 +198,6 @@ class IncModel(IncrementalLearner):
         # only updates parameters for the current network
         if self._der and self._task > 0:
             for i in range(self._task):
-                # for p in self._parallel_network.module.convnets[i].parameters():
                 for p in self._parallel_network.module.convnets[i].parameters():
                     p.requires_grad = False
 
@@ -258,7 +251,6 @@ class IncModel(IncrementalLearner):
                     if self._cfg['use_aux_cls']:
                         self._network.aux_classifier.reset_parameters()
 
-                    # self._parallel_network.to(self._device)
                     self._parallel_network.to(self._device)
             count = 0
             for i, data in enumerate(train_loader, start=1):
@@ -269,7 +261,6 @@ class IncModel(IncrementalLearner):
                 self.train()
                 self._optimizer.zero_grad()
 
-                # outputs = self._parallel_network(inputs)
                 outputs = self._parallel_network(inputs)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, self.train_save_option)
                 ce_loss, loss_aux = self._compute_loss(outputs, targets, nlosses, stslosses, losses)
@@ -399,7 +390,6 @@ class IncModel(IncrementalLearner):
 
             nloss = deep_rtc_nloss(nout, targets, self._network.leaf_id, self._network.node_labels, self._device)
             nlosses.update(nloss.item(), batch_size)
-            # print(nloss)
 
             gt_z = torch.gather(output, 1, targets_0.view(-1, 1))
             stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
@@ -407,8 +397,7 @@ class IncModel(IncrementalLearner):
 
             loss = nloss + stsloss * 0
             losses.update(loss.item(), batch_size)
-            # if stsloss < 0:
-                # print('stsloss: ', stsloss)
+
         else:
             output = outputs['output']
             aux_output = outputs['aux_logit']
@@ -486,7 +475,6 @@ class IncModel(IncrementalLearner):
                                 temperature=self._decouple["temperature"],
                                 save_path=f"{self.sp['acc_detail']['train']}/task_{self._task}_decouple",
                                 index_map=self._inc_dataset.targets_all_unique)
-            # network = deepcopy(self._parallel_network)
             network = deepcopy(self._parallel_network)
             if taski in self._cfg["save_ckpt"]:
                 # save_path = os.path.join(os.getcwd(), "ckpts")
@@ -519,8 +507,6 @@ class IncModel(IncrementalLearner):
                     torch.save(memory, "{}/mem_step{}.ckpt".format(save_path, self._task))
                     self._logger.info(f"Save step{self._task} memory!")
 
-        # self._parallel_network.eval()
-        # self._old_model = deepcopy(self._parallel_network)
         self._parallel_network.eval()
         self._old_model = deepcopy(self._parallel_network)
         self._old_model.module.freeze()

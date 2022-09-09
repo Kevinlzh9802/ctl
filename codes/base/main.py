@@ -70,7 +70,6 @@ def _train(rank, cfg, world_size, logger=None):
     logger.info(inc_dataset.curriculum)
 
     for task_i in range(inc_dataset.n_tasks):
-    # for task_i in range(1):
         model.new_task()
         model.before_task(inc_dataset)
 

@@ -129,13 +129,8 @@ class IncrementalDataset:
         # new method
         self.taxonomy_tree.expand_tree(self.current_partial_tree, self.curriculum[self._current_task])
         self.current_partial_tree.reset_params()
-        # self.current_partial_tree = self.taxonomy_tree.reset_params_2(self.current_partial_tree)
 
-        print(self.current_partial_tree.label_dict_hier)
-        # self.current_partial_tree = Tree(self.current_partial_tree.dataset_name,
-        #                                  self.current_partial_tree.label_dict_hier,
-        #                                  self.taxonomy_tree.label_dict_index)
-
+        # print(self.current_partial_tree.label_dict_hier)
         task_info = {
             "task": self._current_task,
             "task_size": len(self.curriculum[self._current_task]),
