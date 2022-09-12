@@ -470,18 +470,18 @@ class DummyDataset(torch.utils.data.Dataset):
 
         else:
             # Assume the dataset is ImageNet
-            # x = cv2.imread(x)
-            # x = x[:, :, ::-1]
-            if idx < len(self.share_memory):
-                if self.share_memory[idx] is not None:
-                    x = self.share_memory[idx]
-                else:
-                    x = cv2.imread(x)
-                    x = x[:, :, ::-1]
-                    self.share_memory[idx] = x
-            else:
-                x = cv2.imread(x)
-                x = x[:, :, ::-1]
+            x = cv2.imread(x)
+            x = x[:, :, ::-1]
+            # if idx < len(self.share_memory):
+            #     if self.share_memory[idx] is not None:
+            #         x = self.share_memory[idx]
+            #     else:
+            #         x = cv2.imread(x)
+            #         x = x[:, :, ::-1]
+            #         self.share_memory[idx] = x
+            # else:
+            #     x = cv2.imread(x)
+            #     x = x[:, :, ::-1]
 
         if 'torch' in self.trsf_type:
             x = self.trsf(x)
