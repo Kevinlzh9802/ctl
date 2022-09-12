@@ -10,7 +10,7 @@ model_pivot:
   arch: pivot
   dropout_rate: 0.0
 convnet: 'resnet18'  # modified_resnet32, resnet18
-taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
+taxonomy: # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64

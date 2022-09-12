@@ -54,7 +54,7 @@ def get_data(cfg):
         batch_size=cfg["batch_size"],
         seed=cfg["seed"],
         sample_rate=cfg["sample_rate"],
-        workers=0,
+        workers=cfg["workers"],
         device=cfg["device"],
         validation_split=cfg["validation"],
         resampling=cfg["resampling"],
