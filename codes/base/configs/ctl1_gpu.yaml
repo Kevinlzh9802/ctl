@@ -30,6 +30,7 @@ save_ckpt: [0, 1, 20] # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20]
 save_ckpt_path: ''  # '' or '/datasets'
 save_mem: True
 load_mem: False
+retrain_from_task: 10
 
 # Optimization; Training related
 task_max: 10
@@ -48,7 +49,6 @@ resampling: False
 warmup: False
 warmup_epochs: 10
 sample_rate: 0.3
-retrain_from_task: 10
 
 train_save_option:
   acc_details: True

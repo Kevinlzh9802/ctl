@@ -107,12 +107,12 @@ def _train(rank, cfg, world_size, logger=None):
                 "preds_aux_details": True
             })
 
-            model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
-                "acc_details": True,
-                "acc_aux_details": True,
-                "preds_details": True,
-                "preds_aux_details": True
-            })
+            # model.eval_task(model._cur_test_loader, save_path=model.sp['exp'], name='test', save_option={
+            #     "acc_details": True,
+            #     "acc_aux_details": True,
+            #     "preds_details": True,
+            #     "preds_aux_details": True
+            # })
 
 
 @ex.command

@@ -74,6 +74,9 @@ class IncrementalDataset:
         self.current_partial_tree = Tree(self.dataset_name)
         self.current_ordered_dict = OrderedDict()
 
+        # for joint training
+        self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
+
         # memory Mt
         # self.data_memory = None
         #         # self.targets_memory = []
@@ -117,7 +120,6 @@ class IncrementalDataset:
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
         val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
-        print(val_loader.sampler)
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         # old method
