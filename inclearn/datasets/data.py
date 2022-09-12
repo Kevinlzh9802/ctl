@@ -77,6 +77,12 @@ class IncrementalDataset:
         # for joint training
         self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
 
+        # for original DER
+        classes = list(self.taxonomy_tree.leaf_nodes.values())
+        self.curriculum = []
+        for t in range(20):
+            self.curriculum.append(classes[t * 5: t * 5 + 5])
+
         # memory Mt
         # self.data_memory = None
         #         # self.targets_memory = []
