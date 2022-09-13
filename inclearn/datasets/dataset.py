@@ -797,6 +797,7 @@ class iImageNet100(DataHandler):
     used_nodes, leaf_id, node_labels = taxonomy_tree.prepro()
 
     def __init__(self, data_folder, train, device, is_fine_label=False):
+        print(device.type)
         if device.type == 'cuda':
             self.base_dataset = self.base_dataset_cls(osp.join(data_folder, "training"))
         else:
