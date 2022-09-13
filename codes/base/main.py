@@ -133,6 +133,7 @@ def train(_run, _rnd, _seed):
     else:
         cfg.data_folder = osp.join(base_dir, "data")
 
+    print(cfg['device'])
     start_time = time.time()
     if cfg["is_distributed"]:
         gpu_num = torch.cuda.device_count()
