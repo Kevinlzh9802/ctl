@@ -1,6 +1,6 @@
 exp:
-  name: "ctl_imagenet100_2"
-  load_model_name: 'ctl_imagenet100_2'
+  name: "ctl_imagenet100_trial3"
+  load_model_name: 'ctl_imagenet100_trial3'
   debug: False
 
 # Model Cfg
@@ -44,7 +44,7 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
@@ -71,7 +71,7 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 50
+  epochs: 2
   fullset: False
   lr: 0.05
   scheduling:
