@@ -1,6 +1,6 @@
 exp:
-  name: "ctl_imagenet100_trial3"
-  load_model_name: 'ctl_imagenet100_trial3'
+  name: "ctl_imagenet100_trial3_joint"
+  load_model_name: 'ctl_imagenet100_trial3_joint'
   debug: False
 
 # Model Cfg
@@ -17,7 +17,7 @@ channel: 64
 use_bias: False
 last_relu: False
 
-der: True
+der: False
 use_aux_cls: True
 aux_n+1: True
 distillation: "none"

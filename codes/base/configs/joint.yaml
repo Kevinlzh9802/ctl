@@ -1,15 +1,15 @@
 exp:
-  name: "joint_task1_trial6"
+  name: "ctl_imagenet100_trial3_joint"
+  load_model_name: 'ctl_imagenet100_trial3_joint'
   debug: False
-  load_model_name: 'joint2'
 
 # Model Cfg
 model: "incmodel"
 model_cls: "hiernet"
 model_pivot:
   arch: pivot
-  dropout_rate: 0
-convnet: 'resnet18' # modified_resnet32, resnet18
+  dropout_rate: 0.0
+convnet: 'resnet18'  # modified_resnet32, resnet18
 taxonomy: # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
@@ -18,19 +18,19 @@ use_bias: False
 last_relu: False
 
 der: False
-use_aux_cls: False
+use_aux_cls: True
 aux_n+1: True
 distillation: "none"
 temperature: 2
 
-reuse_oldfc: False
+reuse_oldfc: True
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
-save_ckpt: True
-save_mem: False
+save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+save_ckpt_path: ''  # '' or '/datasets'
+save_mem: True
 load_mem: False
-new_train_from: 0
-
+retrain_from_task: 0
 
 # Optimization; Training related
 task_max: 10
@@ -44,22 +44,21 @@ scheduling:
   - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 2
+epochs: 170
 resampling: False
 warmup: False
 warmup_epochs: 10
-sample_rate: 0.7
-retrain_from_task: 0
+sample_rate: 0.3
 
 train_save_option:
-  acc_details: False
+  acc_details: True
   acc_aux_details: True
   preds_details: True
   preds_aux_details: True
 
 postprocessor:
   enable: False
-  type: 'bic'  # 'bic', 'wa'
+  type: 'bic'  #'bic', 'wa'
   epochs: 1
   batch_size: 128
   lr: 0.1
@@ -72,7 +71,7 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 2
+  epochs: 50
   fullset: False
   lr: 0.05
   scheduling:
@@ -94,26 +93,28 @@ pretrain:
 
 
 # Dataset Cfg
-dataset: "cifar100" #'imagenet100', 'cifar100'
-trial: -1
+dataset: "imagenet100"  # 'imagenet100', 'cifar100'
+trial: 3
 increment: 10
 batch_size: 128
-workers: 8
-validation: 0 # Validation split (0. <= x <= 1.)
-random_classes: False #Randomize classes order of increment
-start_class: 0 # number of tasks for the first step, start from 0.
+
+workers: 0
+validation: 0.1  # Validation split (0. <= x <= 1.)
+random_classes: False  # Randomize classes order of increment
+start_class: 0  # number of tasks for the first step, start from 0.
 start_task: 0
-max_task: # Cap the number of task
+max_task:  # Cap the number of task
+is_distributed: False
 
 # Memory
-memory_enable: False
+memory_enable: True
 coreset_strategy: "iCaRL"  # iCaRL, random
-mem_size_mode: "uniform_fixed_total_mem" # uniform_fixed_per_cls, uniform_fixed_total_mem
-memory_size: 2000 # Max number of storable examplars
-fixed_memory_per_cls: 20 # the fixed number of exemplars per cls
+mem_size_mode: "uniform_fixed_total_mem"  # uniform_fixed_per_cls, uniform_fixed_total_mem
+memory_size: 2000  # Max number of storable examplars
+fixed_memory_per_cls: 20  # the fixed number of exemplars per cls
 
 # Misc
 device_auto_detect: True  # If True, use GPU whenever possible
-device: -1 # GPU index to use, for cpu use -1
+device: 0 # GPU index to use, for cpu use -1
 seed: 1993
-
+overwrite_prevention: False
