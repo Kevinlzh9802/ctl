@@ -75,7 +75,7 @@ class IncrementalDataset:
         self.current_ordered_dict = OrderedDict()
 
         # for joint training
-        # self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
+        self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
 
         # for original DER
         # classes = list(self.taxonomy_tree.leaf_nodes.values())
