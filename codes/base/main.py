@@ -90,7 +90,7 @@ def _train(rank, cfg, world_size, logger=None):
         #     state_dict = torch.load(f"results/{cfg['exp']['load_model_name']}/train/ckpts/decouple_step{task_i}.ckpt")
         #     model._parallel_network.load_state_dict(state_dict)
 
-        if cfg['device'].type == 'cuda':
+        if cfg['device'].type == 'cuda' and task_i >= cfg['retrain_from_task'] - 1:
             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_before_decouple', save_option={
                 "acc_details": True,
                 "acc_aux_details": True,
@@ -99,7 +99,7 @@ def _train(rank, cfg, world_size, logger=None):
             })
         model.after_task(inc_dataset)
 
-        if cfg['device'].type == 'cuda':
+        if cfg['device'].type == 'cuda' and task_i >= cfg['retrain_from_task'] - 1:
             model.eval_task(model._cur_val_loader, save_path=model.sp['exp'], name='eval_after_decouple', save_option={
                 "acc_details": True,
                 "acc_aux_details": True,

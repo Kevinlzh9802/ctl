@@ -10,3 +10,4 @@ scipy~=1.5.4
 opencv-python-headless
 albumentations~=1.1.0
 Pillow~=8.4.0
+pynvml

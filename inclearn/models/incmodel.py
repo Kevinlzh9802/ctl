@@ -3,6 +3,7 @@ import numpy as np
 import os
 from copy import deepcopy
 from scipy.spatial.distance import cdist
+import pynvml
 
 import torch
 from torch.nn import DataParallel
@@ -766,3 +767,47 @@ class IncModel(IncrementalLearner):
             return x.cuda()
         else:
             return x
+
+    def nvidia_info(self):
+        nvidia_dict = {
+            "state": True,
+            "nvidia_version": "",
+            "nvidia_count": 4,
+            "gpus": []
+        }
+        try:
+            pynvml.nvmlInit()
+            nvidia_dict["nvidia_version"] = pynvml.nvmlSystemGetDriverVersion()
+            nvidia_dict["nvidia_count"] = pynvml.nvmlDeviceGetCount()
+            for i in range(nvidia_dict["nvidia_count"]):
+                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                gpu = {
+                    "gpu_name": pynvml.nvmlDeviceGetName(handle),
+                    "total": memory_info.total,
+                    "free": memory_info.free,
+                    "used": memory_info.used,
+                    "temperature": f"{pynvml.nvmlDeviceGetTemperature(handle, 0)}℃",
+                    "powerStatus": pynvml.nvmlDeviceGetPowerState(handle)
+                }
+                nvidia_dict['gpus'].append(gpu)
+        except pynvml.NVMLError as _:
+            nvidia_dict["state"] = False
+        except Exception as _:
+            nvidia_dict["state"] = False
+        finally:
+            try:
+                pynvml.vmlShutdown()
+            except:
+                pass
+        return nvidia_dict
+
+    def check_gpu_info(self, pos_name):
+        gpus_info = self.nvidia_info()['gpus']
+        logger_mesg = ''
+        for i in range(len(gpus_info)):
+            gpu_info_i = gpus_info[i]
+            logger_mesg += f"GPU {i} at {pos_name} Name {gpu_info_i['gpu_name']}, " + \
+                           f"Usage {np.round(gpu_info_i['used'] / gpu_info_i['total'] * 100, 3)}%\n"
+
+        self._logger.info(logger_mesg)
