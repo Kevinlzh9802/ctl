@@ -17,7 +17,7 @@ channel: 64
 use_bias: False
 last_relu: False
 
-der: False
+der: True
 use_aux_cls: True
 aux_n+1: True
 distillation: "none"
@@ -40,11 +40,13 @@ weight_decay: 0.0005
 dynamic_weight_decay: False
 scheduler: 'multistep'
 scheduling:
-  - 100
+  - 60
   - 120
+  - 160
+  - 180
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 170
+epochs: 220
 resampling: False
 warmup: False
 warmup_epochs: 10
@@ -71,15 +73,14 @@ postprocessor:
 
 decouple:
   enable: True
-  epochs: 50
+  epochs: 30
   fullset: False
-  lr: 0.05
+  lr: 0.1
   scheduling:
     - 15
-    - 30
   lr_decay: 0.1
   weight_decay: 0.0005
-  temperature: 5.0
+  temperature: 1.0
 
 pretrain:
   epochs: 200
@@ -96,7 +97,7 @@ pretrain:
 dataset: "imagenet100"  # 'imagenet100', 'cifar100'
 trial: 3
 increment: 10
-batch_size: 128
+batch_size: 256
 
 workers: 0
 validation: 0.1  # Validation split (0. <= x <= 1.)
