@@ -25,8 +25,9 @@ def get_data_folder(data_folder, dataset_name):
 
 class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, is_distributed=False, random_order=False, shuffle=True, workers=10,
-                 device=None, batch_size=128, seed=1, sample_rate=0.3, increment=10, validation_split=0.0,
-                 resampling=False, data_folder="./data", start_class=0, mode_train=True, taxonomy=None):
+                 device=None, batch_size=128, seed=1, sample_rate_c1=0.1, sample_rate_c2=0.2, increment=10,
+                 validation_split=0.0, resampling=False, data_folder="./data", start_class=0, mode_train=True,
+                 taxonomy=None):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -40,7 +41,8 @@ class IncrementalDataset:
         self._device = device
 
         self._seed = seed
-        self._s_rate = sample_rate
+        self._s_rate_c1 = sample_rate_c1
+        self._s_rate_c2 = sample_rate_c2
         self._workers = workers
         self._shuffle = shuffle
         self._batch_size = batch_size
@@ -75,7 +77,7 @@ class IncrementalDataset:
         self.current_ordered_dict = OrderedDict()
 
         # for joint training
-        self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
+        # self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
 
         # for original DER
         # classes = list(self.taxonomy_tree.leaf_nodes.values())
@@ -204,8 +206,8 @@ class IncrementalDataset:
 
                 if self._device.type == 'cuda':
                     if data_frac > 0 and self.taxonomy:
-                        # sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
-                        sel_ind = random.sample(list(idx_available), round(data_frac * len(idx_available)))
+                        sel_ind = random.sample(list(idx_available), round(data_frac * len(lfx_all)))
+                        # sel_ind = random.sample(list(idx_available), round(data_frac * len(idx_available)))
                         # sel_ind = random.sample(list(idx_available), 20)
                     else:
                         sel_ind = idx_available
@@ -230,8 +232,16 @@ class IncrementalDataset:
         return x_selected, y_selected
 
     def _sample_rate(self, leaf_depth, parent_depth):
-        assert leaf_depth >= parent_depth
-        return -1 if leaf_depth == parent_depth else self._s_rate
+        depth_diff = leaf_depth - parent_depth
+        assert depth_diff >= 0
+        if depth_diff == 0:
+            return -1
+        elif depth_diff == 1:
+            return self._s_rate_c2
+        elif depth_diff == 2:
+            return self._s_rate_c1
+        else:
+            raise NotImplementedError('no such depth')
 
     def _get_cur_step_data_for_raw_data(self, ):
         min_class = sum(self.increments[:self._current_task])
