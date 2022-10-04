@@ -27,7 +27,7 @@ class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, is_distributed=False, random_order=False, shuffle=True, workers=10,
                  device=None, batch_size=128, seed=1, sample_rate_c1=0.1, sample_rate_c2=0.2, increment=10,
                  validation_split=0.0, resampling=False, data_folder="./data", start_class=0, mode_train=True,
-                 taxonomy=None):
+                 taxonomy=None, joint_train=False):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -47,6 +47,7 @@ class IncrementalDataset:
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
+        self._joint_train = joint_train
         # -------------------------------------
         # Dataset Info
         # -------------------------------------
@@ -77,7 +78,8 @@ class IncrementalDataset:
         self.current_ordered_dict = OrderedDict()
 
         # for joint training
-        # self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
+        if self._joint_train:
+            self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
 
         # for original DER
         # classes = list(self.taxonomy_tree.leaf_nodes.values())

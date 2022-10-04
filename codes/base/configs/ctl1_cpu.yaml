@@ -30,6 +30,7 @@ save_ckpt: [0, 1, 10, 20]
 save_ckpt_path: ''  # '' or '/datasets'
 save_mem: False
 load_mem: False
+joint: True
 
 # Optimization; Training related
 task_max: 10

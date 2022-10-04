@@ -16,6 +16,7 @@ infer_head: 'softmax'
 channel: 64
 use_bias: False
 last_relu: False
+joint: True
 
 der: True
 use_aux_cls: True
@@ -47,7 +48,8 @@ epochs: 2
 resampling: False
 warmup: True
 warmup_epochs: 2
-sample_rate: 0.1
+sample_rate_c1: 0.1
+sample_rate_c2: 0.1
 retrain_from_task: 0
 
 train_save_option:

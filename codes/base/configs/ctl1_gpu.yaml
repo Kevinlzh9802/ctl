@@ -11,6 +11,7 @@ model_pivot:
   dropout_rate: 0.0
 convnet: 'resnet18'  # modified_resnet32, resnet18
 taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
+joint: True
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
@@ -48,7 +49,8 @@ epochs: 170
 resampling: False
 warmup: False
 warmup_epochs: 10
-sample_rate: 0.3
+sample_rate_c1: 0.1
+sample_rate_c2: 0.1
 
 train_save_option:
   acc_details: True

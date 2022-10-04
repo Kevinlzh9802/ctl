@@ -62,7 +62,8 @@ def get_data(cfg):
         increment=cfg["increment"],
         data_folder=cfg["data_folder"],
         mode_train=cfg["exp"]["mode_train"],
-        taxonomy=cfg["taxonomy"]
+        taxonomy=cfg["taxonomy"],
+        joint_train=cfg["joint"]
     )
 
 
