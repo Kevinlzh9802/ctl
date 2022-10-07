@@ -28,7 +28,7 @@ reuse_oldfc: True
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
 save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
-save_ckpt_path: ''  # '' or '/datasets'
+save_ckpt_path: '/datasets'  # '' or '/datasets'
 save_mem: True
 load_mem: True
 retrain_from_task: 0

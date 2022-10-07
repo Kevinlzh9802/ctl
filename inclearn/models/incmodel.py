@@ -327,6 +327,13 @@ class IncModel(IncrementalLearner):
             acc_list.append(acc)
             acc_list_aux.append(acc_aux)
 
+            self.check_gpu_info(f'epoch {epoch + 1}')
+            if epoch % 40 == 0:
+                epoch_net = deepcopy(self._parallel_network)
+                epoch_net.eval()
+                self._logger.info("save model")
+                torch.save(epoch_net.cpu().state_dict(), "{}/epoch{}.ckpt".format(self.sp['model'], epoch))
+
         # For the large-scale dataset, we manage the data in the shared memory.
         self._inc_dataset.shared_data_inc = train_loader.dataset.share_memory
 
