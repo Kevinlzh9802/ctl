@@ -212,8 +212,8 @@ class IncrementalDataset:
                         # sel_ind = random.sample(list(idx_available), round(data_frac * len(idx_available)))
                         # sel_ind = random.sample(list(idx_available), 20)
                     else:
-                        # sel_ind = idx_available
-                        sel_ind = random.sample(list(idx_available), 20)
+                        sel_ind = idx_available
+                        # sel_ind = random.sample(list(idx_available), 20)
                 else:
                     sel_ind = random.sample(list(idx_available), 2)
                     # sel_ind = idx_available
