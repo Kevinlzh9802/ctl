@@ -236,10 +236,11 @@ class IncModel(IncrementalLearner):
         self.curr_targets, self.curr_targets_aux = self._to_device(torch.tensor([])), self._to_device(torch.tensor([]))
 
         for epoch in range(self._n_epochs):
-            _ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0
+            _ce_loss, _joint_ce_loss, _loss_aux, _total_loss = 0.0, 0.0, 0.0, 0.0
 
             nlosses = averageMeter()
             stslosses = averageMeter()
+            jointcelosses = averageMeter()
             losses = averageMeter()
             acc = averageMeter()
             acc_5 = averageMeter()
@@ -264,7 +265,8 @@ class IncModel(IncrementalLearner):
 
                 outputs = self._parallel_network(inputs)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, self.train_save_option)
-                ce_loss, loss_aux = self._compute_loss(outputs, targets, nlosses, stslosses, losses)
+                joint_ce_loss, ce_loss, loss_aux = \
+                    self._compute_loss(outputs, targets, nlosses, jointcelosses, stslosses, losses)
                 # ce_loss, loss_aux, acc, acc_aux = \
                 #     self._forward_loss(inputs, targets, nlosses, stslosses, losses, acc, acc_aux)
 
@@ -273,15 +275,8 @@ class IncModel(IncrementalLearner):
                 else:
                     total_loss = ce_loss
 
-                # if ce_loss < 0:
-                #     print('ce_loss: ', ce_loss)
-                # if loss_aux < 0:
-                #     print('loss_aux: ', loss_aux)
-                #     a = self._optimizer.param_groups[0]['params']
-                #     for x in range(len(a)):
-                #         if torch.sum(torch.isnan(a[x]) > 0):
-                #             print(x)
-                #             print(a[x])
+                if self._cfg["use_joint_ce_loss"]:
+                    total_loss += joint_ce_loss
 
                 # print(total_loss)
                 total_loss.backward()
@@ -299,17 +294,21 @@ class IncModel(IncrementalLearner):
                 # _loss += loss_ce
                 _loss_aux += loss_aux
                 _ce_loss += ce_loss
+                _joint_ce_loss += joint_ce_loss
                 _total_loss += total_loss
                 count += 1
 
+                self._network.cal_score_tree(inputs)
+
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
+            _joint_ce_loss = _joint_ce_loss.item()
             _total_loss = _total_loss.item()
             if not self._warmup:
                 self._scheduler.step()
             self._logger.info(
                 "Task {}/{}, Epoch {}/{} => Clf Avg Total Loss: {}, Clf Avg CE Loss: {}, Avg Aux Loss: {}, "
-                "Avg Acc: {}, Avg Aux Acc: {}".format(
+                "Avg Joint CE Loss: {}, Avg Acc: {}, Avg Aux Acc: {}".format(
                     self._task + 1,
                     self._n_tasks,
                     epoch + 1,
@@ -317,6 +316,7 @@ class IncModel(IncrementalLearner):
                     round(_total_loss / i, 3),
                     round(_ce_loss / i, 3),
                     round(_loss_aux / i, 3),
+                    round(_joint_ce_loss / i, 3),
                     round(acc.avg, 3),
                     round(acc_aux.avg, 3)
                 ))
@@ -386,7 +386,7 @@ class IncModel(IncrementalLearner):
         if save_option["preds_aux_details"]:
             self.save_preds_aux_details(self.curr_preds_aux, self.curr_targets_aux, preds_dir)
 
-    def _compute_loss(self, outputs, targets, nlosses, stslosses, losses):
+    def _compute_loss(self, outputs, targets, nlosses, jointcelosses, stslosses, losses):
         batch_size = targets.size(0)
         if self._cfg["taxonomy"] is not None:
             output = outputs['output']
@@ -403,6 +403,12 @@ class IncModel(IncrementalLearner):
             stsloss = torch.mean(-gt_z + torch.log(torch.clamp(sfmx_base.view(-1, 1), 1e-17, 1e17)))
             stslosses.update(stsloss.item(), batch_size)
 
+            if self._cfg["use_joint_ce_loss"]:
+                joint_ce_loss = self._compute_joint_ce_loss(targets_0, output)
+                jointcelosses.update(joint_ce_loss.item(), batch_size)
+            else:
+                joint_ce_loss = torch.tensor([0])
+
             loss = nloss + stsloss * 0
             losses.update(loss.item(), batch_size)
 
@@ -414,7 +420,12 @@ class IncModel(IncrementalLearner):
             loss = torch.mean(criterion(output, targets_0.long()))
             losses.update(loss.item(), batch_size)
             aux_loss = self._compute_aux_loss(targets, aux_output)
-        return loss, aux_loss
+            joint_ce_loss = torch.tensor([0])
+        return joint_ce_loss, loss, aux_loss
+
+    def _compute_joint_ce_loss(self, targets_0, output):
+        joint_ce_loss = torch.mean(F.cross_entropy(output, targets_0.long()))
+        return joint_ce_loss
 
     def update_acc_detail(self, leaf_id_index_list, pred, multi_pred_list):
         res_dict = {i: {'avg': 0, 'multi_rate': 0, 'sum': 0, 'count': 0, 'multi_num': 0} for i in leaf_id_index_list}

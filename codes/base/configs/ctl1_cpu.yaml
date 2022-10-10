@@ -19,6 +19,7 @@ last_relu: False
 
 der: True
 use_aux_cls: True
+use_joint_ce_loss: True
 aux_n+1: True
 distillation: "none"
 temperature: 2
@@ -30,7 +31,7 @@ save_ckpt: [0, 1, 10, 20]
 save_ckpt_path: ''  # '' or '/datasets'
 save_mem: False
 load_mem: False
-joint: True
+joint: False
 
 # Optimization; Training related
 task_max: 10

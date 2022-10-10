@@ -8,6 +8,7 @@ from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
 from inclearn.deeprtc import get_model
 from inclearn.deeprtc.pivot import Pivot
+from inclearn.datasets.data import tgt_to_tgt0
 
 
 class TaxonomicDer(nn.Module):  # used in incmodel.py
@@ -231,3 +232,20 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.used_nodes = used_nodes
         self.node_labels = node_labels
         self.leaf_id = leaf_id
+
+    def cal_score_tree(self, inputs):
+        if self.der:
+            features = [convnet(inputs) for convnet in self.convnets]
+            features = torch.cat(features, 1)
+        else:
+            features = self.convnet(inputs)
+
+        score_info = []
+        for node in self.used_nodes.values():
+            prod = 0.0
+            for j in range(self.current_task + 1):
+                fc_name = node.name + f'_TF{j}'
+                fc_layers = getattr(self.classifier, fc_name)
+                prod += fc_layers(features[:, 512 * j: 512 * (j + 1)])
+            score_info.append({'name': node.name, 'depth': node.depth, 'score': torch.mean(prod, 0)})
+        c = 9

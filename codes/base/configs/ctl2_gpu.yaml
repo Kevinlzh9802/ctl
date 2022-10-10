@@ -16,10 +16,11 @@ infer_head: 'softmax'
 channel: 64
 use_bias: False
 last_relu: False
-joint: True
+joint: False
 
 der: False
 use_aux_cls: True
+use_joint_ce_loss: True
 aux_n+1: True
 distillation: "none"
 temperature: 2
