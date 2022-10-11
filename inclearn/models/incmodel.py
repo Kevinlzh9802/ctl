@@ -563,8 +563,9 @@ class IncModel(IncrementalLearner):
                 # self._logger.info(targets)
                 self.record_details(outputs, targets, acc, acc_5, acc_aux, save_option)
 
-
         self._logger.info(f"Evaluation {name} acc: {acc.avg}, aux_acc: {acc_aux.avg}")
+
+        self._network.cal_score_tree(inputs[:30])
         # save accuracy and preds info into files
         self.curr_acc_list = [acc]
         self.curr_acc_list_aux = [acc_aux]

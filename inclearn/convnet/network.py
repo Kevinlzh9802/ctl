@@ -240,6 +240,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         else:
             features = self.convnet(inputs)
 
+        leaf_id_inv = {self.leaf_id[x]: x for x in self.leaf_id.keys()}
         score_info = []
         for node in self.used_nodes.values():
             prod = 0.0
@@ -247,5 +248,9 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 fc_name = node.name + f'_TF{j}'
                 fc_layers = getattr(self.classifier, fc_name)
                 prod += fc_layers(features[:, 512 * j: 512 * (j + 1)])
-            score_info.append({'name': node.name, 'depth': node.depth, 'score': torch.mean(prod, 0)})
-        c = 9
+            score_info.append({'name': node.name,
+                               'depth': node.depth,
+                               'children': node.children,
+                               'score': torch.mean(prod, 0)})
+        for i in range(len(score_info)):
+            print(score_info[i])
