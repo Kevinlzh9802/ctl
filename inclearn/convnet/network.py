@@ -82,7 +82,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
             # gate[:, 0] = 1
             # print(features)
-            output, nout, sfmx_base = self.classifier(x=features, gate=gate)
+            output, nout, sfmx_base, outs = self.classifier(x=features, gate=gate)
             # logits = self.classifier(features)
         else:
             output = self.classifier(features)
@@ -93,7 +93,8 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 if features.shape[1] > self.out_dim else None
         else:
             aux_logits = None
-        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits}
+        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits,
+                'outs': outs}
 
     @property
     def features_dim(self):
@@ -139,15 +140,19 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             if self.classifier is not None and self.reuse_oldfc:
                 old_clf = self.classifier
                 for k in range(old_clf.num_nodes):
-                    for j in range(old_clf.cur_task):
+                    for j in range(new_clf.cur_task):
                         fc_name = old_clf.nodes[k].name + f'_TF{j}'
                         fc_old = getattr(old_clf, fc_name, None)
                         fc_new = getattr(new_clf, fc_name, None)
-                        assert fc_old is not None
+                        # assert fc_old is not None
                         assert fc_new is not None
-                        # weight = copy.deepcopy(fc_old.weight.data)
-                        fc_new.weight.data = copy.deepcopy(fc_old.weight.data)
-                        fc_new.bias.data = copy.deepcopy(fc_old.bias.data)
+                        if fc_old is not None:
+                            # weight = copy.deepcopy(fc_old.weight.data)
+                            fc_new.weight.data = copy.deepcopy(fc_old.weight.data)
+                            fc_new.bias.data = copy.deepcopy(fc_old.bias.data)
+                        else:
+                            fc_new.weight.data = torch.zeros_like(fc_new.weight.data)
+                            fc_new.bias.data = torch.zeros_like(fc_new.bias.data)
                         for param in fc_new.parameters():
                             param.requires_grad = False
                         fc_new.eval()
@@ -170,7 +175,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             aux_fc = self._gen_classifier(self.out_dim, self.n_classes + n_classes)
         del self.aux_classifier
         self.aux_classifier = aux_fc
-        c = 9
 
     def _add_classes_single_fc(self, n_classes):
         if self.classifier is not None:

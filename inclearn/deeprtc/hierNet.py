@@ -10,6 +10,7 @@ class HierNet(nn.Module):
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
+        self.label2name = {}
         self.cur_task = int(input_size / 512)
         self.reuse_old = reuse
         for i in range(self.num_nodes):
@@ -51,8 +52,8 @@ class HierNet(nn.Module):
             self.output = torch.sum(torch.stack(outs[:]), 0)
             out_mask = torch.eq(torch.sum(torch.stack(out_masks), 0), 0).float()
             self.sfmx_base = torch.sum(torch.exp(self.output) * out_mask, 1)
-
-            return self.output, nout, self.sfmx_base
+            # self.hier_cls(nout)
+            return self.output, nout, self.sfmx_base, outs
 
         else:
             # for testing
@@ -86,6 +87,7 @@ class HierNet(nn.Module):
                 outs.append(torch.matmul(nout[i], cw) * cond_gate * gate[:, i].view(-1, 1))
 
             self.output = torch.sum(torch.stack(outs), 0)
+
             return self.output, nout
 
     def reset_parameters(self):
@@ -104,6 +106,11 @@ class HierNet(nn.Module):
                     fc_name = self.nodes[i].name + f'_TF{j}'
                     self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
         return
+
+    def hier_cls(self, nout):
+        hier1_cls = torch.argmax(nout[0], 1)
+
+        c = 9
 
 
 def hiernet(**kwargs):

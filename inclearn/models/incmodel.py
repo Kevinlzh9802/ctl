@@ -298,7 +298,7 @@ class IncModel(IncrementalLearner):
                 _total_loss += total_loss
                 count += 1
 
-                self._network.cal_score_tree(inputs)
+                # self._network.cal_score_tree(inputs)
 
             _ce_loss = _ce_loss.item()
             _loss_aux = _loss_aux.item()
