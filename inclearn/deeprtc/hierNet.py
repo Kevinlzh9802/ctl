@@ -92,10 +92,10 @@ class HierNet(nn.Module):
 
     def reset_parameters(self):
         if self.reuse_old:
-            j = self.cur_task - 1
-            for i in range(self.num_nodes):
-                fc_name = self.nodes[i].name + f'_TF{j}'
-                self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
+            # j = self.cur_task - 1
+            # for i in range(self.num_nodes):
+            #     fc_name = self.nodes[i].name + f'_TF{j}'
+            #     self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
             i = self.num_nodes - 1
             for j in range(self.num_nodes):
                 fc_name = self.nodes[i].name + f'_TF{j}'
