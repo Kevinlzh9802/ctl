@@ -5,7 +5,7 @@ from .hierNet import hiernet
 from .pivot import pivot
 
 
-def get_model(model_dict, nodes=None):
+def get_model(model_dict, nodes=None, reuse=False):
     name = model_dict['arch']
     feat_size = model_dict.get('feat_size', 512)
     model = _get_model_instance(name)
@@ -17,6 +17,7 @@ def get_model(model_dict, nodes=None):
     if name == 'hiernet':
         param_dict['input_size'] = feat_size
         param_dict['nodes'] = nodes
+        param_dict['reuse'] = reuse
         model = model(**param_dict)
 
     else:
