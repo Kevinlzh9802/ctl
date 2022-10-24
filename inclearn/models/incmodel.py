@@ -73,6 +73,7 @@ class IncModel(IncrementalLearner):
             use_bias=cfg["use_bias"],
             dataset=cfg["dataset"],
         )
+        self._network.curriculum = self._inc_dataset.curriculum
         if self._cfg["is_distributed"]:
             self._parallel_network = DDP(self._network, device_ids=[self._rank], output_device=self._rank)
             self._parallel_network.to(self._device)

@@ -5,12 +5,13 @@ from torch import nn
 
 class HierNet(nn.Module):
     """Module of hierarchical classifier"""
-    def __init__(self, input_size, nodes, reuse=False):
+    def __init__(self, input_size, nodes, parent, reuse=False):
         super(HierNet, self).__init__()
         self.input_size = input_size
         self.nodes = nodes
         self.num_nodes = len(nodes)
         self.label2name = {}
+        self.parent = parent
         self.cur_task = int(input_size / 512)
         self.reuse_old = reuse
         for i in range(self.num_nodes):
@@ -91,15 +92,18 @@ class HierNet(nn.Module):
             return self.output, nout
 
     def reset_parameters(self):
+
         if self.reuse_old:
-            # j = self.cur_task - 1
-            # for i in range(self.num_nodes):
-            #     fc_name = self.nodes[i].name + f'_TF{j}'
-            #     self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
-            i = self.num_nodes - 1
+            node = None
+            for i in range(self.num_nodes):
+                if self.nodes[i].name == self.parent:
+                    node = self.nodes[i]
+                    break
+
+            assert node is not None
             for j in range(self.num_nodes):
-                fc_name = self.nodes[i].name + f'_TF{j}'
-                self.add_module(fc_name, nn.Linear(512, len(self.nodes[i].children)))
+                fc_name = node.name + f'_TF{j}'
+                self.add_module(fc_name, nn.Linear(512, len(node.children)))
         else:
             for i in range(self.num_nodes):
                 for j in range(self.num_nodes):

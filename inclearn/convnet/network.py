@@ -31,6 +31,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.module_pivot = cfg['model_pivot']
         self.current_tax_tree = current_tax_tree
         self.current_task = current_task
+        self.curriculum = []
 
         if self.der:
             print("Enable dynamical representation expansion!")
@@ -199,11 +200,12 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 # classifier
                 # used_nodes = setup_tree(self.current_task, self.current_tax_tree)
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
+                cur_parent_node = self.current_tax_tree.get_task_parent(self.curriculum[self.current_task])
                 if self.device.type == 'cuda':
-                    model_cls = get_model(model_dict, self.used_nodes, self.reuse_oldfc).cuda()
+                    model_cls = get_model(model_dict, self.used_nodes, cur_parent_node, self.reuse_oldfc).cuda()
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
                 else:
-                    model_cls = get_model(model_dict, self.used_nodes, self.reuse_oldfc)
+                    model_cls = get_model(model_dict, self.used_nodes, cur_parent_node, self.reuse_oldfc)
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
 
