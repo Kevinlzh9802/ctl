@@ -1,6 +1,6 @@
 exp:
-  name: "ctl_imagenet100_trial3_joint"
-  load_model_name: 'ctl_imagenet100_trial3_joint'
+  name: "ctl_imagenet100_trial3_sr0102"
+  load_model_name: 'ctl_imagenet100_trial3_sr0102'
   debug: False
 
 # Model Cfg
