@@ -25,9 +25,8 @@ def get_data_folder(data_folder, dataset_name):
 
 class IncrementalDataset:
     def __init__(self, trial_i, dataset_name, is_distributed=False, random_order=False, shuffle=True, workers=10,
-                 device=None, batch_size=128, seed=1, sample_rate_c1=0.1, sample_rate_c2=0.2, increment=10,
-                 validation_split=0.0, resampling=False, data_folder="./data", start_class=0, mode_train=True,
-                 taxonomy=None, joint_train=False):
+                 device=None, batch_size=128, seed=1, sample_rate_c1=0.1, sample_rate_c2=0.2, increment=10, validation_split=0.0,
+                 resampling=False, data_folder="./data", start_class=0, mode_train=True, taxonomy=None):
         # The info about incremental split
         self.trial_i = trial_i
         self.start_class = start_class
@@ -41,13 +40,13 @@ class IncrementalDataset:
         self._device = device
 
         self._seed = seed
+        # self._s_rate = sample_rate
         self._s_rate_c1 = sample_rate_c1
         self._s_rate_c2 = sample_rate_c2
         self._workers = workers
         self._shuffle = shuffle
         self._batch_size = batch_size
         self._resampling = resampling
-        self._joint_train = joint_train
         # -------------------------------------
         # Dataset Info
         # -------------------------------------
@@ -60,6 +59,7 @@ class IncrementalDataset:
         self.n_tot_cls = -1
         # datasets is the object
         dataset_class = get_dataset(dataset_name)
+
         self._setup_data(dataset_class)
 
         # Currently, don't support multiple datasets
@@ -76,16 +76,6 @@ class IncrementalDataset:
         self.taxonomy_tree = dataset_class.taxonomy_tree
         self.current_partial_tree = Tree(self.dataset_name)
         self.current_ordered_dict = OrderedDict()
-
-        # for joint training
-        if self._joint_train:
-            self.curriculum = [list(self.taxonomy_tree.leaf_nodes.values())]
-
-        # for original DER
-        # classes = list(self.taxonomy_tree.leaf_nodes.values())
-        # self.curriculum = []
-        # for t in range(20):
-        #     self.curriculum.append(classes[t * 5: t * 5 + 5])
 
         # memory Mt
         # self.data_memory = None
@@ -130,6 +120,7 @@ class IncrementalDataset:
 
         train_loader = self._get_loader(x_train, y_train, mode="train")
         val_loader = self._get_loader(x_val, y_val, shuffle=False, mode="test")
+        print(val_loader.sampler)
         test_loader = self._get_loader(x_test, y_test, shuffle=False, mode="test")
 
         # old method
@@ -141,8 +132,13 @@ class IncrementalDataset:
         # new method
         self.taxonomy_tree.expand_tree(self.current_partial_tree, self.curriculum[self._current_task])
         self.current_partial_tree.reset_params()
+        # self.current_partial_tree = self.taxonomy_tree.reset_params_2(self.current_partial_tree)
 
-        # print(self.current_partial_tree.label_dict_hier)
+        print(self.current_partial_tree.label_dict_hier)
+        # self.current_partial_tree = Tree(self.current_partial_tree.dataset_name,
+        #                                  self.current_partial_tree.label_dict_hier,
+        #                                  self.taxonomy_tree.label_dict_index)
+
         task_info = {
             "task": self._current_task,
             "task_size": len(self.curriculum[self._current_task]),
@@ -234,6 +230,8 @@ class IncrementalDataset:
         return x_selected, y_selected
 
     def _sample_rate(self, leaf_depth, parent_depth):
+        # assert leaf_depth >= parent_depth
+        # return -1 if leaf_depth == parent_depth else self._s_rate
         depth_diff = leaf_depth - parent_depth
         assert depth_diff >= 0
         if depth_diff == 0:
@@ -418,7 +416,7 @@ class IncrementalDataset:
             sampler = DistributedSampler(dataset, num_replicas=4, drop_last=True)
         return DataLoader(dataset,
                           batch_size=batch_size,
-                          shuffle=False if sampler is not None else shuffle,
+                          shuffle=(sampler is None),
                           num_workers=self._workers,
                           sampler=sampler,
                           pin_memory=False)

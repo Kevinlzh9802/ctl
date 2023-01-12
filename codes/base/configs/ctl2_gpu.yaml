@@ -1,7 +1,77 @@
+# for imagenet100
+
 exp:
-  name: "ctl_imagenet100_trial3_sr0102"
-  load_model_name: 'ctl_imagenet100_trial3_sr0102'
+  name: "ctl_rtc_imagenet100_trial3_BFS_seed500_with_imagenet100_config"
+  load_model_name: '/datasets/imagenet100_results/ctl_rtc_imagenet100_trial3_BFS_seed500_retrain_from_task21'
   debug: False
+
+
+# important cfg
+
+# cfg_check_1
+# sample_rate & epoch
+#sample_rate: 0.3     # 0.3 or 0.001
+sample_rate_c1: 0.3   # 0.3 or 0.001
+sample_rate_c2: 0.21  # 0.21 or 0.001
+epochs: 220           # 220 or 2
+decouple:
+  enable: True
+  epochs: 30           # 30 or 2
+  fullset: False
+  lr: 0.1            # 0.1 or 0.05
+  scheduling:
+    - 15
+  lr_decay: 0.1
+  weight_decay: 0.0005
+  temperature: 1.0
+
+
+# cfg_check_2
+# load_prev_model eg. has ckpts/ (decouple_)step13 then set retrain_from_task: 14
+use_joint_ce_loss: False
+feature_mode: 'full' # ['full', 'add_zero_only_ancestor_fea',  'add_zero_use_all_prev']  # 新任务选用哪些feature
+retrain_from_task: 0  # 0 or n
+save_mem: True
+load_mem: False       # False or True
+show_noutput_detail: True   # True or False
+
+# cfg_check_3
+# change seed & dataset
+seed: 500              # 500 or 600 or 1993
+dataset: "imagenet100" # 'imagenet100' or 'cifar100'
+trial: 3               # 3 or 2
+acc_k: 0               # record top k acc   =0 then no res
+
+# check datasets.py trial2 / trial3 BFS / DFS
+
+
+# check cgpu_using
+show_detail: False    # show time consumsing or not
+check_cgpu_info: False
+check_cgpu_batch_period: 30
+
+# cfg_check_4
+# change batch_size then change the lr in  decouple
+lr: 0.1
+batch_size: 256        # 256 or 64
+num_workers: 4
+
+save_result_path: '/datasets/imagenet100_results/' # '/datasets/imagenet100_results/' or ''
+
+taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
+save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+save_before_decouple: False
+
+
+# lr_decay
+scheduling:
+  - 60
+  - 120
+  - 160
+  - 180
+
+is_distributed: False
+
 
 # Model Cfg
 model: "incmodel"
@@ -10,51 +80,50 @@ model_pivot:
   arch: pivot
   dropout_rate: 0.0
 convnet: 'resnet18'  # modified_resnet32, resnet18
-taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
+#taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
 train_head: 'softmax'
 infer_head: 'softmax'
 channel: 64
 use_bias: False
 last_relu: False
-joint: False
 
 der: True
 use_aux_cls: True
-use_joint_ce_loss: True
 aux_n+1: True
+#use_joint_ce_loss: True
 distillation: "none"
 temperature: 2
 
 reuse_oldfc: True
 weight_normalization: False
 val_per_n_epoch: -1 # Validation Per N epoch. -1 means the function is off.
-save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
-#save_ckpt_path: '/datasets'  # '' or '/datasets'
-save_path: '/datasets/'  # 'results/' or '/datasets/'
-save_mem: True
-load_mem: True
-retrain_from_task: 0
+#save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+#save_result_path: '/datasets/imagenet100_results/' # '/datasets/imagenet100_results/' or ''
+#check_cgpu_info: True
+#check_cgpu_batch_period: 30
+#save_mem: True
+#load_mem: False
 
 # Optimization; Training related
 task_max: 10
 lr_min: 0.00005
-lr: 0.1
+#lr: 0.1
+#num_workers: 4
 weight_decay: 0.0005
 dynamic_weight_decay: False
 scheduler: 'multistep'
-scheduling:
-  - 60
-  - 120
-  - 160
-  - 180
+#scheduling:
+#  - 100
+#  - 120
 lr_decay: 0.1
 optimizer: "sgd"
-epochs: 220
+#epochs: 2
 resampling: False
 warmup: False
 warmup_epochs: 10
-sample_rate_c1: 0.1
-sample_rate_c2: 0.2
+#sample_rate: 0.001
+#retrain_from_task: 0
+#acc_k: 0               # record top k acc   =0 then no res
 
 train_save_option:
   acc_details: True
@@ -75,16 +144,18 @@ postprocessor:
   lr_decay_factor: 0.1
   weight_decay: 0.0005
 
-decouple:
-  enable: True
-  epochs: 30
-  fullset: False
-  lr: 0.1
-  scheduling:
-    - 15
-  lr_decay: 0.1
-  weight_decay: 0.0005
-  temperature: 1.0
+
+#decouple:
+#  enable: True
+#  epochs: 2
+#  fullset: False
+#  lr: 0.05
+#  scheduling:
+#    - 15
+#    - 30
+#  lr_decay: 0.1
+#  weight_decay: 0.0005
+#  temperature: 5.0
 
 pretrain:
   epochs: 200
@@ -98,18 +169,17 @@ pretrain:
 
 
 # Dataset Cfg
-dataset: "imagenet100"  # 'imagenet100', 'cifar100'
-trial: 3
+#dataset: "imagenet100"  # 'imagenet100', 'cifar100'
+#trial: 3
 increment: 10
-batch_size: 256
+#batch_size: 128
 
-workers: 8
 validation: 0.1  # Validation split (0. <= x <= 1.)
 random_classes: False  # Randomize classes order of increment
 start_class: 0  # number of tasks for the first step, start from 0.
 start_task: 0
 max_task:  # Cap the number of task
-is_distributed: False
+#is_distributed: False
 
 # Memory
 memory_enable: True
@@ -121,5 +191,8 @@ fixed_memory_per_cls: 20  # the fixed number of exemplars per cls
 # Misc
 device_auto_detect: True  # If True, use GPU whenever possible
 device: 0 # GPU index to use, for cpu use -1
-seed: 1993
+#seed: 500
 overwrite_prevention: False
+
+
+

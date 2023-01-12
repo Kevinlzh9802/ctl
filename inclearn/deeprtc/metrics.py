@@ -50,3 +50,27 @@ class averageMeter(object):
         res_dict['avg'] = round(res_dict['sum']/res_dict['count'], 3)
         res_dict['multi_rate'] = round(res_dict['multi_num']/res_dict['count'], 3)
         return res_dict
+
+    def get_avg_detail(self):
+        total_name_list = list(self.info_detail.keys())
+
+        finest_name_list = []
+        coarse_name_list = []
+        for i in total_name_list:
+            if i < 0:
+                coarse_name_list.append(i)
+            else:
+                finest_name_list.append(i)
+        if coarse_name_list:
+            coarse_avg = round(sum([self.info_detail[i]['sum'] for i in coarse_name_list]) / sum(
+                [self.info_detail[i]['count'] for i in coarse_name_list]), 3)
+        else:
+            coarse_avg = None
+
+        if finest_name_list:
+
+            finest_avg = round(sum([self.info_detail[i]['sum'] for i in finest_name_list])/sum([self.info_detail[i]['count'] for i in finest_name_list]), 3)
+        else:
+            finest_avg = None
+
+        return {'total_avg': round(self.avg, 3), 'finest_avg': finest_avg, 'coarse_avg': coarse_avg, 'finest_count': len(finest_name_list), 'coarse_count': len(coarse_name_list)}

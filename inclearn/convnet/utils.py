@@ -9,7 +9,7 @@ from inclearn.deeprtc.utils import deep_rtc_nloss
 from inclearn.datasets.data import tgt_to_tgt0, tgt_to_tgt0_no_tax
 
 
-def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, scheduling=None, lr_decay=0.1,
+def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=0.1, use_joint_ce_loss=False, scheduling=None, lr_decay=0.1,
                         weight_decay=5e-4, loss_type="ce", temperature=5.0, test_loader=None, save_path='',
                         index_map=None):
     if scheduling is None:
@@ -26,7 +26,9 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
 
     logger.info("Begin finetuning last layer")
     for i in range(nepoch):
-        total_loss = 0.0
+        total_nloss = 0.0
+        total_joint_loss = 0.0
+        # raise('To add joint_loss in finetune')
         total_correct = 0.0
         total_count = 0
         # print(f"dataset loader length {len(loader.dataset)}")
@@ -42,12 +44,23 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 outputs = network(inputs)
                 nout = outputs['nout']
                 optim.zero_grad()
-                loss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
+                nloss = deep_rtc_nloss(nout, targets, n_module.leaf_id, n_module.node_labels, n_module.device)
 
                 max_z = torch.max(outputs["output"], dim=1)[0]
                 preds = torch.eq(outputs["output"], max_z.view(-1, 1))
                 leaf_id_indexes = tgt_to_tgt0(targets, n_module.leaf_id, n_module.device)
                 iscorrect = torch.gather(preds, 1, leaf_id_indexes.view(-1, 1)).flatten().float()
+
+                if use_joint_ce_loss:
+                    output = outputs['output']
+                    joint_ce_loss = torch.mean(F.cross_entropy(output, leaf_id_indexes.long()))
+
+                else:
+                    if device.type == 'cuda':
+                        joint_ce_loss = torch.tensor([0]).cuda()
+                    else:
+                        joint_ce_loss = torch.tensor([0])
+
 
                 if all_preds is None:
                     all_preds = np.empty([0, preds.shape[1]])
@@ -55,9 +68,11 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 all_is_correct = np.concatenate((all_is_correct, iscorrect.cpu()))
                 # print(loss)
 
-                loss.backward()
+                total_loss = nloss + joint_ce_loss
+                total_loss.backward()
                 optim.step()
-                total_loss += loss
+                total_nloss += nloss * inputs.size(0)
+                total_joint_loss += joint_ce_loss
                 total_correct += iscorrect.sum()
                 total_count += inputs.size(0)
             else:
@@ -68,7 +83,7 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
                 loss = criterion(outputs / temperature, targets_0.long())
                 loss.backward()
                 optim.step()
-                total_loss += loss * inputs.size(0)
+                total_nloss += loss * inputs.size(0)
                 total_correct += (preds == targets_0).sum()
                 total_count += inputs.size(0)
 
@@ -94,11 +109,11 @@ def finetune_last_layer(logger, network, loader, n_class, device, nepoch=30, lr=
         scheduler.step()
         if test_loader is not None:
             logger.info(
-                "Epoch %d finetuning loss %.3f acc %.3f Eval %.3f" %
-                (i, total_loss.item() / total_count, total_correct.item() / total_count, test_correct / test_count))
+                "Epoch %d finetuning, nloss %.3f, joint_ce_loss %.3f, acc %.3f, Eval %.3f" %
+                (i, total_nloss.item() / total_count, total_joint_loss.item() / total_count, total_correct.item() / total_count, test_correct / test_count))
         else:
-            logger.info("Epoch %d finetuning loss %.3f acc %.3f" %
-                        (i, total_loss.item() / total_count, total_correct.item() / total_count))
+            logger.info("Epoch %d finetuning, nloss %.3f, joint_ce_loss %.3f, acc %.3f" %
+                        (i, total_nloss.item() / total_count, total_joint_loss.item() / total_count, total_correct.item() / total_count))
         if i == nepoch - 1:
             np.savetxt(save_path + f'_epoch_{i}_preds.txt', np.array(all_preds), fmt='%2.2f')
             np.savetxt(save_path + f'_epoch_{i}_iscorrect.txt', np.array(all_is_correct), fmt='%2.2f')
@@ -110,8 +125,10 @@ def extract_features(model, loader, device):
     model.eval()
     with torch.no_grad():
         for _inputs, _targets in loader:
-            if device.type == 'cuda':
+            if device == 'cuda':
                 _inputs = _inputs.cuda()
+            else:
+                _inputs = _inputs
             _targets = _targets.numpy()
             _features = model(_inputs)['feature'].detach().cpu().numpy()
             features.append(_features)

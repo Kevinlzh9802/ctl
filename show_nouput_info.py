@@ -1,371 +1,147 @@
+import pandas as pd
 import numpy as np
-import os
-
-from collections import defaultdict, OrderedDict
 
 
-class TreeNode:
-    def __init__(self, name, label_index, depth, node_id, child_idx=-1, parent=None, codeword=None, cond=None,
-                 children_unid=None, mask=None):
-        self.name = name
-        self.label_index = label_index
-        self.depth = depth
-        self.node_id = node_id
-        self.children = {}
-        self.child_idx = child_idx
-        self.parent = parent
-        self.codeword = codeword
-        self.cond = cond
-        self.children_unid = children_unid
-        self.mask = mask
+def get_nout_mean(file_path, task_i, save=False):
+    nout_csv_path = f'{file_path}/nout_details_task{task_i}.csv'
+    df_nout = pd.read_csv(nout_csv_path)
 
-    def add_child(self, child):
-        self.children[len(self.children)] = child
+    nout_mean_dict = {}
+    col_nout_pair_list = []
 
-    def init_codeword(self, cw_size):
-        self.codeword = np.zeros([cw_size])
+    for col_i in list(df_nout.columns):
+        if col_i != 'targets':
+            mean_col_i = np.mean(df_nout.loc[:, col_i])
+            nout_mean_dict[col_i] = mean_col_i
+            col_nout_pair_list.append((col_i, mean_col_i))
 
-    def set_codeword(self, idx):
-        self.codeword[idx] = 1
-
-    def set_cond(self, parent_idx):
-        self.cond = [parent_idx, self.child_idx]
-
-    def __str__(self):
-        attr = 'name={}, node_id={}, depth={}, children={}'.format(
-            self.name, self.node_id, self.depth,
-            ','.join([chd for chd in self.children.values()])
-        )
-        return attr
-
-    def copy(self):
-        new_node = TreeNode(self.name, self.label_index, self.depth, self.node_id, self.child_idx, self.parent)
-        new_node.children = self.children.copy()
-        if self.cond:
-            new_node.cond = self.cond.copy()
-        return new_node
+    col_nout_pair_list.sort(key=lambda x:abs(x[1]), reverse=True)
 
 
-class Tree:
-    def __init__(self, dataset_name, label_dict_hier=None, label_dict_index=None, node_order=None):
-        if label_dict_index is None:
-            label_dict_index = {}
-        if label_dict_hier is None:
-            label_dict_hier = {}
-        self.dataset_name = dataset_name
-        self.label_dict_hier = label_dict_hier
-        self.label_dict_index = label_dict_index
-        """For the root node, attach a child node with name of the dataset. root.depth=0, dataset.depth=1."""
-        self._setup_root_nodes()
-        # self._buildTree(self.data_root, label_dict_hier, label_dict_index)
-        self._buildTree(self.root, label_dict_hier, label_dict_index, node_order)
-        self.max_depth = max(n.depth for n in self.nodes.values())  # including root(0) and datasets(1)
-        self.dict_depth = self.max_depth - 1
 
-        self.depth_dict = {}
+    if save:
+        df_nout_mean = pd.DataFrame(nout_mean_dict, index=[0])
+        df_nout_mean.to_csv(f'{file_path}/nout_mean.csv', index=False)
 
-        self.used_nodes = {}        # inter nodes pair {id: Treenode}
-        self.leaf_nodes = {}        # leaf nodes pair {id: Treenode}
-        self.id2name = {}
-        self.label2name = {}
 
-        if len(label_dict_hier) > 0:
-            self.gen_codeword()
-            self.gen_rel_path()
-            self.gen_Id2name()
-            self.init_depth_dict()
+    return nout_mean_dict, col_nout_pair_list
 
-    def prepro(self, save_path=None):
-        # find nodes we want, and get codewords under these nodes
-        used_nodes = {}
-        for n_id, name in self.used_nodes.items():
-            used_nodes[n_id] = self.nodes.get(name).copy()
-            used_nodes[n_id].codeword = self.get_codeword(name)
-            # generate mask for internal nodes other than root node
-            # if n_id > 0:
-            n_cw = self.nodes.get(name).codeword
-            idx = n_cw.tolist().index(1)
-            used_nodes[n_id].mask = 1 - n_cw
-            assert used_nodes[n_id].mask[idx] == 0
-            used_nodes[n_id].mask[idx] = 1
-        # print('number of used nodes: {}'.format(len(used_nodes)))
+def show_trend_diff_tasks(base_path, task_i_list, file_name_i):
 
-        # save leaf nodes
-        leaf_id = {self.nodes.get(v).label_index: k for k, v in self.leaf_nodes.items()}  # node_name: id
+    df_max = pd.read_csv(
+        f'{base_path}/nout_details_task{max(task_i_list)}.csv')
 
-        # save label at each node for each class
-        node_labels = defaultdict(list)
-        for k in self.leaf_nodes.keys():
-            for n_id in used_nodes.keys():
-                # which column of the codeword matrix has at least one non-zero element?
-                # in such column, determine the row index of the element 1, which is the child index
-                chd_idx = np.where(used_nodes[n_id].codeword[:, k] == 1)[0]
+    total_col = list(df_max.columns)
+    total_col.remove('targets')
 
-                # k is the index in leaf_nodes, n_id is the index in used_nodes
-                # node_labels determines all intermediate nodes that a particular leaf_node belongs to
-                # and the corresponding child index
-                if len(chd_idx) > 0:
-                    node_labels[k].append([n_id, chd_idx[0]])
+    nout_mean_summary_dict = {}
+    for col_i in total_col:
+        nout_mean_summary_dict[col_i] = []
 
-        if save_path:
-            np.save(os.path.join(save_path, 'used_nodes.npy'), used_nodes)
-            np.save(os.path.join(save_path, 'leaf_nodes.npy'), leaf_id)
-            np.save(os.path.join(save_path, 'node_labels.npy'), node_labels)
-
-        return used_nodes, leaf_id, node_labels
-
-    def _setup_root_nodes(self):
-        self.root = TreeNode('root', 'root', 0, 0)
-        # self.root.add_child('data_root')
-        # self.data_root = TreeNode('data_root', self.dataset_name, 1, 1, child_idx=1, parent='root')
-        # self.nodes = {'root': self.root, 'data_root': self.data_root}
-        self.nodes = {'root': self.root}
-
-    def _buildTree(self, root, label_dict_hier, label_dict_index, node_order=None):
-        for child_name in label_dict_hier.keys():
-            root.add_child(child_name)
-            child = TreeNode(child_name, label_dict_index[child_name], root.depth + 1, len(self.nodes),
-                             len(root.children), root.name)
-            self.nodes[child_name] = child
-            self._buildTree(child, label_dict_hier[child_name], label_dict_index)
-
-    def show(self, node_name='root', root_depth=-1, max_depth=np.Inf, show_label_index=False):
-        root = self.nodes.get(node_name, None)
-        if not root:
-            raise ValueError('{} is not in the tree'.format(node_name))
-
-        if root_depth == -1:
-            print(root.name)
-            root_depth = root.depth
-            max_depth = min(self.max_depth, max_depth)
-
-        if root.depth - root_depth < max_depth:
-            for chd in root.children.values():
-                child = self.nodes[chd]
-                print('--' * (child.depth - root_depth), end='')
-                if show_label_index:
-                    print(child.label_index)
-                else:
-                    print(child.name)
-                self.show(chd, root_depth, max_depth, show_label_index)
-
-    def gen_codeword(self, max_depth=np.Inf):
-        if max_depth == np.Inf:
-            leaf_nodes = sorted([x.name for x in self.nodes.values() if len(x.children) == 0])
-        elif max_depth <= self.max_depth:
-            leaf_nodes = sorted([x.name for x in self.nodes.values() if x.depth == max_depth])
-        else:
-            raise ValueError('max_depth should be equal or smaller than {}'.format(self.max_depth))
-        self.leaf_nodes = dict(enumerate(leaf_nodes))
-
-        # used_nodes are actually intermediate nodes
-        used_nodes = [x for x in self.nodes.values() if x.depth < max_depth and x.name not in leaf_nodes]
-        used_nodes = sorted(used_nodes, key=lambda x: x.node_id)
-        self.used_nodes = dict(enumerate([x.name for x in used_nodes]))
-
-        node_list = [x for x in self.used_nodes.values()] + [x for x in self.leaf_nodes.values()]
-        for n in node_list:
-            node = self.nodes.get(n)
-            node.init_codeword(len(self.leaf_nodes))
-
-        for idx, n in self.leaf_nodes.items():
-            node = self.nodes.get(n)
-            node.set_codeword(idx)
-            parent = self.nodes.get(node.parent)
-            # reverse traversal
-            while parent.name != 'root':
-                parent.set_codeword(idx)
-                parent = self.nodes.get(parent.parent)
-            parent.set_codeword(idx)
-
-    def gen_rel_path(self):
-        name2Id = {v: k for k, v in self.used_nodes.items()}
-        for idx, n in self.used_nodes.items():
-            node = self.nodes.get(n)
-            parent = node.parent
-            if parent:  # if parent is not None
-                idx = name2Id.get(parent)
-                node.set_cond(idx)
-
-    def get_codeword(self, node_name=None):
-        # concatenate all codewords of the parent node
-        node = self.nodes.get(node_name, None)
-        if not node:
-            raise ValueError('{} is not in the tree'.format(node_name))
-
-        codeword = []
-        for i in range(len(node.children)):
-            chd = node.children[i]
-            child = self.nodes.get(chd)
-            codeword.append(child.codeword)
-        codeword = np.array(codeword)
-        return codeword
-
-    def gen_Id2name(self):
-        for node_i in self.nodes.values():
-            self.id2name[node_i.node_id] = node_i.name
-            self.label2name[node_i.label_index] = node_i.name
-
-    def get_nodeId(self, node_name=None):
-        node = self.nodes.get(node_name, None)
-        if not node:
-            raise ValueError('{} is not in the tree'.format(node_name))
-        return node.node_id
-
-    def get_parent(self, node_name=None):
-        node = self.nodes.get(node_name, None)
-        if not node:
-            raise ValueError('{} is not in the tree'.format(node_name))
-        return node.parent
-
-    def get_ancestor_list(self, node_name=None):
-        parent_list = []
-        node = self.nodes.get(node_name, None)
-        while True:
-            node_name = node.parent
-            parent_list.append(node_name)
-            if node_name == 'root':
-                break
-            node = self.nodes.get(node_name, None)
-        return parent_list
-
-    def get_coarse_node_list(self):
-        return [self.nodes.get(i) for i in self.used_nodes.values() if i != 'root']
-
-    def get_finest(self, node_name):
-        node = self.nodes.get(node_name)
-        if not node:
-            raise ValueError('{} is not in the tree'.format(node_name))
-        # if node.depth == 0 or node.depth == 1:
-        if node.depth == 0:
-            finest_nodes_name = list(self.leaf_nodes.values())
-        elif len(node.children) == 0:
-            finest_nodes_name = [node.name]
-        else:
-            finest_nodes_name = []
-            children_nodes_list = [self.nodes.get(i) for i in node.children.values()]
-            for children_node_i in children_nodes_list:
-                finest_nodes_name += self.get_finest(children_node_i.name)
-        return finest_nodes_name
-
-    def get_children_label(self, node_name):
-        node = self.nodes.get(node_name, None)
-        return list(node.children.values()), [self.get_nodeId(i) for i in node.children.values()]
-
-    def get_parent_n_layer(self, node_label_list=None, n_layer=0):
-        parent_name_list = []
-        parent_label_index_list = []
-        for node_label_i in node_label_list:
-            node_name_i = self.label2name[node_label_i]
-            node_i = self.nodes.get(node_name_i, None)
-            if n_layer < 0 or n_layer > self.max_depth:
-                raise 'n_layer error'
-            for i in range(node_i.depth - n_layer):
-                node_i = self.nodes.get(node_i.parent, None)
-            parent_name_list.append(node_i.name)
-            parent_label_index_list.append(node_i.label_index)
-        return parent_name_list, parent_label_index_list
-
-    def gen_partial_tree(self, task_until_now):
-        name_list = list(np.array(task_until_now).flatten())
-        parent_node_order = [self.get_task_parent(x) for x in task_until_now]
-        parent_node_order.pop(0)
-        if len(parent_node_order) == 0:
-            partial_dict = partial_copy_dict(self.label_dict_hier, name_list)
-        else:
-            partial_dict = partial_copy_dict(self.label_dict_hier, name_list, parent_node_order)
-        tree = Tree(self.dataset_name, partial_dict, self.label_dict_index, task_until_now)
-        return tree
-
-    def expand_tree(self, existing_tree, node_names):
-        if len(existing_tree.label_dict_index) == 0:
-            existing_tree.label_dict_index = self.label_dict_index
-        for x in node_names:
-            self.connect_node(existing_tree, x)
-        # existing_tree.max_depth = max(n.depth for n in existing_tree.nodes.values())
-        # existing_tree.show()
-
-    def connect_node(self, existing_tree, node_name):
-        node = self.nodes.get(node_name).copy()
-        node.children = {}
-        node.cond = []
-        node_parent = existing_tree.nodes.get(node.parent)
-        if node_parent is None:
-            self.connect_node(existing_tree, node.parent)
-        node_parent = existing_tree.nodes.get(node.parent)
-        assert node_parent is not None
-
-        node.node_id = len(existing_tree.nodes)
-        existing_tree.nodes[node_name] = node
-        node.child_idx = len(node_parent.children)
-        node_parent.add_child(node_name)
-
-    def init_depth_dict(self):
-        for node_i_ind in self.nodes:
-            node_i = self.nodes[node_i_ind]
-            if node_i.depth in self.depth_dict:
-                self.depth_dict[node_i.depth].append(node_i.name)
+    file_path_i = file_path_dict[file_name_i]
+    for task_i in task_i_list:
+        nout_mean_dict_i, col_nout_pair_list_i = get_nout_mean(file_path_i, task_i, save=False)
+        for col_i in total_col:
+            if col_i not in nout_mean_dict_i:
+                nout_mean_summary_dict[col_i].append(None)
             else:
-                self.depth_dict[node_i.depth] = [node_i.name]
+                nout_mean_summary_dict[col_i].append(nout_mean_dict_i[col_i])
 
-    def reset_params(self):
-        self.label_dict_hier = self.tree_node_to_dict(self.root)
-        self.max_depth = max(n.depth for n in self.nodes.values())  # including root(0) and datasets(1)
-        self.dict_depth = self.max_depth - 1
-        self.depth_dict = {}
+    df_nout_mean_summary = pd.DataFrame(nout_mean_summary_dict, index=[f'{file_name_i}_task{task_i}' for task_i in task_i_list])
+    df_nout_mean_summary.to_csv(f'{base_path}/nout_mean_summary_for_{file_name_i}.csv')
 
-        self.used_nodes = {}
-        self.leaf_nodes = {}
-        self.id2name = {}
-        self.label2name = {}
+def show_nout_trend_diff_datasets(file_path_dict, task_i, save_path):
+    nout_mean_summary_dict = {}
 
-        if len(self.label_dict_hier) > 0:
-            self.gen_codeword()
-            self.gen_rel_path()
-            self.gen_Id2name()
-            self.init_depth_dict()
+    tmp_nout_mean_dict = {}
 
+    for file_name_i in file_path_dict:
+        file_path_i = file_path_dict[file_name_i]
+        nout_mean_dict_i, col_nout_pair_list_i = get_nout_mean(file_path_i, task_i, save=False)
+        tmp_nout_mean_dict[file_name_i] = [nout_mean_dict_i, col_nout_pair_list_i]
 
-    def tree_node_to_dict(self, node):
-        child_dict = OrderedDict()
-        for x in node.children.values():
-            child_node = self.nodes.get(x)
-            child_dict[x] = self.tree_node_to_dict(child_node)
-        return child_dict
+    total_col = []
+    for nout_file_i in tmp_nout_mean_dict.values():
+        for col_j in nout_file_i:
+            if col_j not in total_col:
+                total_col.append(col_j)
 
-    # def flatten_children(self, node_name):
-    #     all_children = self.get_finest(node_name)
-    #     leaf_nodes = [self.nodes.get(x) for x in all_children]
-    #     for x in leaf_nodes:
-    #         self.merge
-    #     return
-
-    def get_task_parent(self, name_list):
-        return [self.nodes.get(x).parent for x in name_list][0]
+    for task_i in tmp_nout_mean_dict:
+        nout_mean_dict_i, col_nout_pair_list_i = tmp_nout_mean_dict[task_i][0], tmp_nout_mean_dict[task_i][1]
+        for col_i in total_col:
+            if col_i not in nout_mean_dict_i:
+                nout_mean_summary_dict[col_i].append(None)
+            else:
+                nout_mean_summary_dict[col_i].append(nout_mean_dict_i[col_i])
 
 
-def write_file(file_name, data_list):
-    with open(file_name, 'w') as f:
-        for data in data_list:
-            f.write('{},{},{}\n'.format(data[1][0], data[1][1], data[0]))
+    df_nout_mean_summary = pd.DataFrame(nout_mean_summary_dict,
+                                        index=[f'{file_name_i}_task{task_i}' for file_name_i in file_path_dict])
+    df_nout_mean_summary.to_csv(f'{save_path}/nout_mean_summary.csv')
 
+def show_top_nlayer_result(taxonomy_tree, csv_path, n=1):
+    if n == 1:
+        df = pd.read_csv(csv_path)
+        depth_1_columns = taxonomy_tree.depth_dict[1]
 
-def partial_copy_dict(dict_full, name_list, key_order=None):
-    dict_part = OrderedDict()
-    if key_order is None:
-        for name in dict_full.keys():
-            if name in name_list:
-                dict_part[name] = partial_copy_dict(dict_full[name], name_list)
+        df['max_depth_1_index'] = df[[f'p_root_c_{i}' for i in depth_1_columns]].apply(
+            lambda x: np.argmax(x), axis=1)
+        pred_list = np.array(df['max_depth_1_index'])
+
+        targets_list = list(df['targets'])
+
+        gt_list = []
+        index2child = taxonomy_tree.nodes.get('root').children
+        node2index = {index2child[i]: i for i in index2child}
+        for i in targets_list:
+            gt_list.append(node2index[taxonomy_tree.get_parent_n_layer(node_label_list=[i], n_layer=1)[0][0]])
+        gt_list = np.array(gt_list)
+        total_acc = np.sum(gt_list == pred_list) / len(pred_list)
+
+        partial_list = {}
+        for i in range(4):
+            index = np.where(gt_list == i)
+            partial_res_i = np.sum(pred_list[index] == i) / len(index[0])
+            partial_list[f'{index2child[i]}'] = partial_res_i
+
+        return total_acc, partial_list
+    
+    elif n==2:
+        df = pd.read_csv(csv_path)
+        depth_2_columns = taxonomy_tree.depth_dict[2]
+        
+        for i in depth_2_columns:
+            df[f'{i}_score'] = df[[f'p_root_c_{taxonomy_tree.nodes.get(i).parent}', f'p_{taxonomy_tree.nodes.get(i).parent}_c_{i}']].apply(
+            lambda x: np.sum(x), axis=1)
+        
+        df['max_depth_2_index'] = df[[f'{i}_score' for i in depth_2_columns]].apply(
+            lambda x: np.argmax(x), axis=1)
+
+        # print(df['max_depth_2_index'])
+        
+        pred_list = np.array(df['max_depth_2_index'])
+
+        targets_list = list(df['targets'])
+
+        gt_list = []
+        node2index = {depth_2_columns[i]:i for i in range(len(depth_2_columns))}
+        for i in targets_list:
+            gt_list.append(node2index[taxonomy_tree.get_parent_n_layer(node_label_list=[i], n_layer=2)[0][0]])
+        gt_list = np.array(gt_list)
+        total_acc = np.sum(gt_list == pred_list) / len(pred_list)
+
+        partial_list = {}
+        for i in range(len(depth_2_columns)):
+            index = np.where(gt_list == i)
+            partial_res_i = np.sum(pred_list[index] == i) / len(index[0])
+            partial_list[f'{taxonomy_tree.nodes.get(depth_2_columns[i]).parent}_{depth_2_columns[i]}'] = partial_res_i
+        df.to_csv('/Users/chenyuzhao/Downloads/test12312312.csv')
+        return total_acc, partial_list
     else:
-        for x in key_order:
-            dict_part[x] = dict_full[x]
-        for x in dict_full.keys():
-            if x not in dict_part.keys():
-                dict_part[x] = {}
-    return dict_part
-
+        raise('n layers not available')
 
 if __name__ == '__main__':
+
     def imagenet1000_label_dict_index_trial3():
         return {'physical_entity': -1, 'abstraction': -2, 'matter': -3, 'causal_agent': -4, 'object': -5, 'bubble': 971,
                 'communication': -6, 'food': -7, 'food_1': -8, 'substance': -9, 'person': -10, 'whole': -11,
@@ -727,6 +503,7 @@ if __name__ == '__main__':
                       'other_wheeled_vehicle': {'barrow': {}, 'freight_car': {}, 'jinrikisha': {}, 'motor_scooter': {},
                                                 'unicycle': {}}}}
 
+    from inclearn.deeprtc.libs import Tree
     imagenet1000_label_dict_index = imagenet1000_label_dict_index_trial3
     index_list = index_list_trial3
     data_name_hier_dict_100 = data_name_hier_dict_100_trial3
@@ -736,160 +513,27 @@ if __name__ == '__main__':
     data_label_index_dict['other_aquatic_bird'] = -451
     data_label_index_dict['other_wheeled_vehicle'] = -452
 
-    def class_order():
-
-        return [
-                ['mammal', 'bird', 'device', 'container'],  # init
-
-                ['ungulate', 'rodent', 'primate', 'feline', 'canine'],  # mammal
-                ['game_bird', 'finch', 'wading_bird', 'other_oscine', 'other_aquatic_bird'],  # bird
-                ['instrument', 'restraint', 'mechanism', 'musical_instrument', 'machine'],  # device
-                ['vessel', 'box', 'bag', 'self-propelled_vehicle', 'other_wheeled_vehicle'],  # container
-
-
-                ['hippopotamus', 'ox', 'hartebeest', 'impala', 'zebra'],  # ungulate
-                ['guinea_pig', 'marmot', 'porcupine', 'hamster', 'beaver'],  # rodent
-                ['titi', 'capuchin', 'howler_monkey', 'patas', 'gibbon'],  # primate
-                ['tiger_cat', 'tiger', 'persian_cat', 'cheetah', 'lion'],  # feline
-                ['hyena', 'dhole', 'mexican_hairless', 'arctic_fox', 'timber_wolf'],  # canine
-                ['ruffed_grouse', 'peacock', 'ptarmigan', 'partridge', 'quail'],  # game_bird
-                ['goldfinch', 'junco', 'brambling', 'indigo_bunting', 'house_finch'],  # finch
-                ['bustard', 'ruddy_turnstone', 'little_blue_heron', 'limpkin', 'spoonbill'],  # wading_bird
-                ['bulbul', 'jay', 'magpie', 'chickadee', 'water_ouzel'],  # other_oscine
-                ['goose', 'black_swan', 'european_gallinule', 'king_penguin', 'albatross'],  # other_aquatic_bird
-                ['sunglasses', 'cannon', 'rule', 'radio_telescope', 'guillotine'],  # instrument
-                ['buckle', 'padlock', 'hair_slide', 'safety_pin', 'muzzle'],  # restraint
-                ['paddlewheel', 'potters_wheel', 'puck', 'car_wheel', 'switch'],  # mechanism
-                ['harp', 'sax', 'trombone', 'oboe', 'cornet'],  # musical_instrument
-                ['chain_saw', 'cash_machine', 'abacus', 'harvester', 'desktop_computer'],  # machine
-                ['mortar', 'ladle', 'tub', 'pitcher', 'beaker'],  # vessel
-                ['safe', 'pencil_box', 'mailbox', 'crate', 'chest'],  # box
-                ['backpack', 'sleeping_bag', 'mailbag', 'purse', 'plastic_bag'],  # bag
-                ['streetcar', 'forklift', 'tank', 'tractor', 'recreational_vehicle'],  # self-propelled_vehicle
-                ['barrow', 'freight_car', 'jinrikisha', 'motor_scooter', 'unicycle'],  # other_wheeled_vehicle
-            ]
-
-
-
 
     data_label_index_dict = imagenet1000_label_dict_index()
-    data_label_index_dict['other_working_dog'] = -404
-    taxonomy_tree = Tree('imagenet1000', data_name_hier_dict_100, data_label_index_dict)
+    taxonomy_tree_imagenet100 = Tree('imagenet1000', data_name_hier_dict_100, data_label_index_dict)
 
-    used_nodes, leaf_id, node_labels = taxonomy_tree.prepro()
-    # taxonomy_tree.show()
-    import pandas as pd
-    import numpy as np
 
-    df = pd.read_csv('/Users/chenyuzhao/Downloads/ctl_rtc_imagenet100_trial3_BFS_seed500_with_imagenet_config_check_noutput/nout_details_task24.csv')
-    # df = pd.read_csv('/Users/chenyuzhao/Downloads/test_12112312.csv')
 
-    df['max_index']  = df[['p_root_c_mammal', 'p_root_c_bird', 'p_root_c_device', 'p_root_c_container']].apply(lambda x: np.argmax(x), axis=1)
-    pred_list = np.array(df['max_index'])
+    file_path_dict = {
+                        'BFS_imagnet': '/Users/chenyuzhao/Downloads/ctl_rtc_imagenet100_trial3_BFS_seed500_with_imagenet_config_check_noutput',
+                        'BFS_imagenet_joint_ce_sp12': '/Users/chenyuzhao/Downloads/ctl_rtc_imagenet100_trial3_BFS_seed500_add_joint_ce_loss_sp0p1_0p2_imagenet_config_check_noutput',
+                        'DFS_imagenet': '/Users/chenyuzhao/Downloads/ctl_rtc_imagenet100_trial3_DFS_seed500_retrain_from_task13_check_nouput'
+                      }
 
-    targets_list = list(df['targets'])
+    base_path = '/Users/chenyuzhao/Downloads/ctl_rtc_imagenet100_trial3_BFS_seed500_with_imagenet_config_check_noutput'
 
-    gt_list = []
-    index_1 = list
-    # for i in targets_list:
-    #     top1_list.append()
-    index2child = taxonomy_tree.nodes.get('root').children
-    child2index = {index2child[i]:i for i in index2child}
-    for i in targets_list:
-        gt_list.append(child2index[taxonomy_tree.get_parent_n_layer(node_label_list=[i], n_layer=1)[0][0]])
-    gt_list = np.array(gt_list)
-    total_acc = np.sum(gt_list == pred_list)/len(pred_list)
+
+    # nout_mean_dict, col_nout_pair_list = get_nout_mean(file_path_dict['BFS_imagnet'], 24)
+    # print(nout_mean_dict['p_canine_c_mexican_hairless'])
+    # print(col_nout_pair_list)
+
+    total_acc, partial_list = show_top_nlayer_result(taxonomy_tree_imagenet100,'/Users/chenyuzhao/Downloads/nout_details_task21.csv', n=2)
+
+
     print(total_acc)
-    partial_list = {}
-    for i in range(4):
-        index = np.where(gt_list==i)
-        partial_res_i = np.sum(pred_list[index] == i)/len(index[0])
-        partial_list[i] = partial_res_i
     print(partial_list)
-
-
-    # df['tart']
-
-    # data_label_index_dict_inv = {data_label_index_dict[i]:i for i in data_label_index_dict}
-    # df_total = pd.read_csv('/Users/chenyuzhao/Downloads/imagenet100_trial3_acc_total.csv')
-    # class_index = list(df_total['class_index'])
-    # BFS_diff = list(df_total['BFS_DER_diff'])
-    # DFS_diff = list(df_total['DFS_DER_diff'])
-    # stat_dict = {}
-    # class_to_check = []
-    # for i in range(len(class_index)):
-    #     stat_dict[class_index[i]] = [BFS_diff[i], DFS_diff[i]]
-    # for i in stat_dict:
-    #     if stat_dict[i][0] <-0.1 and stat_dict[i][1] <-0.1:
-    #         class_to_check.append(i)
-    # # class_to_check = [283, 464, 471, 480, 527, 561, 594, 636, 670, 676, 683, 694, 725, 739, 748, 769, 772, 844, 875]
-    # name_list = [data_label_index_dict_inv[i] for i in class_to_check]
-    # node_label_list = [taxonomy_tree.nodes.get(i).label_index for i in name_list]
-    #
-    # parent_list = taxonomy_tree.get_parent_n_layer(node_label_list, 1)
-    #
-    # print(class_to_check)
-    # print(name_list)
-    # print(parent_list)
-    # print({i: parent_list[0].count(i) for i in set(parent_list[0])})
-
-    # import pandas as pd
-    #
-    # taxonomy_tree.show()
-    #
-    # task_order = class_order()
-    #
-    # data_label_index_dict_inv = {data_label_index_dict[i]:i for i in data_label_index_dict}
-    #
-    # prob_list =[153, 158, 185, 193, 212, 225, 246, 256, 264, 266, 268, 282, 298, 338, 342, 348, 356, 380]
-    #
-    #
-    # acc_csv = pd.read_csv('/Users/chenyuzhao/Downloads/_task_16-3.csv')
-    # avg_acc_list = list(acc_csv['avg_acc'][1:])
-    # class_index_list = list(acc_csv['class_index'][1:])
-    # count_list = list(acc_csv['count'][1:])
-    #
-    # acc_dict = {}
-    # for i in range(len(class_index_list)):
-    #     acc_dict[class_index_list[i]] = avg_acc_list[i]
-    #
-    # count_dict = {}
-    # for i in range(len(class_index_list)):
-    #     count_dict[class_index_list[i]] = count_list[i]
-    #
-    #
-    # res_list = []
-    # for i in prob_list:
-    #     for j in task_order:
-    #
-    #         if data_label_index_dict_inv[i] in j:
-    #             res_list.append(task_order.index(j))
-    #
-    # finest_dict = {}
-    # for i in range(len(task_order)):
-    #     for j in task_order[i]:
-    #         if j in taxonomy_tree.leaf_nodes.values():
-    #             if i not in finest_dict:
-    #                 finest_dict[i] = [j]
-    #             else:
-    #                 finest_dict[i].append(j)
-    #
-    # finest_acc_dict = {i: [acc_dict[str(data_label_index_dict[j])] for j in finest_dict[i]] for i in finest_dict}
-    #
-    #
-    # count_dict = {i: [count_dict[str(data_label_index_dict[j])] for j in finest_dict[i]] for i in finest_dict}
-    #
-    #
-    # for i in finest_acc_dict:
-    #     print(f'task {i+1}, with len {len(finest_acc_dict[i])}, mean {np.round(np.mean(finest_acc_dict[i]), 3)}, avg count {np.round(np.mean(count_dict[i]), 3)}')
-    #
-    # print(count_dict[10])
-
-
-    # print(finest_acc_dict)
-
-
-    # print(res_list)
-    # print([(i, len(task_order[i])) for i in range(17)])
-
-

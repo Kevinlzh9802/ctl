@@ -8,12 +8,11 @@ from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
 from inclearn.deeprtc import get_model
 from inclearn.deeprtc.pivot import Pivot
-from inclearn.datasets.data import tgt_to_tgt0
 
 
 class TaxonomicDer(nn.Module):  # used in incmodel.py
     def __init__(self, convnet_type, cfg, nf=64, use_bias=False, init="kaiming", device=None, dataset="cifar100",
-                 current_tax_tree=None, current_task=0):
+                 current_tax_tree=None, current_task=0, feature_mode='full'):
         super(TaxonomicDer, self).__init__()
         self.nf = nf
         self.init = init
@@ -31,7 +30,6 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.module_pivot = cfg['model_pivot']
         self.current_tax_tree = current_tax_tree
         self.current_task = current_task
-        self.curriculum = []
 
         if self.der:
             print("Enable dynamical representation expansion!")
@@ -55,6 +53,9 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
         self.n_classes = 0
         self.device = device
+        self.feature_mode = feature_mode
+        self.node2TFind_dict = {}
+        self.ancestor_self_nodes_list = None
         # self.device = torch.device( "cuda" if torch.cuda.is_available() else "cpu" , index = 0)
 
         if cfg['postprocessor']['enable']:
@@ -83,7 +84,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             gate = self.model_pivot(torch.ones([x.size(0), len(self.used_nodes)]))
             # gate[:, 0] = 1
             # print(features)
-            output, nout, sfmx_base, outs = self.classifier(x=features, gate=gate)
+            output, nout, sfmx_base = self.classifier(x=features, gate=gate)
             # logits = self.classifier(features)
         else:
             output = self.classifier(features)
@@ -94,8 +95,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 if features.shape[1] > self.out_dim else None
         else:
             aux_logits = None
-        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits,
-                'outs': outs}
+        return {'feature': features, 'output': output, 'nout': nout, 'sfmx_base': sfmx_base, 'aux_logit': aux_logits}
 
     @property
     def features_dim(self):
@@ -113,15 +113,15 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
     def copy(self):
         return copy.deepcopy(self)
 
-    def add_classes(self, n_classes):
+    def add_classes(self, n_classes, feature_mode='feature_mode'):
         if self.der:
-            self._add_classes_multi_fc(n_classes)
+            self._add_classes_multi_fc(n_classes, feature_mode)
         else:
             self._add_classes_single_fc(n_classes)
 
         # self.n_classes += n_classes
 
-    def _add_classes_multi_fc(self, n_classes):
+    def _add_classes_multi_fc(self, n_classes, feature_mode='full'):
         if self.taxonomy:
             all_classes = len(self.current_tax_tree.leaf_nodes)
         else:
@@ -138,25 +138,74 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
 
         new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
         if self.taxonomy:
+            if self.classifier is None:
+                self.node2TFind_dict['root'] = self.current_task
+
             if self.classifier is not None and self.reuse_oldfc:
                 old_clf = self.classifier
+
+                if feature_mode == 'full':
+                    j_task_range = old_clf.cur_task
+                elif 'add_zero' in feature_mode:
+                    j_task_range = new_clf.cur_task
+                else:
+                    raise('feature_mode not implement')
+
                 for k in range(old_clf.num_nodes):
-                    for j in range(new_clf.cur_task):
+                    for j in range(j_task_range):
                         fc_name = old_clf.nodes[k].name + f'_TF{j}'
                         fc_old = getattr(old_clf, fc_name, None)
                         fc_new = getattr(new_clf, fc_name, None)
-                        # assert fc_old is not None
+                        if feature_mode == 'full':
+                            assert fc_old is not None
                         assert fc_new is not None
-                        if fc_old is not None:
-                            # weight = copy.deepcopy(fc_old.weight.data)
+                        # weight = copy.deepcopy(fc_old.weight.data)
+                        if feature_mode == 'full':
                             fc_new.weight.data = copy.deepcopy(fc_old.weight.data)
                             fc_new.bias.data = copy.deepcopy(fc_old.bias.data)
-                        else:
-                            fc_new.weight.data = torch.zeros_like(fc_new.weight.data)
-                            fc_new.bias.data = torch.zeros_like(fc_new.bias.data)
+                        elif 'add_zero' in feature_mode:
+                            if fc_old is not None:
+                                fc_new.weight.data = copy.deepcopy(fc_old.weight.data)
+                                fc_new.bias.data = copy.deepcopy(fc_old.bias.data)
+                            else:
+                                fc_new.weight.data = torch.zeros_like(fc_new.weight.data)
+                                fc_new.bias.data = torch.zeros_like(fc_new.bias.data)
+
                         for param in fc_new.parameters():
                             param.requires_grad = False
                         fc_new.eval()
+
+                curr_nodes_name_list = []
+                for i in [j.name for j in new_clf.nodes.values()]:
+                    if i not in [j.name for j in old_clf.nodes.values()]:
+                        curr_nodes_name_list.append(i)
+                assert len(curr_nodes_name_list) == 1
+
+                curr_node_name = curr_nodes_name_list[0]
+
+                self.node2TFind_dict[curr_node_name] = self.current_task
+
+            if self.classifier is not None and self.feature_mode=='add_zero_only_ancestor_fea':
+
+                for j in range(self.current_task):
+                    ancestor_nodes_list = self.current_tax_tree.get_ancestor_list(new_clf.nodes[len(new_clf.nodes)-1].name)
+                    ancestor_self_nodes_list = ancestor_nodes_list + [curr_node_name]
+                    self.ancestor_self_nodes_list = ancestor_self_nodes_list
+
+                    useless_TF_list = [self.node2TFind_dict[i] for i in ancestor_self_nodes_list]
+                    if j not in useless_TF_list:
+                        fc_name = curr_node_name + f'_TF{j}'
+                        fc_useless = getattr(new_clf, fc_name, None)
+                        fc_useless.weight.data = torch.zeros_like(fc_useless.weight.data)
+                        fc_useless.bias.data = torch.zeros_like(fc_useless.bias.data)
+                        for param in fc_useless.parameters():
+                            param.requires_grad = False
+
+            for k in range(new_clf.num_nodes):
+                for j in range(new_clf.cur_task):
+                    fc_name = new_clf.nodes[k].name + f'_TF{j}'
+                    fc_new = getattr(new_clf, fc_name, None)
+
         else:
             if self.classifier is not None and self.reuse_oldfc:
                 weight = copy.deepcopy(self.classifier.weight.data)
@@ -176,6 +225,7 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
             aux_fc = self._gen_classifier(self.out_dim, self.n_classes + n_classes)
         del self.aux_classifier
         self.aux_classifier = aux_fc
+        c = 9
 
     def _add_classes_single_fc(self, n_classes):
         if self.classifier is not None:
@@ -200,12 +250,11 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
                 # classifier
                 # used_nodes = setup_tree(self.current_task, self.current_tax_tree)
                 model_dict = {'arch': self.module_cls, 'feat_size': in_features}
-                cur_parent_node = self.current_tax_tree.get_task_parent(self.curriculum[self.current_task])
                 if self.device.type == 'cuda':
-                    model_cls = get_model(model_dict, self.used_nodes, cur_parent_node, self.reuse_oldfc).cuda()
+                    model_cls = get_model(model_dict, self.used_nodes, self.reuse_oldfc).cuda()
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(torch.cuda.device_count()))
                 else:
-                    model_cls = get_model(model_dict, self.used_nodes, cur_parent_node, self.reuse_oldfc)
+                    model_cls = get_model(model_dict, self.used_nodes, self.reuse_oldfc)
                     # model_cls = nn.DataParallel(model_cls, device_ids=range(0))
                 classifier = model_cls
 
@@ -238,24 +287,3 @@ class TaxonomicDer(nn.Module):  # used in incmodel.py
         self.used_nodes = used_nodes
         self.node_labels = node_labels
         self.leaf_id = leaf_id
-
-    def cal_score_tree(self, inputs):
-        if self.der:
-            features = [convnet(inputs) for convnet in self.convnets]
-            features = torch.cat(features, 1)
-        else:
-            features = self.convnet(inputs)
-
-        score_info = []
-        for node in self.used_nodes.values():
-            prod = 0.0
-            for j in range(self.current_task + 1):
-                fc_name = node.name + f'_TF{j}'
-                fc_layers = getattr(self.classifier, fc_name)
-                prod += fc_layers(features[:, 512 * j: 512 * (j + 1)])
-            score_info.append({'name': node.name,
-                               'depth': node.depth,
-                               'children': node.children,
-                               'score': torch.mean(prod, 0)})
-        for i in range(len(score_info)):
-            print(score_info[i])

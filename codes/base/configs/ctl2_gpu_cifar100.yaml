@@ -1,7 +1,7 @@
-# for imagenet100
+# for cifar100
 
 exp:
-  name: "ctl_rtc_imagenet100_trial3_BFS_seed500"
+  name: "ctl_rtc_imagenet100_trial3_BFS_seed500_with_cifar_config"
   load_model_name: '/datasets/imagenet100_results/ctl_rtc_imagenet100_trial3_BFS_seed500_retrain_from_task21'
   debug: False
 
@@ -10,60 +10,62 @@ exp:
 
 # cfg_check_1
 # sample_rate & epoch
-#sample_rate: 0.03    # 0.3 or 0.001
-sample_rate_c1: 0.03   # 0.3 or 0.001
-sample_rate_c2: 0.01  # 0.21 or 0.001
-epochs: 2            # 220 or 2
+#sample_rate: 0.3     # 0.3 or 0.001
+sample_rate_c1: 0.3   # 0.3 or 0.001
+sample_rate_c2: 0.21  # 0.21 or 0.001
+epochs: 170             # 170 or 2
 decouple:
   enable: True
-  epochs: 2          # 30 or 2
+  epochs: 50           # 50 or 2
   fullset: False
-  lr: 0.1            # 0.1 or 0.05
+  lr: 0.05            # 0.05 or 0.025
   scheduling:
     - 15
+    - 30
   lr_decay: 0.1
   weight_decay: 0.0005
-  temperature: 1.0
-
-
+  temperature: 5.0
 
 # cfg_check_2
 # load_prev_model eg. has ckpts/ (decouple_)step13 then set retrain_from_task: 14
+use_joint_ce_loss: True
 retrain_from_task: 0  # 0 or n
-save_mem: False
+save_mem: True
 load_mem: False       # False or True
 show_noutput_detail: True   # True or False
-feature_mode: 'add_zero_use_all_prev' # ['full', 'add_zero_only_ancestor_fea',  'add_zero_use_all_prev']  # 新任务选用哪些feature
+
 # cfg_check_3
 # change seed & dataset
 seed: 500              # 500 or 600 or 1993
-dataset: "cifar100" # 'imagenet100' or 'cifar100'
-trial: 5              # 3 or 2
+dataset: "imagenet100" # 'imagenet100' or 'cifar100'
+trial: 3               # 3 or 2
+acc_k: 0               # record top k acc   =0 then no res
+
 # check datasets.py trial2 / trial3 BFS / DFS
 
-acc_k: 0
-show_detail: False
+
 # check cgpu_using
-check_cgpu_info: False
+check_cgpu_info: True
 check_cgpu_batch_period: 30
 
 # cfg_check_4
 # change batch_size then change the lr in  decouple
 lr: 0.1
-batch_size: 128        # 256 or 64
-num_workers: 0
+batch_size: 128        # 128 or 64
+num_workers: 4
 
-save_result_path: '' # '/datasets/imagenet100_results/' or ''
+save_result_path: '/datasets/imagenet100_results/' # '/datasets/imagenet100_results/' or ''
 
 taxonomy: 'rtc' # rtc for Real Taxonomic Classifier
-save_ckpt: []
+save_ckpt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+
 
 # lr_decay
 scheduling:
-  - 60
+  - 100
   - 120
-  - 160
-  - 180
+
+
 
 is_distributed: False
 
@@ -84,8 +86,8 @@ last_relu: False
 
 der: True
 use_aux_cls: True
-use_joint_ce_loss: True
 aux_n+1: True
+#use_joint_ce_loss: True
 distillation: "none"
 temperature: 2
 
@@ -118,6 +120,7 @@ warmup: False
 warmup_epochs: 10
 #sample_rate: 0.001
 #retrain_from_task: 0
+#acc_k: 0               # record top k acc   =0 then no res
 
 train_save_option:
   acc_details: True
