@@ -148,7 +148,15 @@ class IncrementalDataset:
             "n_test_data": len(y_train),
         }
 
+        taxonomy_info = []
         self._current_task += 1
+        for t in range(self._current_task):
+            taxonomy_info.append({
+                "task_order": t, 
+                "parent_node": "0",  # string
+                "child_nodes": ["0"],  # list of strings
+                "ancestor_tasks": [],   # list of ints
+            })
         return task_info, train_loader, val_loader, test_loader
 
     def _update_memory_for_new_task(self, labels):
