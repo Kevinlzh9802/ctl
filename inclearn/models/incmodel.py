@@ -9,7 +9,7 @@ from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.nn import functional as F
 
-from inclearn.convnet import network
+from inclearn.convnet import network, network_connect
 from inclearn.models.base import IncrementalLearner
 from inclearn.tools import factory, utils
 from inclearn.tools.metrics import ClassErrorMeter
@@ -66,7 +66,7 @@ class IncModel(IncrementalLearner):
 
         # Model
         self._der = cfg['der']  # Whether to expand the representation
-        self._network = network.TaxonomicDer(
+        self._network = network_connect.TaxConnectionDer(
             cfg["convnet"],
             cfg=cfg,
             nf=cfg["channel"],
@@ -113,9 +113,11 @@ class IncModel(IncrementalLearner):
         self.curr_targets_aux = torch.tensor([])
 
         # Task info
+        # self.task_info = {}
+        self.at_info, self.ct_info = {}, {}
         self._task = 0
         self._task_size = 0
-        self._current_tax_tree = None
+        self._part_tree = None
         self._n_train_data = 0
         self._n_test_data = 0
         self._n_tasks = self._inc_dataset.n_tasks
@@ -138,46 +140,43 @@ class IncModel(IncrementalLearner):
     def set_task_info(self, task_info):
         if self._cfg["is_distributed"]:
             self._logger.info(f'process {self._cfg["rank"]} begin set task info')
-        self._task = task_info["task"]
+        self.at_info = task_info
+        ct_info = task_info.loc[len(task_info)-1]  # default is the last row
+        
+        self._task = ct_info["task_order"]
         # task size for current task
         # n_classes for total number of classes (history + present)
-        self._task_size = task_info["task_size"]
+        self._task_size = ct_info["task_size"]
 
         if self._cfg["taxonomy"] is None:
-            self._current_tax_tree = None
+            self._part_tree = None
             self._n_classes += self._task_size
         elif self._cfg["taxonomy"] == 'rtc':
-            self._current_tax_tree = task_info["partial_tree"]
-            self._n_classes = len(self._current_tax_tree.leaf_nodes)
+            self._part_tree = ct_info["part_tree"]
+            self._n_classes = len(self._part_tree.leaf_nodes)
 
-        self._n_train_data = task_info["n_train_data"]
-        self._n_test_data = task_info["n_test_data"]
+        self._n_train_data = ct_info["n_train_data"]
+        self._n_test_data = ct_info["n_test_data"]
 
     def train(self):
         if self._der:
-            # self._parallel_network.train()
-            # self._parallel_network.module.convnets[-1].train()
             self._parallel_network.train()
             self._parallel_network.module.convnets[-1].train()
             if self._task >= 1:
                 for i in range(self._task):
-                    # self._parallel_network.module.convnets[i].eval()
                     self._parallel_network.module.convnets[i].eval()
         else:
-            # self._parallel_network.train()
             self._parallel_network.train()
 
-    def _new_task(self):
-        self._logger.info('begin new task')
+    def _before_task(self):
+        # Set task info
         task_info, train_loader, val_loader, test_loader = self._inc_dataset.new_task()
         self.set_task_info(task_info)
         self._cur_train_loader = train_loader
         self._cur_val_loader = val_loader
         self._cur_test_loader = test_loader
-        # print(self._cur_val_loader.sampler)
 
-    def _before_task(self, inc_dataset):
-        self._logger.info(f"Begin step {self._task}")
+        self._logger.info(f"Begin task {self._task}")
 
         # Memory
         self._memory_size.update_n_classes(self._n_classes)
@@ -185,13 +184,10 @@ class IncModel(IncrementalLearner):
         self._logger.info("Now {} examplars per class.".format(self._memory_per_class))
 
         # Network
-        self._network.current_tax_tree = self._current_tax_tree
-        self._network.task_size = self._task_size
-        self._network.current_task = self._task
-
-        self._network.add_classes(self._task_size, feature_mode=self._cfg['feature_mode'])
-        self._network.n_classes = self._n_classes
+        self._network.new_task(self.at_info, feature_mode=self._cfg['feature_mode'])
+        # self._network.n_classes = self._n_classes
         self.set_optimizer()
+    
 
     def set_optimizer(self, lr=None):
         if lr is None:

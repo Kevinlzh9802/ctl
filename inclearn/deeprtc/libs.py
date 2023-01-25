@@ -221,12 +221,9 @@ class Tree:
     def get_ancestor_list(self, node_name=None):
         parent_list = []
         node = self.nodes.get(node_name, None)
-        while True:
-            node_name = node.parent
-            parent_list.append(node_name)
-            if node_name == 'root':
-                break
-            node = self.nodes.get(node_name, None)
+        while node.name != 'root':
+            parent_list.append(node.parent)
+            node = self.nodes.get(node.parent, None)
         return parent_list
 
     def get_coarse_node_list(self):

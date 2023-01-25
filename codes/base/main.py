@@ -73,8 +73,7 @@ def _train(rank, cfg, world_size, logger=None):
 
     for task_i in range(inc_dataset.n_tasks):
     # for task_i in range(1):
-        model.new_task()
-        model.before_task(inc_dataset)
+        model.before_task()
         enforce_decouple = False
 
 
@@ -229,8 +228,7 @@ def test(_run, _rnd, _seed):
 
     test_results = results_utils.get_template_results(cfg)
     for task_i in range(inc_dataset.n_tasks):
-        model.new_task()
-        model.before_task(inc_dataset)
+        model.before_task()
         if task_i == 20:
             model_path = 'results/' + cfg['exp']['load_model_name'] + f'/train/ckpts/decouple_step{task_i}.ckpt'
             state_dict = torch.load(model_path)

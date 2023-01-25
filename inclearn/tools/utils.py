@@ -59,6 +59,10 @@ def get_featnorm_grouped_by_class(network, cur_n_cls, loader):
     return feat_norms
 
 
+def set_feature_size(node_depth):
+    return 512 / pow(2, 2*node_depth)
+
+
 def set_seed(seed):
     print("Set seed", seed)
     random.seed(seed)

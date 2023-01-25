@@ -6,17 +6,19 @@ import torch.nn.functional as F
 from inclearn.tools import factory
 from inclearn.convnet.imbalance import BiC, WA
 from inclearn.convnet.classifier import CosineClassifier, RealTaxonomicClassifier
+from inclearn.convnet.resnet_con import resconnect18
 from inclearn.deeprtc import get_model
 from inclearn.deeprtc.pivot import Pivot
 
 
-class TaxonomicExpansionDer(nn.Module):  # used in incmodel.py
+class TaxConnectionDer(nn.Module):  # used in incmodel.py
     def __init__(self, convnet_type, cfg, nf=64, use_bias=False, init="kaiming", device=None, dataset="cifar100",
-                 current_tax_tree=None, current_task=0, feature_mode='full'):
-        super(TaxonomicExpansionDer, self).__init__()
+                 at_info={}, ct_info={}, feature_mode='full'):
+        super(TaxConnectionDer, self).__init__()
         self.nf = nf
         self.init = init
         self.convnet_type = convnet_type
+        self.exp_module = resconnect18()
         self.dataset = dataset
         self.start_class = cfg['start_class']
         self.weight_normalization = cfg['weight_normalization']
@@ -28,19 +30,12 @@ class TaxonomicExpansionDer(nn.Module):  # used in incmodel.py
         self.reuse_oldfc = cfg['reuse_oldfc']
         self.module_cls = cfg['model_cls']
         self.module_pivot = cfg['model_pivot']
-        self.current_tax_tree = current_tax_tree
-        self.current_task = current_task
+        self.at_info = at_info
+        self.ct_info = ct_info
 
         if self.der:
             print("Enable dynamical representation expansion!")
             self.convnets = nn.ModuleList()
-            self.convnets.append(
-                factory.get_convnet(convnet_type,
-                                    nf=nf,
-                                    dataset=dataset,
-                                    start_class=self.start_class,
-                                    remove_last_relu=self.remove_last_relu))
-            self.out_dim = self.convnets[0].out_dim
         else:
             self.convnet = factory.get_convnet(convnet_type,
                                                nf=nf,
@@ -77,17 +72,19 @@ class TaxonomicExpansionDer(nn.Module):  # used in incmodel.py
         # get feature
         if self.der:
             # features = [convnet(x) for convnet in self.convnets]
-            prev_out = [x] * net_layers
-            for k in range(net_layers):
-                new_in = []
-                for t in range(current_tasks):
-                    ancester_mask = self.taxonomy_info[t]["ancestor"]
-                    new_in.append = torch.cat(prev_out[ancester_mask])
-                group_layer = [convnet.get_layer(k) for convnet in self.convnets]
-                for t in range(current_tasks):
-                    prev_out.append(group_layer[t](new_in[t]))
+            assert len(self.convnets) == len(self.at_info["task_list"])
+            features, conn_ft = [], []
+
+            for k in range(len(self.convnets)):
+                convnet = self.convnets[k]
+                task_info = self.at_info["task_list"][k]
+                ext_in = self.find_conns(conn_ft, task_info)
+                convnet.update_ext(ext_in)
+                feature, conn_single = convnet(x)
+                conn_ft.append(conn_single)
+                features.append(feature)
                 
-            features = torch.cat(prev_out, 1)
+            features = torch.cat(features)
         else:
             features = self.convnet(x)
 
@@ -125,29 +122,35 @@ class TaxonomicExpansionDer(nn.Module):  # used in incmodel.py
     def copy(self):
         return copy.deepcopy(self)
 
-    def add_classes(self, n_classes, feature_mode='feature_mode'):
+    
+    def new_task(self, at_info, feature_mode):
+        # update info
+        self.at_info = at_info
+        self.current_task = len(at_info) - 1
+        self.ct_info = at_info.loc[self.current_task]
+
+        expand_info = at_info.loc[:, at_info.columns != 'part_tree']
+        self.exp_module.update_task_info(expand_info)
+
+        # add classes
         if self.der:
-            self._add_classes_multi_fc(n_classes, feature_mode)
+            self._add_classes_multi_fc(feature_mode)
         else:
-            self._add_classes_single_fc(n_classes)
+            self._add_classes_single_fc()
 
-        # self.n_classes += n_classes
 
-    def _add_classes_multi_fc(self, n_classes, feature_mode='full'):
+    def _add_classes_multi_fc(self, feature_mode='full'):
+        n_classes = self.ct_info["task_size"]
         if self.taxonomy:
-            all_classes = len(self.current_tax_tree.leaf_nodes)
+            all_classes = len(self.ct_info['part_tree'].leaf_nodes)
         else:
             all_classes = self.n_classes + n_classes
 
-        if self.current_task > 0:
-            new_net = factory.get_convnet(self.convnet_type,
-                                          nf=self.nf,
-                                          dataset=self.dataset,
-                                          start_class=self.start_class,
-                                          remove_last_relu=self.remove_last_relu).to(self.device)
-            new_net.load_state_dict(self.convnets[-1].state_dict())
-            self.convnets.append(new_net)
+        # expand network part
+        base_nf = 64
+        self.exp_module.expand(base_nf)
 
+        # expand classifier part
         new_clf = self._gen_classifier(self.out_dim * len(self.convnets), all_classes)
         if self.taxonomy:
             if self.classifier is None:
@@ -295,7 +298,7 @@ class TaxonomicExpansionDer(nn.Module):  # used in incmodel.py
         self.model_pivot = model_pivot
 
     def _update_tree_info(self):
-        used_nodes, leaf_id, node_labels = self.current_tax_tree.prepro()
+        used_nodes, leaf_id, node_labels = self.at_info['part_tree'].prepro()
         self.used_nodes = used_nodes
         self.node_labels = node_labels
         self.leaf_id = leaf_id
